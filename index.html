@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Klasyfikacja parcfer.me</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--font-sans:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;--font-mono:ui-monospace,"SF Mono",Consolas,monospace;
+--text-primary:#1a1a18;--text-secondary:#52514e;--text-muted:#898781;--text-danger:#A32D2D;--text-accent:#185FA5;
+--surface-0:#f5f4f0;--surface-1:#fcfcfb;--surface-2:#ffffff;--border:rgba(11,11,11,.12);--border-strong:rgba(11,11,11,.22);--bg-danger:#FCEBEB}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+--text-primary:#f0efec;--text-secondary:#c3c2b7;--text-muted:#898781;--text-danger:#F09595;--text-accent:#85B7EB;
+--surface-0:#141413;--surface-1:#1f1f1d;--surface-2:#262624;--border:rgba(255,255,255,.12);--border-strong:rgba(255,255,255,.22);--bg-danger:#3a1d1d}}
+:root[data-theme="dark"]{--text-primary:#f0efec;--text-secondary:#c3c2b7;--text-muted:#898781;--text-danger:#F09595;--text-accent:#85B7EB;
+--surface-0:#141413;--surface-1:#1f1f1d;--surface-2:#262624;--border:rgba(255,255,255,.12);--border-strong:rgba(255,255,255,.22);--bg-danger:#3a1d1d}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--surface-0);color:var(--text-primary);font-family:var(--font-sans)}
+.page{max-width:980px;margin:0 auto;padding:0 16px 24px}
+input,textarea,button{font:inherit;color:var(--text-primary)}
+input[type=text],input[type=number]{box-sizing:border-box;height:34px;padding:0 10px;border:0.5px solid var(--border-strong);border-radius:8px;background:var(--surface-2)}
+button{height:34px;padding:0 14px;border:0.5px solid var(--border-strong);border-radius:8px;background:var(--surface-2);cursor:pointer}
+button:hover{background:var(--surface-1)}
+canvas{max-width:100%}
+@media (max-width:600px){.pf-stats{grid-template-columns:1fr!important}.pf-form-row{grid-template-columns:1fr 1fr!important}}
+</style>
+</head>
+<body><div class="page">
+
+<style>
+.ps-wrap{font-family:var(--font-sans);padding:1rem 0}
+.ps-hdr{display:flex;align-items:center;gap:12px;margin-bottom:1.25rem}
+.ps-logo{width:38px;height:38px;background:#185FA5;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:500;font-size:13px;flex-shrink:0}
+.ps-title{font-size:16px;font-weight:500;color:var(--text-primary)}
+.ps-sub{font-size:12px;color:var(--text-secondary);margin-top:2px}
+.ps-import{background:var(--surface-1);border-radius:12px;padding:16px;margin-bottom:1.25rem}
+.ps-import-title{font-size:13px;font-weight:500;margin-bottom:10px;color:var(--text-primary)}
+.ps-import-row{display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:8px;align-items:end}
+.ps-field label{display:block;font-size:11px;color:var(--text-secondary);margin-bottom:4px}
+.ps-field input{width:100%}
+.ps-textarea{width:100%;min-height:110px;font-family:var(--font-mono);font-size:12px;padding:8px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface-2);color:var(--text-primary);resize:vertical}
+.ps-import-note{font-size:11px;color:var(--text-muted);margin-top:6px;line-height:1.5}
+.ps-tablewrap{overflow-x:auto;border-radius:12px;border:0.5px solid var(--border)}
+.ps-table{border-collapse:collapse;font-size:11px;white-space:nowrap;min-width:100%}
+.ps-table th{position:sticky;top:0;background:var(--surface-1);color:var(--text-secondary);font-weight:500;padding:6px 8px;text-align:center;border-bottom:0.5px solid var(--border);position:sticky;top:0}
+.ps-table th.ps-name-col,.ps-table td.ps-name-col{text-align:left;position:sticky;left:0;background:var(--surface-2);min-width:130px;z-index:1}
+.ps-table th.ps-pos-col,.ps-table td.ps-pos-col{text-align:center;min-width:32px}
+.ps-table td{padding:5px 8px;text-align:center;border-bottom:0.5px solid var(--border);color:var(--text-primary)}
+.ps-table tr.ps-me{background:var(--bg-danger)}
+.ps-table tr.ps-me td.ps-name-col{background:var(--bg-danger)}
+.ps-table td.ps-total{font-weight:500}
+.ps-table td.ps-zero{color:var(--text-muted)}
+.ps-empty{font-size:12px;color:var(--text-muted);text-align:center;padding:2rem 0}
+.ps-controls{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;align-items:center}
+.ps-limit{font-size:11px;color:var(--text-secondary)}
+.ps-foot{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:12px;font-size:12px;color:var(--text-secondary)}
+.ps-foot input{width:160px}
+.ps-note{font-size:11px;color:var(--text-muted);margin-top:10px;line-height:1.55}
+.ps-note a{color:var(--text-accent)}
+</style>
+
+<div class="ps-wrap">
+  <div class="ps-hdr">
+    <div class="ps-logo">S</div>
+    <div>
+      <div class="ps-title">Klasyfikacja typerów parcfer.me — F1 <span id="ps-season"></span></div>
+      <div class="ps-sub" id="ps-seasons"></div>
+      <div class="ps-sub" id="ps-subtitle">Ładowanie...</div>
+    </div>
+  </div>
+
+  <div class="ps-controls">
+    <input type="text" id="ps-filter" placeholder="Filtruj uczestników…" oninput="psRenderTable()" style="flex:1;min-width:140px;max-width:260px">
+    <label class="ps-limit"><input type="checkbox" id="ps-top100" checked onchange="psRenderTable()"> Tylko TOP 100 (+ Twój nick)</label>
+  </div>
+
+  <div class="ps-tablewrap">
+    <table class="ps-table" id="ps-table"></table>
+  </div>
+  <div class="ps-empty" id="ps-empty" style="display:none">Brak jeszcze żadnych zaimportowanych rund — wklej pierwszą tabelę powyżej.</div>
+
+  <div class="ps-foot">
+    <label for="ps-myname">Podświetl swój nick:</label>
+    <input type="text" id="ps-myname" placeholder="np. igordzie" oninput="psSaveMyName()">
+  </div>
+  <div class="ps-note">Nieoficjalne zestawienie fanowskie. Źródło danych: publiczny ranking <a href="https://parcfer.me" target="_blank" rel="noopener">parcfer.me</a> (TOP 100 po każdej rundzie). <span id="ps-asof"></span> Wartość w komórce: punkty łącznie, miejsce w danej rundzie i przyrost punktów w rundzie. Gdy nick się powtarza, kolejne osoby oznaczono „(2)” według kolejności w rankingu.</div>
+</div>
+
+<script>
+
+function lsGet(k){try{var v=localStorage.getItem(k);return v===null?null:{key:k,value:v};}catch(e){return null;}}
+function lsSet(k,v){try{localStorage.setItem(k,v);return true;}catch(e){return false;}}
+var MYNAME_KEY = 'parcfer-public-myname';
+var state = { rounds: [], participants: {} };
+var myName = '';
+var SEASON = null;
+function psBuildSeasonPicker(list) {
+  var el = document.getElementById('ps-seasons');
+  if (list.length < 2) { el.style.display = 'none'; return; }
+  el.innerHTML = 'Sezon: ' + list.map(function(y) { return y === SEASON ? '<b>' + y + '</b>' : '<a href="?sezon=' + y + '">' + y + '</a>'; }).join(' · ');
+}
+
+var seedRounds = [];
+var seedRaw = {};
+
+function buildSeedState() {
+  var st = { rounds: seedRounds.slice(), participants: {} };
+  seedRounds.forEach(function(rnd) {
+    var seen = {};
+    seedRaw[rnd].forEach(function(row) {
+      var pos = row[0], name = row[1], pts = row[2];
+      seen[name] = (seen[name] || 0);
+      var key = seen[name] > 0 ? name + ' (' + (seen[name]+1) + ')' : name;
+      seen[name]++;
+      if (!st.participants[key]) st.participants[key] = {};
+      st.participants[key][rnd] = { position: pos, points: pts };
+    });
+  });
+  return st;
+}
+
+async function psLoad() { return buildSeedState(); }
+async function psLoadMyName() {
+  var res = lsGet(MYNAME_KEY);
+  return (res && res.value) ? res.value : '';
+}
+async function psSaveMyName() {
+  myName = document.getElementById('ps-myname').value.trim();
+  try { lsSet(MYNAME_KEY, myName); } catch (e) {}
+  psRenderTable();
+}
+
+
+function psIsMe(n) {
+  var me = (myName || '').toLowerCase();
+  var x = n.toLowerCase();
+  return !!me && (x === me || x.indexOf(me + ' (') === 0);
+}
+
+function psRenderTable() {
+  var tbl = document.getElementById('ps-table');
+  var emptyEl = document.getElementById('ps-empty');
+  var sub = document.getElementById('ps-subtitle');
+
+  if (!state.rounds.length) {
+    tbl.innerHTML = '';
+    emptyEl.style.display = 'block';
+    sub.textContent = 'Brak danych';
+    return;
+  }
+  emptyEl.style.display = 'none';
+  document.getElementById('ps-asof').textContent = 'Stan po rundzie: ' + state.rounds[state.rounds.length - 1] + '.';
+  sub.textContent = state.rounds.length + ' ' + (state.rounds.length === 1 ? 'runda' : 'rund') + ' · ' + Object.keys(state.participants).length + ' uczestników w zestawieniu';
+
+  var lastRound = state.rounds[state.rounds.length - 1];
+  var names = Object.keys(state.participants);
+
+  names.sort(function(a, b) {
+    var pa = state.participants[a][lastRound] ? state.participants[a][lastRound].points : -1;
+    var pb = state.participants[b][lastRound] ? state.participants[b][lastRound].points : -1;
+    return pb - pa;
+  });
+
+  var top100Only = document.getElementById('ps-top100').checked;
+  var shown = names;
+  if (top100Only) {
+    var top100 = names.slice(0, 100);
+    var meIncluded = top100.some(psIsMe);
+    if (!meIncluded) {
+      var meKey = names.find(psIsMe);
+      if (meKey) top100.push(meKey);
+    }
+    shown = top100;
+  }
+  var rankOf = {};
+  names.forEach(function(n, i) { rankOf[n] = i + 1; });
+  var q = (document.getElementById('ps-filter').value || '').trim().toLowerCase();
+  if (q) shown = names.filter(function(n) { return n.toLowerCase().indexOf(q) !== -1; });
+
+  var head = '<tr><th class="ps-pos-col">Poz.</th><th class="ps-name-col">Uczestnik</th>';
+  state.rounds.forEach(function(r) { head += '<th>' + r + '</th>'; });
+  head += '<th>Suma (ost.)</th></tr>';
+
+  var body = shown.map(function(name, idx) {
+    var isMe = psIsMe(name);
+    var lastData = state.participants[name][lastRound];
+    var lastPts = lastData ? lastData.points : 0;
+    var cells = state.rounds.map(function(r, ri) {
+      var d = state.participants[name][r];
+      if (!d) return '<td class="ps-zero">—</td>';
+      var deltaHtml = '';
+      if (ri === 0) {
+        deltaHtml = '<span style="font-size:9px;color:var(--text-muted)">start</span>';
+      } else {
+        var prevRound = state.rounds[ri - 1];
+        var prevD = state.participants[name][prevRound];
+        if (prevD) {
+          var delta = d.points - prevD.points;
+          var col = delta > 0 ? '#3B6D11' : (delta < 0 ? '#E24B4A' : 'var(--text-muted)');
+          deltaHtml = '<span style="font-size:9px;color:' + col + '">' + (delta >= 0 ? '+' : '') + delta + ' w rundzie</span>';
+        } else {
+          deltaHtml = '<span style="font-size:9px;color:var(--text-accent)">nowy</span>';
+        }
+      }
+      return '<td>' + d.points + '<br><span style="font-size:9px;color:var(--text-muted)">P' + d.position + '</span><br>' + deltaHtml + '</td>';
+    }).join('');
+    return '<tr class="' + (isMe ? 'ps-me' : '') + '"><td class="ps-pos-col">' + rankOf[name] + '</td><td class="ps-name-col">' + name + '</td>' + cells + '<td class="ps-total">' + lastPts + '</td></tr>';
+  }).join('');
+
+  tbl.innerHTML = head + (body || '<tr><td colspan="' + (state.rounds.length + 3) + '" class="ps-zero" style="padding:16px">Brak uczestników pasujących do filtra</td></tr>');
+  var wrap = tbl.parentNode; wrap.scrollLeft = wrap.scrollWidth;
+}
+
+(async function psInit() {
+  try {
+    var idx = await (await fetch('data/seasons.json', { cache: 'no-cache' })).json();
+    var qs = parseInt(new URLSearchParams(location.search).get('sezon'), 10);
+    SEASON = idx.seasons.indexOf(qs) !== -1 ? qs : idx['default'];
+    psBuildSeasonPicker(idx.seasons);
+    var resp = await fetch('data/' + SEASON + '.json', { cache: 'no-cache' });
+    var json = await resp.json();
+    document.getElementById('ps-season').textContent = SEASON;
+    document.title = 'Klasyfikacja parcfer.me ' + SEASON;
+    json.rounds.forEach(function(r) {
+      seedRounds.push(r.name);
+      seedRaw[r.name] = r.standings.map(function(x) { return [x.pos, x.name, x.points]; });
+    });
+  } catch (e) {
+    document.getElementById('ps-subtitle').textContent = 'Nie udało się wczytać danych.';
+    return;
+  }
+  state = await psLoad();
+  myName = await psLoadMyName();
+  document.getElementById('ps-myname').value = myName;
+  psRenderTable();
+})();
+</script>
+
+</div></body>
+</html>
