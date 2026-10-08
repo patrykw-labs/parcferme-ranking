@@ -39,6 +39,10 @@ Strona wczytuje JSON przez `fetch`, więc otwórz ją przez serwer, np. `python 
 
 GitHub Pages: Settings → Pages → Deploy from a branch → `main` / `(root)`. Plik `.nojekyll` wyłącza przetwarzanie przez Jekyll — pliki są serwowane bez zmian.
 
+## Wsparcie
+
+Jeśli zestawienie Ci się przydaje: [☕ Postaw mi kawę](https://buymeacoffee.com/pwolszaw).
+
 ## Licencja
 
 Kod: [MIT](LICENSE). Licencja nie obejmuje danych rankingu w `data/` — patrz uwaga na górze.
