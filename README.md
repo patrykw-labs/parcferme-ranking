@@ -1,6 +1,6 @@
 # parcferme-ranking
 
-[![Buy Me a Coffee](https://img.shields.io/badge/Postaw_mi_kaw%C4%99-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/pwolszaw)
+<a href="https://www.buymeacoffee.com/pwolszaw"><img src="https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&amp;emoji=&amp;slug=pwolszaw&amp;button_colour=FFDD00&amp;font_colour=000000&amp;font_family=Cookie&amp;outline_colour=000000&amp;coffee_colour=ffffff" alt="Buy me a coffee" /></a>
 
 Nieoficjalna, fanowska klasyfikacja typerów konkursu [parcfer.me](https://parcfer.me) — F1, runda po rundzie (TOP 100 po każdej rundzie). Wiele sezonów w jednym repo.
 
