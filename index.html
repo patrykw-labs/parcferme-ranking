@@ -30,7 +30,7 @@ canvas{max-width:100%}
 
 <style>
 .ps-wrap{font-family:var(--font-sans);padding:1rem 0}
-.ps-hdr{display:flex;align-items:center;gap:12px;margin-bottom:1.25rem}
+.ps-hdr{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:1.25rem}
 .ps-logo{width:38px;height:38px;background:#185FA5;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:500;font-size:13px;flex-shrink:0}
 .ps-title{font-size:16px;font-weight:500;color:var(--text-primary)}
 .ps-sub{font-size:12px;color:var(--text-secondary);margin-top:2px}
@@ -58,18 +58,20 @@ canvas{max-width:100%}
 .ps-foot input{width:160px}
 .ps-note{font-size:11px;color:var(--text-muted);margin-top:10px;line-height:1.55}
 .ps-note a{color:var(--text-accent)}
-.ps-coffee{display:inline-block;margin-top:14px;font-size:12px;color:var(--text-secondary);text-decoration:none;border:0.5px solid var(--border-strong);border-radius:8px;padding:6px 12px;background:var(--surface-1)}
-.ps-coffee:hover{background:var(--surface-2);color:var(--text-primary)}
+.ps-coffee{margin-left:auto;display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:10px;background:#FFDD00;color:#1a1a18;font-size:15px;font-weight:600;text-decoration:none;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.ps-coffee:hover{background:#ffe433;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+@media (max-width:600px){.ps-coffee{margin-left:0;width:100%;justify-content:center}}
 </style>
 
 <div class="ps-wrap">
   <div class="ps-hdr">
     <div class="ps-logo">S</div>
-    <div>
+    <div style="flex:1;min-width:0">
       <div class="ps-title">Klasyfikacja typerów parcfer.me — F1 <span id="ps-season"></span></div>
       <div class="ps-sub" id="ps-seasons"></div>
       <div class="ps-sub" id="ps-subtitle">Ładowanie...</div>
     </div>
+    <a class="ps-coffee" href="https://buymeacoffee.com/pwolszaw" target="_blank" rel="noopener">☕ Postaw mi kawę</a>
   </div>
 
   <div class="ps-controls">
@@ -87,7 +89,6 @@ canvas{max-width:100%}
     <input type="text" id="ps-myname" placeholder="np. igordzie" oninput="psSaveMyName()">
   </div>
   <div class="ps-note">Nieoficjalne zestawienie fanowskie. Źródło danych: publiczny ranking <a href="https://parcfer.me" target="_blank" rel="noopener">parcfer.me</a> (TOP 100 po każdej rundzie). <span id="ps-asof"></span> Wartość w komórce: punkty łącznie, miejsce w danej rundzie i przyrost punktów w rundzie. Gdy nick się powtarza, kolejne osoby oznaczono „(2)” według kolejności w rankingu.</div>
-  <a class="ps-coffee" href="https://buymeacoffee.com/pwolszaw" target="_blank" rel="noopener">☕ Postaw mi kawę</a>
 </div>
 
 <script>

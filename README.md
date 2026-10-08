@@ -1,5 +1,7 @@
 # parcferme-ranking
 
+[![Buy Me a Coffee](https://img.shields.io/badge/Postaw_mi_kaw%C4%99-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/pwolszaw)
+
 Nieoficjalna, fanowska klasyfikacja typerów konkursu [parcfer.me](https://parcfer.me) — F1, runda po rundzie (TOP 100 po każdej rundzie). Wiele sezonów w jednym repo.
 
 **Strona:** https://patrykw-labs.github.io/parcferme-ranking/
