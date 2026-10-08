@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Klasyfikacja parcfer.me</title>
+<meta name="description" content="Nieoficjalna, fanowska klasyfikacja typerów parcfer.me (F1), runda po rundzie.">
 <style>
 :root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
 --font-sans:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;--font-mono:ui-monospace,"SF Mono",Consolas,monospace;
@@ -77,7 +78,7 @@ canvas{max-width:100%}
   <div class="ps-tablewrap">
     <table class="ps-table" id="ps-table"></table>
   </div>
-  <div class="ps-empty" id="ps-empty" style="display:none">Brak jeszcze żadnych zaimportowanych rund — wklej pierwszą tabelę powyżej.</div>
+  <div class="ps-empty" id="ps-empty" style="display:none">Brak danych dla tego sezonu.</div>
 
   <div class="ps-foot">
     <label for="ps-myname">Podświetl swój nick:</label>
@@ -131,6 +132,10 @@ async function psSaveMyName() {
 }
 
 
+function psEsc(s) {
+  return String(s).replace(/[&<>"']/g, function(c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; });
+}
+
 function psIsMe(n) {
   var me = (myName || '').toLowerCase();
   var x = n.toLowerCase();
@@ -178,7 +183,7 @@ function psRenderTable() {
   if (q) shown = names.filter(function(n) { return n.toLowerCase().indexOf(q) !== -1; });
 
   var head = '<tr><th class="ps-pos-col">Poz.</th><th class="ps-name-col">Uczestnik</th>';
-  state.rounds.forEach(function(r) { head += '<th>' + r + '</th>'; });
+  state.rounds.forEach(function(r) { head += '<th>' + psEsc(r) + '</th>'; });
   head += '<th>Suma (ost.)</th></tr>';
 
   var body = shown.map(function(name, idx) {
@@ -204,7 +209,7 @@ function psRenderTable() {
       }
       return '<td>' + d.points + '<br><span style="font-size:9px;color:var(--text-muted)">P' + d.position + '</span><br>' + deltaHtml + '</td>';
     }).join('');
-    return '<tr class="' + (isMe ? 'ps-me' : '') + '"><td class="ps-pos-col">' + rankOf[name] + '</td><td class="ps-name-col">' + name + '</td>' + cells + '<td class="ps-total">' + lastPts + '</td></tr>';
+    return '<tr class="' + (isMe ? 'ps-me' : '') + '"><td class="ps-pos-col">' + rankOf[name] + '</td><td class="ps-name-col">' + psEsc(name) + '</td>' + cells + '<td class="ps-total">' + lastPts + '</td></tr>';
   }).join('');
 
   tbl.innerHTML = head + (body || '<tr><td colspan="' + (state.rounds.length + 3) + '" class="ps-zero" style="padding:16px">Brak uczestników pasujących do filtra</td></tr>');

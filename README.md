@@ -1,6 +1,10 @@
-# parcfer-ranking
+# parcferme-ranking
 
 Nieoficjalna, fanowska klasyfikacja typerów konkursu [parcfer.me](https://parcfer.me) — F1, runda po rundzie (TOP 100 po każdej rundzie). Wiele sezonów w jednym repo.
+
+**Strona:** https://patrykw-labs.github.io/parcferme-ranking/
+
+> Projekt nie jest powiązany z parcfer.me ani z Formułą 1. Dane pochodzą z publicznego rankingu na [parcfer.me](https://parcfer.me) i należą do ich właścicieli.
 
 ## Struktura
 
@@ -33,4 +37,8 @@ Strona wczytuje JSON przez `fetch`, więc otwórz ją przez serwer, np. `python 
 
 ## Publikacja
 
-GitHub Pages: Settings → Pages → Deploy from a branch → `main` / `(root)`.
+GitHub Pages: Settings → Pages → Deploy from a branch → `main` / `(root)`. Plik `.nojekyll` wyłącza przetwarzanie przez Jekyll — pliki są serwowane bez zmian.
+
+## Licencja
+
+Kod: [MIT](LICENSE). Licencja nie obejmuje danych rankingu w `data/` — patrz uwaga na górze.
