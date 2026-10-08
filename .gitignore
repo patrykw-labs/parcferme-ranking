@@ -1,0 +1,14 @@
+# System
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Edytory
+.vscode/
+.idea/
+*.swp
+*~
+
+# Pliki robocze
+*.tmp
+*.bak
