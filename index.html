@@ -166,9 +166,10 @@ function psRenderTable() {
   var names = Object.keys(state.participants);
 
   names.sort(function(a, b) {
-    var pa = state.participants[a][lastRound] ? state.participants[a][lastRound].points : -1;
-    var pb = state.participants[b][lastRound] ? state.participants[b][lastRound].points : -1;
-    return pb - pa;
+    var da = state.participants[a][lastRound], db = state.participants[b][lastRound];
+    var pa = da ? da.points : -1, pb = db ? db.points : -1;
+    if (pb !== pa) return pb - pa;
+    return (da ? da.position : Infinity) - (db ? db.position : Infinity);
   });
 
   var top100Only = document.getElementById('ps-top100').checked;
