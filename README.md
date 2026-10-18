@@ -1,5 +1,7 @@
 # parcferme-ranking
 
+<a href="https://www.buymeacoffee.com/pwolszaw"><img src="assets/banner.jpg" alt="Klasyfikacja parcfer.me — postaw mi kawę" width="100%" /></a>
+
 <a href="https://www.buymeacoffee.com/pwolszaw"><img src="https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&amp;emoji=&amp;slug=pwolszaw&amp;button_colour=FFDD00&amp;font_colour=000000&amp;font_family=Cookie&amp;outline_colour=000000&amp;coffee_colour=ffffff" alt="Buy me a coffee" /></a>
 
 Nieoficjalna, fanowska klasyfikacja typerów konkursu [parcfer.me](https://parcfer.me) — F1, runda po rundzie (TOP 100 po każdej rundzie). Wiele sezonów w jednym repo.
@@ -12,6 +14,7 @@ Nieoficjalna, fanowska klasyfikacja typerów konkursu [parcfer.me](https://parcf
 
 - `index.html` — strona (czysty HTML + JS, bez zależności i bez kroku budowania)
 - `data/seasons.json` — lista sezonów i sezon domyślny
+- `assets/` — grafiki (baner)
 - `data/<rok>.json` — dane sezonu: lista rund, w każdej ranking `{ pos, name, points }`
 
 Konkretny sezon: `index.html?sezon=2026`. Przy ≥2 sezonach w nagłówku pojawia się przełącznik.
@@ -43,7 +46,7 @@ GitHub Pages: Settings → Pages → Deploy from a branch → `main` / `(root)`.
 
 ## Statystyki
 
-Anonimowe statystyki odwiedzin (bez cookies): [parcferme.goatcounter.com](https://parcferme.goatcounter.com/). Kliknięcia w przycisk Buy Me a Coffee są liczone jako zdarzenie `buymeacoffee`.
+Anonimowe statystyki odwiedzin (bez cookies): [parcferme.goatcounter.com](https://parcferme.goatcounter.com/). Kliknięcia w przycisk i baner Buy Me a Coffee są liczone jako zdarzenia `buymeacoffee` i `buymeacoffee-banner`.
 
 ## Wsparcie
 
