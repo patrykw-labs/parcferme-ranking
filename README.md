@@ -41,6 +41,10 @@ Strona wczytuje JSON przez `fetch`, więc otwórz ją przez serwer, np. `python 
 
 GitHub Pages: Settings → Pages → Deploy from a branch → `main` / `(root)`. Plik `.nojekyll` wyłącza przetwarzanie przez Jekyll — pliki są serwowane bez zmian.
 
+## Statystyki
+
+Anonimowe statystyki odwiedzin (bez cookies): [parcferme.goatcounter.com](https://parcferme.goatcounter.com/). Kliknięcia w przycisk Buy Me a Coffee są liczone jako zdarzenie `buymeacoffee`.
+
 ## Wsparcie
 
 Jeśli zestawienie Ci się przydaje: [☕ Postaw mi kawę](https://buymeacoffee.com/pwolszaw).
