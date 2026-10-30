@@ -204,7 +204,7 @@ tr.me .c-name::after{content:"TY";margin-left:8px;padding:1px 6px;border-radius:
   <section class="tiles">
     <div class="card tile"><div class="label">↗ Skok rundy</div><div class="val up" id="k-jump">—</div><div class="desc" id="k-jump-d"></div></div>
     <div class="card tile"><div class="label">★ Najwięcej pkt w rundzie</div><div class="val" id="k-best">—</div><div class="desc" id="k-best-d"></div></div>
-    <div class="card tile"><div class="label">⇄ Nowi w TOP 100</div><div class="val" id="k-new">—</div><div class="desc" id="k-new-d"></div></div>
+    <div class="card tile"><div class="label">⇄ Nowi w TOP 10</div><div class="val" id="k-new">—</div><div class="desc" id="k-new-d"></div></div>
     <div class="card tile"><div class="label">◎ Rozrzut TOP 100</div><div class="val" id="k-gap">—</div><div class="desc" id="k-gap-d"></div></div>
   </section>
 
@@ -352,7 +352,7 @@ function psRenderKpis(names) {
   var jump = null, best = null, newc = 0;
   names.forEach(function(x) {
     var m = psMove(x), cur = P[x][last], prv = n > 1 ? P[x][state.rounds[n - 2]] : null;
-    if (n > 1 && cur && cur.position <= 100 && (!prv || prv.position > 100)) newc++;
+    if (n > 1 && cur && cur.position <= 10 && (!prv || prv.position > 10)) newc++;
     if (typeof m === 'number' && (jump === null || m > jump.v)) jump = { n: x, v: m };
     var d = psRoundDelta(x, n - 1);
     if (d !== null && (best === null || d > best.v)) best = { n: x, v: d };
@@ -362,7 +362,7 @@ function psRenderKpis(names) {
   document.getElementById('k-best').textContent = best ? psSigned(best.v) + ' pkt' : '—';
   document.getElementById('k-best-d').textContent = best ? best.n : '';
   document.getElementById('k-new').textContent = n > 1 ? newc : '—';
-  document.getElementById('k-new-d').textContent = n > 1 ? 'weszło do TOP 100 po ' + last : '';
+  document.getElementById('k-new-d').textContent = n > 1 ? 'weszło do TOP 10 po ' + last : '';
   var p100 = names[Math.min(99, names.length - 1)];
   var cut = P[p100][last] ? P[p100][last].points : null;
   document.getElementById('k-gap').textContent = cut !== null ? (ld.points - cut) + ' pkt' : '—';
