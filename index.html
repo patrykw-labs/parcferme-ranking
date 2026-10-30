@@ -116,7 +116,13 @@ h1 em{font-style:normal;background:linear-gradient(90deg,var(--accent-2),var(--a
 .search{height:38px;border-radius:999px;border:1px solid var(--border-strong);background:var(--card-2);padding:0 16px;width:220px;max-width:100%}
 .search:focus{outline:2px solid var(--accent);outline-offset:1px}
 .board-head .sp{flex:1}
-.tw{overflow-x:auto}
+.tw{overflow:auto;max-height:min(75vh,900px);overscroll-behavior:contain}
+.pager{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:12px 16px;border-top:1px solid var(--border)}
+.pager button{min-width:38px;height:34px;padding:0 10px;border-radius:10px;border:1px solid var(--border-strong);background:var(--card-2);font-size:12px;font-weight:700;color:var(--text-2);cursor:pointer}
+.pager button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.pager button:disabled{opacity:.4;cursor:default}
+.pager .info{margin-left:auto;font-size:12px;color:var(--muted)}
+.seg button:disabled{opacity:.45;cursor:default}
 table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px;white-space:nowrap}
 th{position:sticky;top:0;background:var(--card-2);color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:10px 12px;text-align:center;border-bottom:1px solid var(--border)}
 td{padding:9px 12px;text-align:center;border-bottom:1px solid var(--border)}
@@ -126,7 +132,7 @@ tbody tr:hover td.c-name{background:linear-gradient(var(--accent-soft),var(--acc
 .c-name{text-align:left;position:sticky;left:0;background:var(--card);z-index:1;min-width:210px;max-width:260px;overflow:hidden;text-overflow:ellipsis;font-weight:700;box-shadow:1px 0 0 var(--border)}
 .c-name .rk{display:inline-block;width:30px;font-weight:800;font-variant-numeric:tabular-nums}
 .c-name .mv{display:inline-block;width:46px;font-size:11px;font-weight:700}
-th.c-name{background:var(--card-2);z-index:2}
+th.c-name{background:var(--card-2);z-index:3}
 .c-tot{font-size:15px;font-weight:800;font-variant-numeric:tabular-nums}
 .mv-up{color:var(--up)}.mv-down{color:var(--down)}.mv-eq{color:var(--muted)}.mv-new{color:var(--accent-2);font-size:10px;letter-spacing:.06em}
 .rc b{display:block;font-weight:700;font-variant-numeric:tabular-nums}
@@ -157,6 +163,7 @@ tr.me .c-name::after{content:"TY";margin-left:8px;padding:1px 6px;border-radius:
   .search{width:100%}
   .c-name{min-width:0;max-width:175px}
   .c-name .mv{width:38px}
+  .pager .num:not(.on){display:none}
 }
 </style>
 </head>
@@ -205,12 +212,14 @@ tr.me .c-name::after{content:"TY";margin-left:8px;padding:1px 6px;border-radius:
       <h2>Tabela runda po rundzie</h2>
       <div class="sp"></div>
       <div class="seg" role="tablist">
-        <button type="button" id="seg-top" class="on" onclick="psSetTop(true)">TOP 100</button>
-        <button type="button" id="seg-all" onclick="psSetTop(false)">Wszyscy</button>
+        <button type="button" id="seg-top" class="on" onclick="psSetView('top')">TOP 100</button>
+        <button type="button" id="seg-near" onclick="psSetView('near')" title="±15 miejsc wokół Twojego nicka">Moja okolica</button>
+        <button type="button" id="seg-all" onclick="psSetView('all')">Wszyscy</button>
       </div>
       <input class="search" type="text" id="ps-filter" placeholder="Szukaj nicku…" oninput="psRenderTable()">
     </div>
     <div class="tw"><table id="ps-table"></table></div>
+    <div class="pager" id="ps-pager" style="display:none"></div>
     <div class="empty" id="ps-empty" style="display:none">Brak danych dla tego sezonu.</div>
   </section>
 
@@ -225,7 +234,7 @@ var THEME_KEY = 'parcfer-theme';
 var state = { rounds: [], participants: {} };
 var myName = '';
 var SEASON = null;
-var topOnly = true;
+var VIEW = 'top', PAGE = 0, PAGE_SIZE = 100, NEAR = 15;
 
 function psEsc(s) {
   return String(s).replace(/[&<>"']/g, function(c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; });
@@ -251,9 +260,10 @@ var seedRounds = [];
 var seedRaw = {};
 
 function buildSeedState() {
-  var st = { rounds: seedRounds.slice(), participants: {} };
+  var st = { rounds: seedRounds.slice(), participants: {}, size: {} };
   seedRounds.forEach(function(rnd) {
     var seen = {};
+    st.size[rnd] = seedRaw[rnd].length;
     seedRaw[rnd].forEach(function(row) {
       var pos = row[0], name = row[1], pts = row[2];
       seen[name] = (seen[name] || 0);
@@ -271,12 +281,12 @@ function psSaveMyName() {
   lsSet(MYNAME_KEY, myName);
   psRenderAll();
 }
-function psSetTop(v) {
-  topOnly = v;
-  document.getElementById('seg-top').classList.toggle('on', v);
-  document.getElementById('seg-all').classList.toggle('on', !v);
-  psRenderTable();
+function psSetView(v) {
+  VIEW = v; PAGE = 0;
+  ['top', 'near', 'all'].forEach(function(k) { document.getElementById('seg-' + k).classList.toggle('on', k === v); });
+  psRenderTable(true);
 }
+function psSetPage(p) { PAGE = p; psRenderTable(true); }
 
 function psIsMe(n) {
   var me = (myName || '').toLowerCase();
@@ -303,7 +313,7 @@ function psMove(name) {
   if (n < 2) return null;
   var cur = state.participants[name][state.rounds[n - 1]], prev = state.participants[name][state.rounds[n - 2]];
   if (!cur) return null;
-  if (!prev) return 'new';
+  if (!prev) return cur.position <= state.size[state.rounds[n - 2]] ? 'new' : null;
   return prev.position - cur.position;
 }
 function psMoveHtml(m) {
@@ -334,9 +344,9 @@ function psRenderKpis(names) {
   // kafelki rundy
   var jump = null, best = null, newc = 0;
   names.forEach(function(x) {
-    var m = psMove(x);
-    if (m === 'new') newc++;
-    else if (m !== null && (jump === null || m > jump.v)) jump = { n: x, v: m };
+    var m = psMove(x), cur = P[x][last], prv = n > 1 ? P[x][state.rounds[n - 2]] : null;
+    if (n > 1 && cur && cur.position <= 100 && (!prv || prv.position > 100)) newc++;
+    if (typeof m === 'number' && (jump === null || m > jump.v)) jump = { n: x, v: m };
     var d = psRoundDelta(x, n - 1);
     if (d !== null && (best === null || d > best.v)) best = { n: x, v: d };
   });
@@ -359,12 +369,12 @@ function psRenderKpis(names) {
   }
   var me = names.filter(psIsMe)[0];
   if (!me || !P[me][last]) {
-    meEl.innerHTML = '<div class="me-hint">Nie ma <b>' + psEsc(myName) + '</b> w TOP 100 po ' + psEsc(last) + '.</div>';
+    meEl.innerHTML = '<div class="me-hint">Nie ma <b>' + psEsc(myName) + '</b> w rankingu po ' + psEsc(last) + '.</div>';
     return;
   }
   var md = P[me][last], mv = psMove(me), mr = psRoundDelta(me, n - 1);
   function plMiejsc(k) { return k === 1 ? 'miejsce' : (k % 10 >= 2 && k % 10 <= 4 && (k % 100 < 10 || k % 100 >= 20)) ? 'miejsca' : 'miejsc'; }
-  var chip = mv === 'new' ? '<span class="chip blue">nowy w TOP 100</span>'
+  var chip = mv === 'new' ? '<span class="chip blue">' + (md.position <= 100 ? 'nowy w TOP 100' : 'nowy w rankingu') + '</span>'
     : mv > 0 ? '<span class="chip green">▲ ' + mv + ' ' + plMiejsc(mv) + '</span>'
     : mv < 0 ? '<span class="chip red">▼ ' + (-mv) + ' ' + plMiejsc(-mv) + '</span>'
     : mv === 0 ? '<span class="chip gold">bez zmian</span>' : '';
@@ -374,20 +384,36 @@ function psRenderKpis(names) {
     '<span class="chip gold">' + (ld.points - md.points) + ' pkt do lidera</span></div>';
 }
 
-function psRenderTable() {
+function psRenderTable(resetScroll) {
   var tbl = document.getElementById('ps-table');
   var lastRound = state.rounds[state.rounds.length - 1];
   var names = psOrder(lastRound);
   var rankOf = {};
   names.forEach(function(n, i) { rankOf[n] = i + 1; });
 
-  var shown = names;
-  if (topOnly) {
+  var shown = names, pager = '', hint = '';
+  var meKey = names.find(psIsMe);
+  document.getElementById('seg-near').disabled = !meKey;
+  if (VIEW === 'near' && !meKey) VIEW = 'top';
+  if (VIEW === 'top') {
     shown = names.slice(0, 100);
-    if (!shown.some(psIsMe)) { var mk = names.find(psIsMe); if (mk) shown.push(mk); }
+    if (meKey && !shown.some(psIsMe)) shown.push(meKey);
+  } else if (VIEW === 'near') {
+    var mi = names.indexOf(meKey);
+    shown = names.slice(Math.max(0, mi - NEAR), mi + NEAR + 1);
+  } else {
+    var pages = Math.ceil(names.length / PAGE_SIZE);
+    PAGE = Math.min(PAGE, pages - 1);
+    shown = names.slice(PAGE * PAGE_SIZE, (PAGE + 1) * PAGE_SIZE);
+    var btns = '<button type="button" ' + (PAGE ? '' : 'disabled ') + 'onclick="psSetPage(' + (PAGE - 1) + ')" aria-label="Poprzednia strona">‹</button>';
+    for (var i = 0; i < pages; i++) btns += '<button type="button" class="num' + (i === PAGE ? ' on' : '') + '" onclick="psSetPage(' + i + ')">' + (i * PAGE_SIZE + 1) + '–' + Math.min((i + 1) * PAGE_SIZE, names.length) + '</button>';
+    btns += '<button type="button" ' + (PAGE < pages - 1 ? '' : 'disabled ') + 'onclick="psSetPage(' + (PAGE + 1) + ')" aria-label="Następna strona">›</button>';
+    pager = btns + '<span class="info">' + names.length + ' uczestników</span>';
   }
   var q = (document.getElementById('ps-filter').value || '').trim().toLowerCase();
-  if (q) shown = names.filter(function(n) { return n.toLowerCase().indexOf(q) !== -1; });
+  if (q) { shown = names.filter(function(n) { return n.toLowerCase().indexOf(q) !== -1; }); pager = ''; }
+  var pg = document.getElementById('ps-pager');
+  pg.innerHTML = pager; pg.style.display = pager ? 'flex' : 'none';
 
   var head = '<thead><tr><th class="c-name"><span class="rk">#</span><span class="mv"></span>Uczestnik</th>';
   state.rounds.forEach(function(r) { head += '<th>' + psEsc(r) + '</th>'; });
@@ -402,7 +428,7 @@ function psRenderTable() {
       if (!d) return '<td class="rc"><span>—</span></td>';
       var dl = psRoundDelta(name, ri), note;
       if (ri === 0) note = '';
-      else if (dl === null) note = ' · <span class="d-new">nowy</span>';
+      else if (dl === null) note = d.position <= state.size[state.rounds[ri - 1]] ? ' · <span class="d-new">nowy</span>' : '';
       else note = ' · <span class="' + (dl > 0 ? 'd-up' : 'd-zero') + '">' + psSigned(dl) + '</span>';
       return '<td class="rc' + (ri === nR - 1 ? ' last' : '') + '"><b>' + d.points + '</b><span>P' + d.position + note + '</span></td>';
     }).join('');
@@ -413,6 +439,11 @@ function psRenderTable() {
 
   tbl.innerHTML = head + '<tbody>' + (body || '<tr><td colspan="' + (nR + 2) + '" class="empty">Brak uczestników pasujących do filtra</td></tr>') + '</tbody>';
   var wrap = tbl.parentNode; wrap.scrollLeft = wrap.scrollWidth;
+  if (resetScroll) wrap.scrollTop = 0;
+  if (VIEW === 'near' && !q) {
+    var row = tbl.querySelector('tr.me');
+    if (row) wrap.scrollTop = row.offsetTop - wrap.clientHeight / 2 + row.offsetHeight / 2;
+  }
 }
 
 function psRenderAll() {
