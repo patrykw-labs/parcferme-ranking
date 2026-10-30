@@ -137,6 +137,7 @@ th.c-name{background:var(--card-2);z-index:3}
 .mv-up{color:var(--up)}.mv-down{color:var(--down)}.mv-eq{color:var(--muted)}.mv-new{color:var(--accent-2);font-size:10px;letter-spacing:.06em}
 .rc b{display:block;font-weight:700;font-variant-numeric:tabular-nums}
 .rc span{font-size:11px;color:var(--muted)}
+.rc .out{font-size:12px;font-weight:700;color:var(--muted);opacity:.7}
 .rc .d-up{color:var(--up)}.rc .d-zero{color:var(--muted)}.rc .d-new{color:var(--accent-2)}
 .rc.last b{color:var(--text)}
 .m1 .rk{color:#d4a017}.m2 .rk{color:#9ca3af}.m3 .rk{color:#c2713b}
@@ -223,7 +224,7 @@ tr.me .c-name::after{content:"TY";margin-left:8px;padding:1px 6px;border-radius:
     <div class="empty" id="ps-empty" style="display:none">Brak danych dla tego sezonu.</div>
   </section>
 
-  <div class="note"><b>Nieoficjalne zestawienie fanowskie.</b> Źródło danych: publiczny ranking <a href="https://parcfer.me" target="_blank" rel="noopener">parcfer.me</a> (TOP 100 po każdej rundzie). <span id="ps-asof"></span> W komórce: punkty łącznie, a pod spodem miejsce w danej rundzie i przyrost punktów. Strzałka obok pozycji to zmiana miejsca względem poprzedniej rundy. Gdy nick się powtarza, kolejne osoby oznaczono „(2)” według kolejności w rankingu. Strona zbiera anonimowe statystyki odwiedzin (<a href="https://www.goatcounter.com" target="_blank" rel="noopener">GoatCounter</a>, bez cookies).</div>
+  <div class="note"><b>Nieoficjalne zestawienie fanowskie.</b> Źródło danych: publiczny ranking <a href="https://parcfer.me" target="_blank" rel="noopener">parcfer.me</a> (TOP 100 po każdej rundzie). <span id="ps-asof"></span> W komórce: punkty łącznie, a pod spodem miejsce w danej rundzie i przyrost punktów. Strzałka obok pozycji to zmiana miejsca względem poprzedniej rundy; „↑100” oznacza wejście do TOP 100, „NOWY” — nowego uczestnika. Ze starszych rund mamy tylko czołówkę (Spa R10: TOP 30, do Singapuru R17: TOP 100), więc osoby spoza niej mają tam „&gt; 30” lub „&gt; 100”. Od USA R18 zapisujemy pełny ranking. Gdy nick się powtarza, kolejne osoby oznaczono „(2)” według kolejności w rankingu. Strona zbiera anonimowe statystyki odwiedzin (<a href="https://www.goatcounter.com" target="_blank" rel="noopener">GoatCounter</a>, bez cookies).</div>
 </main>
 
 <script>
@@ -308,17 +309,23 @@ function psRoundDelta(name, ri) {
   var d = state.participants[name][state.rounds[ri]], p = state.participants[name][state.rounds[ri - 1]];
   return d && p ? d.points - p.points : null;
 }
-function psMove(name) {
-  var n = state.rounds.length;
-  if (n < 2) return null;
-  var cur = state.participants[name][state.rounds[n - 1]], prev = state.participants[name][state.rounds[n - 2]];
+// runda z samą czołówką (starsze dane: TOP 100, Spa TOP 30) — brak osoby nie znaczy, że jej nie było
+function psPartial(round) { return state.size[round] <= 100; }
+// stan względem poprzedniej rundy: liczba (zmiana), 'top' (wejście do TOP 100), 'new' (nowy uczestnik) albo null (brak danych)
+function psStatus(name, ri, field) {
+  if (ri < 1) return null;
+  var cur = state.participants[name][state.rounds[ri]], prevR = state.rounds[ri - 1], prev = state.participants[name][prevR];
   if (!cur) return null;
-  if (!prev) return cur.position <= state.size[state.rounds[n - 2]] ? 'new' : null;
-  return prev.position - cur.position;
+  if (prev) return field === 'points' ? cur.points - prev.points : prev.position - cur.position;
+  if (cur.position > state.size[prevR]) return null;
+  return psPartial(prevR) ? 'top' : 'new';
 }
+function psMove(name) { return psStatus(name, state.rounds.length - 1, 'position'); }
+function psPrevSize(ri) { return state.size[state.rounds[ri - 1]]; }
 function psMoveHtml(m) {
   if (m === null) return '';
   if (m === 'new') return '<span class="mv-new">NOWY</span>';
+  if (m === 'top') { var t = psPrevSize(state.rounds.length - 1); return '<span class="mv-new" title="Wejście do TOP ' + t + '">↑' + t + '</span>'; }
   if (m > 0) return '<span class="mv-up">▲' + m + '</span>';
   if (m < 0) return '<span class="mv-down">▼' + (-m) + '</span>';
   return '<span class="mv-eq">–</span>';
@@ -374,7 +381,8 @@ function psRenderKpis(names) {
   }
   var md = P[me][last], mv = psMove(me), mr = psRoundDelta(me, n - 1);
   function plMiejsc(k) { return k === 1 ? 'miejsce' : (k % 10 >= 2 && k % 10 <= 4 && (k % 100 < 10 || k % 100 >= 20)) ? 'miejsca' : 'miejsc'; }
-  var chip = mv === 'new' ? '<span class="chip blue">' + (md.position <= 100 ? 'nowy w TOP 100' : 'nowy w rankingu') + '</span>'
+  var chip = mv === 'top' ? '<span class="chip blue">wejście do TOP ' + psPrevSize(n - 1) + '</span>'
+    : mv === 'new' ? '<span class="chip blue">nowy w rankingu</span>'
     : mv > 0 ? '<span class="chip green">▲ ' + mv + ' ' + plMiejsc(mv) + '</span>'
     : mv < 0 ? '<span class="chip red">▼ ' + (-mv) + ' ' + plMiejsc(-mv) + '</span>'
     : mv === 0 ? '<span class="chip gold">bez zmian</span>' : '';
@@ -425,10 +433,11 @@ function psRenderTable(resetScroll) {
     var lastPts = P[lastRound] ? P[lastRound].points : '—';
     var cells = state.rounds.map(function(r, ri) {
       var d = P[r];
-      if (!d) return '<td class="rc"><span>—</span></td>';
-      var dl = psRoundDelta(name, ri), note;
-      if (ri === 0) note = '';
-      else if (dl === null) note = d.position <= state.size[state.rounds[ri - 1]] ? ' · <span class="d-new">nowy</span>' : '';
+      if (!d) return psPartial(r) ? '<td class="rc" title="Poza TOP ' + state.size[r] + ' — z tej rundy mamy tylko czołówkę"><span class="out">&gt;&nbsp;' + state.size[r] + '</span></td>' : '<td class="rc"><span>—</span></td>';
+      var dl = psStatus(name, ri, 'points'), note;
+      if (dl === null) note = '';
+      else if (dl === 'top') note = ' · <span class="d-new">↑ TOP ' + psPrevSize(ri) + '</span>';
+      else if (dl === 'new') note = ' · <span class="d-new">nowy</span>';
       else note = ' · <span class="' + (dl > 0 ? 'd-up' : 'd-zero') + '">' + psSigned(dl) + '</span>';
       return '<td class="rc' + (ri === nR - 1 ? ' last' : '') + '"><b>' + d.points + '</b><span>P' + d.position + note + '</span></td>';
     }).join('');
