@@ -100,7 +100,20 @@ h1 em{font-style:normal;background:linear-gradient(90deg,var(--accent-2),var(--a
 .me-stat small{font-size:15px;font-weight:600;color:var(--text-2);letter-spacing:0;margin-left:6px}
 .me-hint{font-size:12px;color:var(--muted)}
 
-.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:16px}
+.tiles{display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:16px}
+.tiles>.tile{grid-column:1}
+#t-top10{grid-column:2;grid-row:1 / span 3}
+.top10{list-style:none;margin:10px 0 0;padding:0;counter-reset:none}
+.top10 li{display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid var(--border);font-size:13px}
+.top10 li:last-child{border-bottom:0}
+.top10 .r{width:20px;font-weight:800;color:var(--muted);font-variant-numeric:tabular-nums}
+.top10 li:nth-child(1) .r{color:#d4a017}.top10 li:nth-child(2) .r{color:#9ca3af}.top10 li:nth-child(3) .r{color:#c2713b}
+.top10 .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+.top10 .m{width:40px;text-align:right;font-size:11px;font-weight:700}
+.top10 .g{width:96px;text-align:right;font-size:12px;color:var(--muted)}
+.top10 .g b{color:var(--up);font-weight:700}
+.top10 .p{width:34px;text-align:right;font-weight:800;font-variant-numeric:tabular-nums}
+.top10 li.me{background:var(--me);margin:0 -8px;padding:5px 8px;border-radius:8px}
 .tile{padding:18px 20px}
 .tile .val{font-size:26px;font-weight:800;letter-spacing:-.02em;margin-top:8px;line-height:1.15;word-break:break-word}
 .tile .val.up{color:var(--up)}
@@ -152,6 +165,9 @@ tr.me .c-name::after{content:"TY";margin-left:8px;padding:1px 6px;border-radius:
 @media (max-width:860px){
   .hero{grid-template-columns:1fr}
   .tiles{grid-template-columns:repeat(2,1fr)}
+  .tiles>.tile{grid-column:auto}
+  #t-top10{grid-column:1 / -1;grid-row:auto;order:1}
+  .tiles>#t-gap{grid-column:1 / -1}
 }
 @media (max-width:560px){
   .coffee-btn span{display:none}
@@ -159,6 +175,7 @@ tr.me .c-name::after{content:"TY";margin-left:8px;padding:1px 6px;border-radius:
   .tiles{gap:10px}
   .tile{padding:14px}
   .tile .val{font-size:20px}
+  .top10 .g{display:none}
   .hero-main,.hero-me{padding:18px}
   .board-head{padding:14px}
   .search{width:100%}
@@ -204,8 +221,8 @@ tr.me .c-name::after{content:"TY";margin-left:8px;padding:1px 6px;border-radius:
   <section class="tiles">
     <div class="card tile"><div class="label">↗ Skok rundy</div><div class="val up" id="k-jump">—</div><div class="desc" id="k-jump-d"></div></div>
     <div class="card tile"><div class="label">★ Najwięcej pkt w rundzie</div><div class="val" id="k-best">—</div><div class="desc" id="k-best-d"></div></div>
-    <div class="card tile"><div class="label">⇄ Nowi w TOP 10</div><div class="val" id="k-new">—</div><div class="desc" id="k-new-d"></div></div>
-    <div class="card tile"><div class="label">◎ Rozrzut TOP 100</div><div class="val" id="k-gap">—</div><div class="desc" id="k-gap-d"></div></div>
+    <div class="card tile" id="t-top10"><div class="label">🏁 TOP 10 <span class="chip blue" id="k-top10-r">—</span></div><ol class="top10" id="k-top10"></ol></div>
+    <div class="card tile" id="t-gap"><div class="label">◎ Rozrzut TOP 100</div><div class="val" id="k-gap">—</div><div class="desc" id="k-gap-d"></div></div>
   </section>
 
   <section class="card board">
@@ -349,20 +366,22 @@ function psRenderKpis(names) {
   }).join('');
 
   // kafelki rundy
-  var jump = null, best = null, newc = 0;
+  var jump = null, best = null;
   names.forEach(function(x) {
-    var m = psMove(x), cur = P[x][last], prv = n > 1 ? P[x][state.rounds[n - 2]] : null;
-    if (n > 1 && cur && cur.position <= 10 && (!prv || prv.position > 10)) newc++;
-    if (typeof m === 'number' && (jump === null || m > jump.v)) jump = { n: x, v: m };
+    var m = psMove(x), cur = P[x][last];
+    // skok liczony w TOP 100 — przy pełnym rankingu awanse z dołu tabeli byłyby nieporównywalne
+    if (typeof m === 'number' && cur && cur.position <= 100 && (jump === null || m > jump.v)) jump = { n: x, v: m };
     var d = psRoundDelta(x, n - 1);
     if (d !== null && (best === null || d > best.v)) best = { n: x, v: d };
   });
   document.getElementById('k-jump').textContent = jump ? '▲' + jump.v : '—';
-  document.getElementById('k-jump-d').textContent = jump ? jump.n + ' — awans w rundzie ' + last : '';
+  document.getElementById('k-jump-d').textContent = jump ? jump.n + ' — największy awans w TOP 100' : '';
   document.getElementById('k-best').textContent = best ? psSigned(best.v) + ' pkt' : '—';
   document.getElementById('k-best-d').textContent = best ? best.n : '';
-  document.getElementById('k-new').textContent = n > 1 ? newc : '—';
-  document.getElementById('k-new-d').textContent = n > 1 ? 'weszło do TOP 10 po ' + last : '';
+  document.getElementById('k-top10-r').textContent = last;
+  document.getElementById('k-top10').innerHTML = names.slice(0, 10).map(function(x, i) {
+    return '<li class="' + (psIsMe(x) ? 'me' : '') + '"><span class="r">' + (i + 1) + '</span><span class="n" title="' + psEsc(x) + '">' + psEsc(x) + '</span><span class="m">' + psMoveHtml(psMove(x)) + '</span><span class="g">' + (function(d) { return d === null ? '' : '<b>' + psSigned(d) + '</b> w rundzie'; })(psRoundDelta(x, n - 1)) + '</span><span class="p">' + P[x][last].points + '</span></li>';
+  }).join('');
   var p100 = names[Math.min(99, names.length - 1)];
   var cut = P[p100][last] ? P[p100][last].points : null;
   document.getElementById('k-gap').textContent = cut !== null ? (ld.points - cut) + ' pkt' : '—';
