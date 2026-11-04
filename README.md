@@ -16,7 +16,7 @@ Nieoficjalna, fanowska klasyfikacja typerów konkursu [parcfer.me](https://parcf
 - `data/seasons.json` — lista sezonów i sezon domyślny
 - `assets/` — grafiki (baner)
 - `tools/add_round.py` — dopisuje rundę z rankingu parcfer.me
-- `data/<rok>.json` — dane sezonu: lista rund, w każdej ranking `{ pos, name, points }`
+- `data/<rok>.json` — dane sezonu: lista rund, w każdej ranking `{ pos, name, points, id }` (`id` to numer użytkownika z parcfer.me)
 
 Konkretny sezon: `index.html?sezon=2026`. Przy ≥2 sezonach w nagłówku pojawia się przełącznik.
 
@@ -30,7 +30,7 @@ python3 tools/add_round.py "Meksyk R19"
 
 Skrypt pobiera pełny ranking z `parcfer.me/typowanie-ranking/<rok>`, sprawdza kolejność pozycji i punktów, odrzuca ranking identyczny z poprzednią rundą (punkty jeszcze nieprzeliczone) i dopisuje rundę na końcu `rounds` w `data/<rok>.json`. Zamiast pobierania można podać `--html zapisana_strona.html` albo `--tsv tabela.tsv` (kolumny: pozycja, nick, punkty).
 
-Duplikaty nicków są rozróżniane po kolejności w rankingu („Oskar”, „Oskar (2)”).
+Uczestników rozróżnia `id` z parcfer.me, więc powtarzające się nicki („Oskar”, „Oskar (2)”) nie mieszają się między rundami. W rundach do Singapuru R17 `id` dopisano wstecz po nicku (przy powtórzeniach po kolejności, sprawdzonej z ciągłością punktów).
 
 ## Nowy sezon
 

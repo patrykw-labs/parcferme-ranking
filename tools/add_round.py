@@ -23,12 +23,18 @@ URL = "https://parcfer.me/typowanie-ranking/{season}"
 
 
 def parse_html(text):
+    """Zwraca listę (pozycja, nick, punkty, id). Id użytkownika (uId) jest w danych strony (__NEXT_DATA__)."""
+    m = re.search(r'<script id="__NEXT_DATA__" type="application/json">(.*?)</script>', text, re.S)
+    if m:
+        wyniki = json.loads(m.group(1))["props"]["pageProps"]["wyniki"]
+        # pozycje jak w tabeli na stronie: kolejne miejsca, także przy remisie punktów
+        return [(i + 1, w["name"].strip(), int(w["suma"]), int(w["uId"])) for i, w in enumerate(wyniki)]
     table = text[text.find('<table class="tabelka_ranking">'):]
     table = table[:table.find("</table>")]
     rows = re.findall(
         r'<tr><td class="poz">\s*(\d+)\s*</td><td class="name">(.*?)</td><td class="punkty">\s*(-?\d+)\s*</td></tr>',
         table, re.S)
-    return [(int(p), html.unescape(re.sub(r"<[^>]+>", "", n)).strip(), int(pts)) for p, n, pts in rows]
+    return [(int(p), html.unescape(re.sub(r"<[^>]+>", "", n)).strip(), int(pts), None) for p, n, pts in rows]
 
 
 def parse_tsv(text):
@@ -37,14 +43,17 @@ def parse_tsv(text):
         parts = [x.strip() for x in line.split("\t")]
         if len(parts) != 3 or not parts[0].isdigit():
             continue  # nagłówek albo pusta linia
-        rows.append((int(parts[0]), parts[1], int(parts[2])))
+        rows.append((int(parts[0]), parts[1], int(parts[2]), None))
     return rows
 
 
 def keyed(standings):
-    """Klucze jak na stronie: powtórzony nick dostaje sufiks „ (2)” itd."""
+    """Klucz uczestnika: id z parcfer.me, a bez id (stare dane, --tsv) nick z sufiksem „ (2)” wg kolejności."""
     seen, out = {}, {}
     for s in standings:
+        if s.get("id") is not None:
+            out[s["id"]] = s
+            continue
         seen[s["name"]] = seen.get(s["name"], 0) + 1
         k = s["name"] if seen[s["name"]] == 1 else f'{s["name"]} ({seen[s["name"]]})'
         out[k] = s
@@ -91,7 +100,21 @@ def main():
         sys.exit("Pozycje nie idą po kolei od 1")
     if any(rows[i][2] < rows[i + 1][2] for i in range(len(rows) - 1)):
         sys.exit("Punkty rosną w dół tabeli")
-    standings = [{"pos": p, "name": n, "points": pts} for p, n, pts in rows]
+    ids = [r[3] for r in rows if r[3] is not None]
+    if len(ids) != len(set(ids)):
+        sys.exit("Powtórzone id uczestnika")
+    if a.tsv:
+        # bez id dopasuj po nicku do poprzedniej rundy (powtórzone nicki — po kolejności)
+        prev_ids = {}
+        for s in (d["rounds"][-1]["standings"] if d["rounds"] else []):
+            if s.get("id") is not None:
+                prev_ids.setdefault(s["name"], []).append(s["id"])
+        seen = {}
+        for i, (p, n, pts, _) in enumerate(rows):
+            k = seen.get(n, 0); seen[n] = k + 1
+            ids = prev_ids.get(n, [])
+            rows[i] = (p, n, pts, ids[k] if k < len(ids) else None)
+    standings = [{"pos": p, "name": n, "points": pts, **({"id": i} if i is not None else {})} for p, n, pts, i in rows]
 
     names = [r["name"] for r in d["rounds"]]
     if a.round in names:
@@ -110,8 +133,9 @@ def main():
         odd = [(k, s["points"] - prev[k]["points"]) for k, s in new.items() if k in prev and not 0 <= s["points"] - prev[k]["points"] <= 25]
         if odd:
             print("UWAGA, nietypowe przyrosty:", odd[:20])
-        top_new = [k for k, s in new.items() if s["pos"] <= 100 and k not in prev]
+        top_new = [s["name"] for k, s in new.items() if s["pos"] <= 100 and k not in prev]
         print("Nowi w TOP 100:", top_new)
+        print("Nowi uczestnicy:", [s["name"] for k, s in new.items() if k not in prev and s["pos"] > 100][:20])
 
     d["rounds"].append({"name": a.round, "standings": standings})
     write(path, d)
