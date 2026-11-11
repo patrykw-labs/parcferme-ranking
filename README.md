@@ -19,7 +19,7 @@ Nieoficjalna, fanowska klasyfikacja typerów konkursu [parcfer.me](https://parcf
 - `data/round_names.json` — krótkie nazwy rund (np. „Sao Paulo” → „Brazylia”)
 - `data/<rok>.json` — dane sezonu: lista rund, w każdej ranking `{ pos, name, points, id }` (`id` to numer użytkownika z parcfer.me)
 
-Konkretny sezon: `index.html?sezon=2026`. Przy ≥2 sezonach w nagłówku pojawia się przełącznik.
+Konkretny sezon: `index.html?sezon=2026`. Link do gracza: `index.html?nick=Pat` — podświetla go i otwiera „Moją okolicę” (bez nadpisywania nicka zapisanego w przeglądarce). Kliknięcie nicka otwiera historię gracza z wykresem miejsca po każdej rundzie. Przy ≥2 sezonach w nagłówku pojawia się przełącznik.
 
 ## Aktualizacja po rundzie
 
