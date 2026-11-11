@@ -351,6 +351,7 @@ dialog.hist::backdrop{background:rgba(5,10,20,.6);backdrop-filter:blur(2px)}
       </div>
       <input class="search" type="text" id="ps-filter" placeholder="Szukaj nicku…" oninput="psRenderTable()">
       <button type="button" class="btn jump" id="ps-jump"></button>
+      <button type="button" class="btn pri jump" id="ps-me-jump">📍 Pokaż mnie</button>
     </div>
     <div class="tw"><table id="ps-table"></table></div>
     <div class="pager" id="ps-pager" style="display:none"></div>
@@ -601,6 +602,10 @@ function psRenderTable(resetScroll) {
 
   var shown = names, pager = '', hint = '';
   var meKey = names.find(psIsMe);
+  // „Pokaż mnie” w widoku Wszyscy: przejście na stronę z nickiem z karty „Twoja pozycja”
+  var mj = document.getElementById('ps-me-jump');
+  mj.style.display = VIEW === 'all' && meKey ? 'inline-flex' : 'none';
+  if (meKey) { mj.title = 'Przejdź do: ' + psName(meKey); mj.onclick = function() { psJumpTo(meKey, true); }; }
   document.getElementById('seg-near').disabled = !meKey;
   if (VIEW === 'near' && !meKey) VIEW = 'top';
   if (VIEW === 'top') {
@@ -698,15 +703,15 @@ async function psShare(nick) {
 }
 
 // przewiń tabelę do wiersza danej osoby (TOP 100 albo właściwa strona „Wszyscy”)
-function psJumpTo(key) {
+function psJumpTo(key, stayAll) {
   var dlg = document.getElementById('hist'); if (dlg.open) dlg.close();
   document.getElementById('ps-filter').value = '';
   var order = psOrder(state.rounds[state.rounds.length - 1]), idx = order.indexOf(key);
   if (idx < 0) return;
-  VIEW = idx < 100 ? 'top' : 'all'; PAGE = Math.floor(idx / PAGE_SIZE);
+  VIEW = stayAll || idx >= 100 ? 'all' : 'top'; PAGE = Math.floor(idx / PAGE_SIZE);
   ['top', 'near', 'all'].forEach(function(k) { document.getElementById('seg-' + k).classList.toggle('on', k === VIEW); });
   psRenderTable();
-  var wrap = document.querySelector('.tw'), row = [].find.call(document.querySelectorAll('#ps-table tr[data-row]'), function(r) { return r.getAttribute('data-row') === key; });
+  var wrap = document.querySelector('.board .tw'), row = [].find.call(document.querySelectorAll('#ps-table tr[data-row]'), function(r) { return r.getAttribute('data-row') === key; });
   if (!row) return;
   document.querySelector('.board').scrollIntoView({ behavior: 'smooth', block: 'start' });
   wrap.scrollTop = row.offsetTop - wrap.clientHeight / 2 + row.offsetHeight / 2;
