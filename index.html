@@ -477,7 +477,8 @@ function psStatus(name, ri, field) {
   if (ri < 1) return null;
   var cur = state.participants[name][state.rounds[ri]], prevR = state.rounds[ri - 1], prev = state.participants[name][prevR];
   if (!cur) return null;
-  if (prev) return field === 'points' ? cur.points - prev.points : prev.position - cur.position;
+  // zmiana miejsca liczona ze wspólnych miejsc (ex aequo), tak jak są pokazywane
+  if (prev) return field === 'points' ? cur.points - prev.points : psPlace(prevR, prev).place - psPlace(state.rounds[ri], cur).place;
   if (cur.position > state.size[prevR]) return null;
   return psPartial(prevR) ? 'top' : 'new';
 }
@@ -520,7 +521,7 @@ function psRenderKpis(names) {
     (rd !== null ? ' · w tej rundzie ' + psSigned(rd) + ' pkt' : '');
   var medals = ['#facc15', '#cbd5e1', '#e8955a'];
   document.getElementById('k-podium').innerHTML = names.slice(0, 3).map(function(x, i) {
-    return '<div data-k="' + psEsc(x) + '"><i style="background:' + medals[i] + '">' + (i + 1) + '</i>' + psEsc(psName(x)) + ' · ' + P[x][last].points + '</div>';
+    return '<div data-k="' + psEsc(x) + '"><i style="background:' + medals[i] + '">' + psPlace(last, P[x][last]).txt + '</i>' + psEsc(psName(x)) + ' · ' + P[x][last].points + '</div>';
   }).join('');
 
   // kafelki rundy
@@ -581,7 +582,8 @@ function psRenderKpis(names) {
     : mv < 0 ? '<span class="chip red">▼ ' + (-mv) + ' ' + plMiejsc(-mv) + '</span>'
     : mv === 0 ? '<span class="chip gold">bez zmian</span>' : '';
   var tie = psTie(last, md.points);
-  meEl.innerHTML = '<div class="me-stat">P' + md.position + '<small>' + md.points + ' pkt' + (tie > 1 ? ' · ex aequo z ' + (tie - 1) + ' ' + (tie - 1 === 1 ? 'osobą' : 'osobami') : '') + '</small></div>' +
+  var mpl = psPlace(last, md), mg = psTieGroup(last, md.points);
+  meEl.innerHTML = '<div class="me-stat"' + (mpl.title ? ' title="' + mpl.title + '"' : '') + '>P' + mpl.txt + '<small>' + md.points + ' pkt' + (tie > 1 ? ' · ex aequo z ' + (tie - 1) + ' ' + (tie - 1 === 1 ? 'osobą' : 'osobami') + ' (miejsca ' + mg.a + '–' + mg.b + ')' : '') + '</small></div>' +
     '<div class="me-row" style="margin-top:10px;flex-wrap:wrap">' + chip +
     (mr !== null ? '<span class="chip blue">' + psSigned(mr) + ' pkt w rundzie</span>' : '') +
     '<span class="chip gold">' + (ld.points - md.points) + ' pkt do lidera</span></div>' +
@@ -720,13 +722,14 @@ function psOpenHistory(key) {
   document.getElementById('h-name').textContent = psName(key);
   var pts = R.map(function(r) { return P[r]; });
   var have = pts.map(function(d, i) { return d ? { i: i, d: d } : null; }).filter(Boolean);
-  var best = have.reduce(function(a, b) { return !a || b.d.position < a.d.position ? b : a; }, null);
+  have.forEach(function(h) { h.pl = psPlace(R[h.i], h.d); });
+  var best = have.reduce(function(a, b) { return !a || b.pl.place < a.pl.place ? b : a; }, null);
   var gains = [], cur = P[last];
   for (var i = 1; i < n; i++) { var g = psRoundDelta(key, i); if (g !== null) gains.push(g); }
   var avg = gains.length ? gains.reduce(function(a, b) { return a + b; }, 0) / gains.length : null;
   document.getElementById('h-chips').innerHTML =
-    (cur ? '<span class="chip blue">Teraz P' + cur.position + ' · ' + cur.points + ' pkt</span>' : '<span class="chip red">Brak w ostatniej rundzie</span>') +
-    (best ? '<span class="chip green">Najwyżej: P' + best.d.position + ' (' + psEsc(R[best.i]) + ')</span>' : '') +
+    (cur ? '<span class="chip blue">Teraz P' + psPlace(last, cur).txt + ' · ' + cur.points + ' pkt</span>' : '<span class="chip red">Brak w ostatniej rundzie</span>') +
+    (best ? '<span class="chip green">Najwyżej: P' + best.pl.txt + ' (' + psEsc(R[best.i]) + ')</span>' : '') +
     (avg !== null ? '<span class="chip gold">Średnio ' + avg.toFixed(1).replace('.', ',') + ' pkt na rundę</span>' : '');
   // tabela (dostępna wersja danych z wykresu)
   var rows = R.map(function(r, i) {
@@ -734,7 +737,8 @@ function psOpenHistory(key) {
     if (!d) return '<tr><td>' + psEsc(r) + '</td><td colspan="3" class="tie">' + (psPartial(r) ? 'poza TOP ' + state.size[r] + ' (z tej rundy mamy tylko czołówkę)' : '—') + '</td></tr>';
     var g = psStatus(key, i, 'points'), t = psTie(r, d.points);
     var gt = g === null ? '—' : g === 'top' ? '↑ TOP ' + psPrevSize(i) : g === 'new' ? 'nowy' : psSigned(g);
-    return '<tr><td>' + psEsc(r) + '</td><td>P' + d.position + (t > 1 ? ' <span class="tie">ex aequo</span>' : '') + '</td><td><b>' + d.points + '</b></td><td>' + gt + '</td></tr>';
+    var hp = psPlace(r, d);
+    return '<tr><td>' + psEsc(r) + '</td><td' + (hp.title ? ' title="' + hp.title + '"' : '') + '>P' + hp.txt + '</td><td><b>' + d.points + '</b></td><td>' + gt + '</td></tr>';
   }).reverse().join('');
   document.getElementById('h-table').innerHTML = '<thead><tr><th>Runda</th><th>Miejsce</th><th>Punkty</th><th>W rundzie</th></tr></thead><tbody>' + rows + '</tbody>';
   document.getElementById('h-actions').innerHTML = cur
@@ -751,7 +755,7 @@ function psDrawChart() {
   var P = state.participants[HIST], R = state.rounds, n = R.length;
   var W = Math.max(280, box.clientWidth), H = W < 480 ? 200 : 240;
   var m = { l: 44, r: 40, t: 16, b: 28 }, iw = W - m.l - m.r, ih = H - m.t - m.b;
-  var vals = R.map(function(r) { return P[r] ? P[r].position : null; });
+  var vals = R.map(function(r) { return P[r] ? psPlace(r, P[r]).place : null; });
   var known = vals.filter(function(v) { return v !== null; });
   var lo = Math.min.apply(null, known), hi = Math.max.apply(null, known);
   var pad = Math.max(2, Math.ceil((hi - lo) * 0.15)); lo = Math.max(1, lo - pad); hi = hi + pad;
@@ -773,7 +777,7 @@ function psDrawChart() {
   svg += '<path class="ln" d="' + d + '"/>';
   svg += vals.map(function(v, i) { return v === null ? '' : '<circle class="dot" data-i="' + i + '" cx="' + X(i) + '" cy="' + Y(v) + '" r="4.5"/>'; }).join('');
   var li = vals.length - 1; while (li >= 0 && vals[li] === null) li--;
-  if (li >= 0) svg += '<text class="lbl" x="' + (X(li) + 9) + '" y="' + (Y(vals[li]) + 4) + '">P' + vals[li] + '</text>';
+  if (li >= 0) svg += '<text class="lbl" x="' + (X(li) + 9) + '" y="' + (Y(vals[li]) + 4) + '">P' + psPlace(R[li], P[R[li]]).txt + '</text>';
   svg += '</svg>';
   box.innerHTML = svg; box.appendChild(tip); tip.style.display = 'none';
   var el = box.querySelector('svg'), cross = el.querySelector('#h-cross');
@@ -784,11 +788,11 @@ function psDrawChart() {
     var dt = P[R[i]], g = psStatus(HIST, i, 'points');
     cross.setAttribute('x1', X(i)); cross.setAttribute('x2', X(i)); cross.style.display = '';
     var dot = el.querySelector('.dot[data-i="' + i + '"]'); if (dot) dot.classList.add('on');
-    tip.innerHTML = '<b>' + psEsc(R[i]) + '</b><br>' + (dt ? 'P' + dt.position + ' · ' + dt.points + ' pkt' + (typeof g === 'number' ? ' (' + psSigned(g) + ')' : '') : (psPartial(R[i]) ? 'poza TOP ' + state.size[R[i]] : 'brak danych'));
+    tip.innerHTML = '<b>' + psEsc(R[i]) + '</b><br>' + (dt ? 'P' + psPlace(R[i], dt).txt + ' · ' + dt.points + ' pkt' + (typeof g === 'number' ? ' (' + psSigned(g) + ')' : '') : (psPartial(R[i]) ? 'poza TOP ' + state.size[R[i]] : 'brak danych'));
     tip.style.display = 'block';
     var px = X(i) * rect.width / W, tw = tip.offsetWidth;
     tip.style.left = Math.max(tw / 2, Math.min(rect.width - tw / 2, px)) + 'px';
-    tip.style.top = Math.max(0, (dt ? Y(dt.position) : m.t) * rect.height / H - tip.offsetHeight - 12) + 'px';
+    tip.style.top = Math.max(0, (dt ? Y(psPlace(R[i], dt).place) : m.t) * rect.height / H - tip.offsetHeight - 12) + 'px';
   }
   el.addEventListener('pointermove', show);
   el.addEventListener('pointerdown', show);
@@ -833,7 +837,7 @@ function psRenderDuel() {
   var rows = R.map(function(r, i) {
     var da = PA[r], db = PB[r], ga = psRoundDelta(a, i), gb = psRoundDelta(b, i), w = '';
     if (ga !== null && gb !== null) { if (ga > gb) { wa++; w = '<span class="win"><i style="background:var(--va)"></i>' + psEsc(psName(a)) + '</span>'; } else if (gb > ga) { wb++; w = '<span class="win"><i style="background:var(--vb)"></i>' + psEsc(psName(b)) + '</span>'; } else { tie++; w = 'remis'; } }
-    var cell = function(d, g) { return d ? '<b>' + d.points + '</b> <span class="tie">P' + d.position + (g !== null ? ' · ' + psSigned(g) : '') + '</span>' : '<span class="tie">' + (psPartial(r) ? '&gt; ' + state.size[r] : '—') + '</span>'; };
+    var cell = function(d, g) { return d ? '<b>' + d.points + '</b> <span class="tie">P' + psPlace(r, d).txt + (g !== null ? ' · ' + psSigned(g) : '') + '</span>' : '<span class="tie">' + (psPartial(r) ? '&gt; ' + state.size[r] : '—') + '</span>'; };
     var diff = da && db ? psSigned(da.points - db.points) : '—';
     return '<tr><td>' + psEsc(r) + '</td><td>' + cell(da, ga) + '</td><td>' + cell(db, gb) + '</td><td>' + diff + '</td><td class="rd2">' + (w || '—') + '</td></tr>';
   }).reverse().join('');
@@ -841,7 +845,7 @@ function psRenderDuel() {
   var gap = ca && cb ? ca.points - cb.points : null;
   var card = function(k, c, cls, col) {
     return '<div class="dp ' + cls + '"><div class="who"><span class="sw" style="background:var(' + col + ')"></span><span data-k="' + psEsc(k) + '">' + psEsc(psName(k)) + '</span></div>' +
-      '<div class="big2">' + (c ? 'P' + c.position + '<small>' + c.points + ' pkt</small>' : '—') + '</div></div>';
+      '<div class="big2">' + (c ? 'P' + psPlace(R[n - 1], c).txt + '<small>' + c.points + ' pkt</small>' : '—') + '</div></div>';
   };
   body.innerHTML = '<div class="duel-sum">' + card(a, ca, 'a', '--va') +
     '<div class="dmid"><div class="mb"><div class="lab">Różnica</div><div class="gapv">' + (gap === null ? '—' : gap === 0 ? 'remis' : Math.abs(gap) + ' pkt') + '</div>' +
@@ -934,7 +938,7 @@ function psRenderForm(order) {
   var line = function(r, i) {
     return '<tr class="' + (psIsMe(r.k) ? 'me ' : '') + (place[i] <= 3 ? 'f' + place[i] : '') + '"><td class="fr">' + place[i] + '</td><td class="nm-c" data-k="' + psEsc(r.k) + '">' + psEsc(psName(r.k)) + '</td>' +
       r.ds.map(function(d) { return '<td class="rd"><span class="' + (d > 0 ? 'd' : 'd0') + '">' + psSigned(d) + '</span></td>'; }).join('') +
-      '<td class="sum">' + r.sum + '</td><td>P' + rankOf[r.k] + '</td></tr>';
+      '<td class="sum">' + r.sum + '</td><td>P' + psPlace(R[n - 1], state.participants[r.k][R[n - 1]]).txt + '</td></tr>';
   };
   var body = rows.slice(0, FORM_TOP).map(line).join('');
   var mi = rows.findIndex(function(r) { return psIsMe(r.k); });
