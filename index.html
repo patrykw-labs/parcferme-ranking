@@ -113,8 +113,10 @@ h1 em{font-style:normal;background:linear-gradient(90deg,var(--accent-2),var(--a
 
 .tiles{display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:16px}
 .tiles>.tile{grid-column:1}
-#t-top10{grid-column:2;grid-row:1 / span 3}
-.top10{list-style:none;margin:10px 0 0;padding:0;counter-reset:none}
+#t-top10{grid-column:2;grid-row:1 / span 4;display:flex;flex-direction:column}
+.top10{list-style:none;margin:10px 0 0;padding:0;counter-reset:none;flex:1;display:flex;flex-direction:column;justify-content:space-between}
+.act-bar{height:8px;border-radius:999px;background:var(--card-2);border:1px solid var(--border);overflow:hidden;margin-top:10px}
+.act-bar i{display:block;height:100%;border-radius:999px;background:var(--accent)}
 .top10 li{display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid var(--border);font-size:13px}
 .top10 li:last-child{border-bottom:0}
 .top10 .r{width:20px;font-weight:800;color:var(--muted);font-variant-numeric:tabular-nums}
@@ -259,7 +261,6 @@ dialog.hist::backdrop{background:rgba(5,10,20,.6);backdrop-filter:blur(2px)}
   .tiles{grid-template-columns:repeat(2,1fr)}
   .tiles>.tile{grid-column:auto}
   #t-top10{grid-column:1 / -1;grid-row:auto;order:1}
-  .tiles>#t-gap{grid-column:1 / -1}
 }
 @media (max-width:560px){
   .coffee-btn span{display:none}
@@ -314,6 +315,7 @@ dialog.hist::backdrop{background:rgba(5,10,20,.6);backdrop-filter:blur(2px)}
     <div class="card tile"><div class="label">↗ Skok rundy</div><div class="val up" id="k-jump">—</div><div class="desc" id="k-jump-d"></div></div>
     <div class="card tile"><div class="label">★ Najwięcej pkt w rundzie</div><div class="val" id="k-best">—</div><div class="desc" id="k-best-d"></div></div>
     <div class="card tile" id="t-top10"><div class="label">🏁 TOP 10 <span class="chip blue" id="k-top10-r">—</span></div><ol class="top10" id="k-top10"></ol></div>
+    <div class="card tile" id="t-act"><div class="label">◉ Aktywność w rundzie</div><div class="val" id="k-act">—</div><div class="desc" id="k-act-d"></div><div class="act-bar" id="k-act-bar" style="display:none"><i></i></div><div class="desc" id="k-act-p"></div></div>
     <div class="card tile" id="t-gap"><div class="label">◎ Rozrzut TOP 100</div><div class="val" id="k-gap">—</div><div class="desc" id="k-gap-d"></div></div>
   </section>
 
@@ -490,6 +492,20 @@ function psMoveHtml(m) {
   return '<span class="mv-eq">–</span>';
 }
 
+// aktywni w rundzie ri: przyrost punktów > 0 (albo nowy uczestnik z punktami); null, gdy poprzednia runda to tylko czołówka
+function psActivity(ri) {
+  if (ri < 1 || psPartial(state.rounds[ri - 1]) || psPartial(state.rounds[ri])) return null;
+  var r = state.rounds[ri], pr = state.rounds[ri - 1], total = 0, active = 0, newbies = 0;
+  Object.keys(state.participants).forEach(function(k) {
+    var d = state.participants[k][r], p = state.participants[k][pr];
+    if (!d) return;
+    total++;
+    if (!p) { newbies++; if (d.points > 0) active++; }
+    else if (d.points > p.points) active++;
+  });
+  return { total: total, active: active, newbies: newbies };
+}
+
 function psRenderKpis(names) {
   var n = state.rounds.length, last = state.rounds[n - 1];
   var P = state.participants;
@@ -528,6 +544,22 @@ function psRenderKpis(names) {
   var cut = P[p100][last] ? P[p100][last].points : null;
   document.getElementById('k-gap').textContent = cut !== null ? (ld.points - cut) + ' pkt' : '—';
   document.getElementById('k-gap-d').textContent = cut !== null ? 'tyle dzieli P1 od P100 (' + cut + ' pkt)' : '';
+
+  // aktywność: kto zdobył punkty w rundzie (parcfer.me nie podaje, kto wysłał typy)
+  var act = psActivity(n - 1), actPrev = psActivity(n - 2);
+  var bar = document.getElementById('k-act-bar');
+  if (act) {
+    var pct = Math.round(act.active / act.total * 100);
+    document.getElementById('k-act').textContent = act.active + ' / ' + act.total;
+    document.getElementById('k-act-d').textContent = pct + '% zdobyło punkty w rundzie ' + last;
+    bar.style.display = ''; bar.firstChild.style.width = pct + '%';
+    document.getElementById('k-act-p').textContent = (actPrev ? 'Poprzednia runda: ' + actPrev.active + ' (' + psSigned(act.active - actPrev.active) + ')' : '') +
+      (act.newbies ? (actPrev ? ' · ' : '') + 'nowi: ' + act.newbies : '');
+  } else {
+    document.getElementById('k-act').textContent = '—';
+    document.getElementById('k-act-d').textContent = 'brak pełnych danych z poprzedniej rundy';
+    bar.style.display = 'none'; document.getElementById('k-act-p').textContent = '';
+  }
 
   // moja pozycja
   var meEl = document.getElementById('k-me');
