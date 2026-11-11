@@ -24,6 +24,7 @@
 </script>
 <style>
 :root{
+  --va:#2563eb;--vb:#d97706;
   --font:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
   --bg:#f4f6fb;--bg-grad:radial-gradient(1200px 500px at 50% -200px,rgba(37,99,235,.10),transparent 70%);
   --card:#ffffff;--card-2:#f1f4fa;--border:rgba(15,23,42,.10);--border-strong:rgba(15,23,42,.18);
@@ -37,7 +38,7 @@
   --bg:#0b1120;--bg-grad:radial-gradient(1200px 500px at 50% -200px,rgba(37,99,235,.22),transparent 70%);
   --card:#111a2e;--card-2:#162036;--border:rgba(148,163,184,.14);--border-strong:rgba(148,163,184,.26);
   --text:#f1f5f9;--text-2:#b6c2d6;--muted:#7c8aa3;
-  --accent:#3b82f6;--accent-2:#7cb4ff;--accent-soft:rgba(59,130,246,.16);
+  --accent:#3b82f6;--accent-2:#7cb4ff;--accent-soft:rgba(59,130,246,.16);--va:#3b82f6;
   --up:#34d399;--up-soft:rgba(52,211,153,.14);--down:#f87171;--down-soft:rgba(248,113,113,.14);
   --gold:#facc15;--gold-soft:rgba(250,204,21,.14);
   --me:rgba(250,204,21,.12);--shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.25);
@@ -46,7 +47,7 @@
   --bg:#0b1120;--bg-grad:radial-gradient(1200px 500px at 50% -200px,rgba(37,99,235,.22),transparent 70%);
   --card:#111a2e;--card-2:#162036;--border:rgba(148,163,184,.14);--border-strong:rgba(148,163,184,.26);
   --text:#f1f5f9;--text-2:#b6c2d6;--muted:#7c8aa3;
-  --accent:#3b82f6;--accent-2:#7cb4ff;--accent-soft:rgba(59,130,246,.16);
+  --accent:#3b82f6;--accent-2:#7cb4ff;--accent-soft:rgba(59,130,246,.16);--va:#3b82f6;
   --up:#34d399;--up-soft:rgba(52,211,153,.14);--down:#f87171;--down-soft:rgba(248,113,113,.14);
   --gold:#facc15;--gold-soft:rgba(250,204,21,.14);
   --me:rgba(250,204,21,.12);--shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.25);
@@ -219,6 +220,37 @@ dialog.hist::backdrop{background:rgba(5,10,20,.6);backdrop-filter:blur(2px)}
 .hist .tie{font-size:11px;color:var(--muted)}
 @media (max-width:560px){.hist-in{padding:16px}.hist table{font-size:12px}.hist td,.hist th{padding:6px 6px}.hist th{letter-spacing:.02em}.hist .tie{display:block}}
 .hist .cap{margin-top:12px;font-size:11.5px;color:var(--muted)}
+/* pojedynek */
+.duel{margin-top:16px;overflow:hidden}
+.duel-pick{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.duel-pick .vs{font-weight:800;color:var(--muted);font-size:12px}
+.duel-pick .search{width:190px}
+#duel-a{box-shadow:inset 3px 0 0 var(--va)}#duel-b{box-shadow:inset 3px 0 0 var(--vb)}
+.duel-body{padding:16px 20px 20px}
+.duel-hint{color:var(--muted);font-size:13px}
+.duel-sum{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:stretch}
+.dp{border:1px solid var(--border);border-radius:14px;padding:14px 16px;background:var(--card-2)}
+.dp .who{display:flex;align-items:center;gap:8px;font-weight:800;font-size:16px;word-break:break-word}
+.dp .sw{width:10px;height:10px;border-radius:3px;flex:none}
+.dp .big2{font-size:28px;font-weight:800;letter-spacing:-.02em;margin-top:6px}
+.dp .big2 small{font-size:13px;color:var(--text-2);font-weight:600;margin-left:4px}
+.dp.b{text-align:right}.dp.b .who{justify-content:flex-end}
+.dmid{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:4px;min-width:120px}
+.dmid .gapv{font-size:24px;font-weight:800}
+.dmid .lab{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--text-2);margin-top:14px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.chart .bar-a{fill:var(--va)}.chart .bar-b{fill:var(--vb)}.chart .bar-0{fill:var(--muted)}
+.chart .zero{stroke:var(--border-strong);stroke-width:1}
+.chart .hit{fill:transparent}
+.duel table{margin-top:14px;font-size:13px}
+.duel th{position:static}
+.duel td:first-child,.duel th:first-child{text-align:left}
+.duel .win{font-weight:700;white-space:nowrap}
+.duel .win i,.dmid .bil i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:6px;vertical-align:0}
+.dmid .mb{display:flex;flex-direction:column;align-items:center;gap:2px}
+.dmid .bil{font-size:18px;font-weight:800;white-space:nowrap}
+@media (max-width:560px){.duel-pick .search{width:calc(50% - 22px)}.duel-sum{grid-template-columns:1fr 1fr}.dmid{grid-column:1 / -1;order:3;flex-direction:row;justify-content:space-around;gap:10px;padding:6px 0}.dmid .gapv{font-size:20px}.duel .rd2{display:none}.duel-body{padding:14px}.dp .big2{font-size:24px}}
 .note{margin-top:16px;padding:16px 18px;border-radius:14px;border:1px solid var(--border);background:var(--card-2);color:var(--text-2);font-size:12.5px;line-height:1.6}
 .note b{color:var(--text)}
 
@@ -289,6 +321,21 @@ dialog.hist::backdrop{background:rgba(5,10,20,.6);backdrop-filter:blur(2px)}
     <div class="board-head"><h2>🔥 Forma — ostatnie 3 rundy <span class="chip blue" id="form-r">—</span></h2></div>
     <div class="tw" style="max-height:none"><table id="form-table"></table></div>
     <div class="cap" id="form-cap"></div>
+  </section>
+
+  <section class="card duel" id="duel-sec">
+    <div class="board-head">
+      <h2>⚔️ Pojedynek</h2>
+      <div class="sp"></div>
+      <div class="duel-pick">
+        <input class="search" id="duel-a" list="nicks" placeholder="Gracz A" autocomplete="off" oninput="psRenderDuel()">
+        <span class="vs">VS</span>
+        <input class="search" id="duel-b" list="nicks" placeholder="Gracz B (rywal)" autocomplete="off" oninput="psRenderDuel()">
+        <button type="button" class="btn" id="duel-share" onclick="psShareDuel()" style="display:none">🔗 Link</button>
+      </div>
+    </div>
+    <datalist id="nicks"></datalist>
+    <div class="duel-body" id="duel-body"></div>
   </section>
 
   <section class="card board">
@@ -711,7 +758,113 @@ document.addEventListener('click', function(e) {
   if (el && state.participants[el.getAttribute('data-k')]) psOpenHistory(el.getAttribute('data-k'));
 });
 document.getElementById('hist').addEventListener('click', function(e) { if (e.target === this) this.close(); });
-window.addEventListener('resize', function() { psDrawChart(); });
+window.addEventListener('resize', function() { psDrawChart(); psDrawDuel(); });
+
+// ---------- pojedynek ----------
+var DUEL = null, duelAuto = true;
+function psFind(text) {
+  var q = (text || '').trim().toLowerCase();
+  if (!q) return null;
+  var keys = Object.keys(state.participants);
+  return keys.find(function(k) { return psName(k).toLowerCase() === q; }) || null;
+}
+function psFillNicks(order) {
+  document.getElementById('nicks').innerHTML = order.map(function(k) { return '<option value="' + psEsc(psName(k)) + '">'; }).join('');
+}
+function psRenderDuel() {
+  var ia = document.getElementById('duel-a'), ib = document.getElementById('duel-b');
+  if (document.activeElement === ia) duelAuto = false;
+  if (duelAuto) ia.value = myName || ''; // dopóki A nie było edytowane, A = nick z „Twojej pozycji”
+  var a = psFind(ia.value), b = psFind(ib.value), body = document.getElementById('duel-body');
+  document.getElementById('duel-share').style.display = a && b && a !== b ? '' : 'none';
+  if (!a || !b || a === b) {
+    DUEL = null;
+    body.innerHTML = '<div class="duel-hint">' + (ia.value && !a ? 'Nie znam nicka „' + psEsc(ia.value) + '”. ' : '') + (ib.value && !b ? 'Nie znam nicka „' + psEsc(ib.value) + '”. ' : '') +
+      (a && b && a === b ? 'Wybierz dwie różne osoby. ' : '') + 'Wpisz dwa nicki — np. swój i rywala — a zobaczysz, kto ile zdobył w każdej rundzie i jak zmieniała się różnica punktów.</div>';
+    return;
+  }
+  DUEL = { a: a, b: b };
+  var R = state.rounds, n = R.length, last = R[n - 1], PA = state.participants[a], PB = state.participants[b];
+  var wa = 0, wb = 0, tie = 0;
+  var rows = R.map(function(r, i) {
+    var da = PA[r], db = PB[r], ga = psRoundDelta(a, i), gb = psRoundDelta(b, i), w = '';
+    if (ga !== null && gb !== null) { if (ga > gb) { wa++; w = '<span class="win"><i style="background:var(--va)"></i>' + psEsc(psName(a)) + '</span>'; } else if (gb > ga) { wb++; w = '<span class="win"><i style="background:var(--vb)"></i>' + psEsc(psName(b)) + '</span>'; } else { tie++; w = 'remis'; } }
+    var cell = function(d, g) { return d ? '<b>' + d.points + '</b> <span class="tie">P' + d.position + (g !== null ? ' · ' + psSigned(g) : '') + '</span>' : '<span class="tie">' + (psPartial(r) ? '&gt; ' + state.size[r] : '—') + '</span>'; };
+    var diff = da && db ? psSigned(da.points - db.points) : '—';
+    return '<tr><td>' + psEsc(r) + '</td><td>' + cell(da, ga) + '</td><td>' + cell(db, gb) + '</td><td>' + diff + '</td><td class="rd2">' + (w || '—') + '</td></tr>';
+  }).reverse().join('');
+  var ca = PA[last], cb = PB[last];
+  var gap = ca && cb ? ca.points - cb.points : null;
+  var card = function(k, c, cls, col) {
+    return '<div class="dp ' + cls + '"><div class="who"><span class="sw" style="background:var(' + col + ')"></span><span data-k="' + psEsc(k) + '">' + psEsc(psName(k)) + '</span></div>' +
+      '<div class="big2">' + (c ? 'P' + c.position + '<small>' + c.points + ' pkt</small>' : '—') + '</div></div>';
+  };
+  body.innerHTML = '<div class="duel-sum">' + card(a, ca, 'a', '--va') +
+    '<div class="dmid"><div class="mb"><div class="lab">Różnica</div><div class="gapv">' + (gap === null ? '—' : gap === 0 ? 'remis' : Math.abs(gap) + ' pkt') + '</div>' +
+    '<div class="tie">' + (gap ? 'prowadzi ' + psEsc(psName(gap > 0 ? a : b)) : '') + '</div></div>' +
+    '<div class="mb"><div class="lab">Bilans rund</div><div class="bil"><i style="background:var(--va)"></i>' + wa + ' : ' + wb + '<i style="background:var(--vb);margin:0 0 0 6px"></i></div>' +
+    '<div class="tie">' + (tie ? tie + ' ' + (tie === 1 ? 'remis' : 'remisy') : 'bez remisów') + '</div></div></div>' +
+    card(b, cb, 'b', '--vb') + '</div>' +
+    '<div class="legend"><span><i style="background:var(--va)"></i>prowadzi ' + psEsc(psName(a)) + '</span><span><i style="background:var(--vb)"></i>prowadzi ' + psEsc(psName(b)) + '</span></div>' +
+    '<div class="label" style="margin-top:10px">Różnica punktów po każdej rundzie</div>' +
+    '<div class="chart" id="duel-chart"><div class="tip" id="duel-tip"></div></div>' +
+    '<div class="tw" style="max-height:none"><table><thead><tr><th>Runda</th><th>' + psEsc(psName(a)) + '</th><th>' + psEsc(psName(b)) + '</th><th>Różnica</th><th class="rd2">Lepszy w rundzie</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+  psDrawDuel();
+}
+function psDrawDuel() {
+  if (!DUEL) return;
+  var box = document.getElementById('duel-chart'), tip = document.getElementById('duel-tip');
+  if (!box) return;
+  var R = state.rounds, n = R.length, PA = state.participants[DUEL.a], PB = state.participants[DUEL.b];
+  var g = R.map(function(r) { return PA[r] && PB[r] ? PA[r].points - PB[r].points : null; });
+  var W = Math.max(280, box.clientWidth), H = W < 480 ? 180 : 210, m = { l: 44, r: 12, t: 14, b: 26 }, iw = W - m.l - m.r, ih = H - m.t - m.b;
+  var mx = Math.max(5, Math.max.apply(null, g.map(function(v) { return v === null ? 0 : Math.abs(v); })));
+  var step = [1, 2, 5, 10, 20, 25, 50, 100].find(function(x) { return x >= mx / 2; }) || 200; mx = Math.ceil(mx / step) * step;
+  var Y = function(v) { return m.t + (mx - v) / (2 * mx) * ih; }, bw = Math.min(28, iw / n * 0.6), X = function(i) { return m.l + (i + 0.5) * iw / n; };
+  var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" aria-label="Różnica punktów po każdej rundzie">';
+  var ticks = []; for (var t = -mx; t <= mx; t += step) ticks.push(t);
+  svg += '<g class="grid">' + ticks.map(function(t) { return '<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + Y(t) + '" y2="' + Y(t) + '"/>'; }).join('') + '</g>';
+  svg += ticks.map(function(t) { return '<text class="ax" x="' + (m.l - 8) + '" y="' + (Y(t) + 4) + '" text-anchor="end">' + (t > 0 ? '+' + t : t) + '</text>'; }).join('');
+  svg += '<line class="zero" x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + Y(0) + '" y2="' + Y(0) + '"/>';
+  var every = W < 480 && n > 8 ? 2 : 1;
+  svg += R.map(function(r, i) { return (i % every && i !== n - 1) ? '' : '<text class="ax" x="' + X(i) + '" y="' + (H - 8) + '" text-anchor="middle">' + psEsc((r.match(/R\d+$/) || [r])[0]) + '</text>'; }).join('');
+  g.forEach(function(v, i) {
+    if (v === null) return;
+    var y0 = Y(0), y1 = Y(v), h = Math.abs(y1 - y0), r = Math.min(4, h / 2);
+    if (v === 0) { svg += '<rect class="bar-0" x="' + (X(i) - bw / 2) + '" y="' + (y0 - 1) + '" width="' + bw + '" height="2" rx="1"/>'; return; }
+    // zaokrąglony tylko koniec słupka, podstawa przy zerze prosta
+    var x0 = X(i) - bw / 2, x1 = X(i) + bw / 2, top = v > 0;
+    var d = top
+      ? 'M' + x0 + ' ' + y0 + 'V' + (y1 + r) + 'Q' + x0 + ' ' + y1 + ' ' + (x0 + r) + ' ' + y1 + 'H' + (x1 - r) + 'Q' + x1 + ' ' + y1 + ' ' + x1 + ' ' + (y1 + r) + 'V' + y0 + 'Z'
+      : 'M' + x0 + ' ' + y0 + 'V' + (y1 - r) + 'Q' + x0 + ' ' + y1 + ' ' + (x0 + r) + ' ' + y1 + 'H' + (x1 - r) + 'Q' + x1 + ' ' + y1 + ' ' + x1 + ' ' + (y1 - r) + 'V' + y0 + 'Z';
+    svg += '<path class="' + (top ? 'bar-a' : 'bar-b') + '" d="' + d + '"/>';
+  });
+  var li = n - 1; while (li >= 0 && g[li] === null) li--;
+  if (li >= 0) svg += '<text class="lbl" x="' + X(li) + '" y="' + (g[li] >= 0 ? Y(g[li]) - 6 : Y(g[li]) + 14) + '" text-anchor="middle">' + (g[li] > 0 ? '+' : '') + g[li] + '</text>';
+  svg += R.map(function(r, i) { return '<rect class="hit" data-i="' + i + '" x="' + (m.l + i * iw / n) + '" y="' + m.t + '" width="' + (iw / n) + '" height="' + ih + '"/>'; }).join('');
+  svg += '</svg>';
+  box.innerHTML = svg; box.appendChild(tip); tip.style.display = 'none';
+  var el = box.querySelector('svg');
+  function show(ev) {
+    var rect = el.getBoundingClientRect(), x = (ev.clientX - rect.left) * W / rect.width;
+    var i = Math.max(0, Math.min(n - 1, Math.floor((x - m.l) / (iw / n)))), r = R[i], v = g[i];
+    tip.innerHTML = '<b>' + psEsc(r) + '</b><br>' + (v === null ? 'brak danych obu graczy'
+      : psEsc(psName(DUEL.a)) + ': ' + PA[r].points + ' · ' + psEsc(psName(DUEL.b)) + ': ' + PB[r].points + '<br>' + (v === 0 ? 'remis' : 'prowadzi ' + psEsc(psName(v > 0 ? DUEL.a : DUEL.b)) + ' o ' + Math.abs(v)));
+    tip.style.display = 'block';
+    var px = X(i) * rect.width / W, tw = tip.offsetWidth;
+    tip.style.left = Math.max(tw / 2, Math.min(rect.width - tw / 2, px)) + 'px';
+    tip.style.top = Math.max(0, (v === null ? m.t : Math.min(Y(v), Y(0))) * rect.height / H - tip.offsetHeight - 10) + 'px';
+  }
+  el.addEventListener('pointermove', show); el.addEventListener('pointerdown', show);
+  el.addEventListener('pointerleave', function() { tip.style.display = 'none'; });
+}
+function psShareDuel() {
+  if (!DUEL) return;
+  var u = new URL(psShareUrl(psName(DUEL.a))); u.searchParams.set('vs', psName(DUEL.b));
+  var url = u.toString();
+  if (navigator.share) { navigator.share({ title: 'Pojedynek: ' + psName(DUEL.a) + ' vs ' + psName(DUEL.b), url: url }).catch(function() {}); return; }
+  navigator.clipboard.writeText(url).then(function() { psToast('Skopiowano link do pojedynku'); }, function() { window.prompt('Skopiuj link:', url); });
+}
 
 // forma: suma punktów z ostatnich FORM_N rund (tylko osoby z danymi ze wszystkich tych rund)
 var FORM_N = 3, FORM_TOP = 10;
@@ -764,6 +917,8 @@ function psRenderAll() {
   psBuildLabels(order);
   psRenderKpis(order);
   psRenderForm(order);
+  psFillNicks(order);
+  psRenderDuel();
   psRenderTable();
 }
 
@@ -791,7 +946,12 @@ function psRenderAll() {
   myName = shared || (saved && saved.value ? saved.value : '');
   document.getElementById('ps-myname').value = myName;
   psRenderAll();
-  if (shared) {
+  var vs = (new URLSearchParams(location.search).get('vs') || '').trim();
+  if (vs) {
+    document.getElementById('duel-b').value = vs;
+    psRenderDuel();
+    document.getElementById('duel-sec').scrollIntoView({ block: 'start' });
+  } else if (shared) {
     var order = psOrder(state.rounds[state.rounds.length - 1]);
     if (order.some(psIsMe)) psSetView('near');
     document.getElementById('k-me').scrollIntoView({ block: 'center' });
