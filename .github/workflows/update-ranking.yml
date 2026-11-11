@@ -1,0 +1,47 @@
+name: Aktualizacja rankingu
+
+# parcfer.me pokazuje tylko bieżący ranking, więc sprawdzamy regularnie,
+# czy jest nowa rozliczona runda, i dopisujemy ją do data/<rok>.json.
+on:
+  schedule:
+    - cron: "23 */3 * * *"   # co 3 godziny
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+
+concurrency:
+  group: update-ranking
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Pobierz nową rundę z parcfer.me
+        run: python3 tools/add_round.py --auto
+
+      - name: Zapisz i opublikuj
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet; then
+            echo "Brak nowej rundy."
+            exit 0
+          fi
+          round=$(python3 -c "import json; d=json.load(open('data/seasons.json')); r=json.load(open(f\"data/{d['default']}.json\"))['rounds']; print(r[-1]['name'])")
+          git config user.name "Patryk"
+          git config user.email "169813447+patrykw-labs@users.noreply.github.com"
+          git add data/
+          git commit -m "Runda $round"
+          git push
+          # push z tokenu Actions nie zawsze uruchamia budowanie Pages — zlecamy je wprost
+          gh api -X POST "repos/${{ github.repository }}/pages/builds" || echo "Nie udało się zlecić budowania Pages"

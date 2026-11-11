@@ -6,6 +6,12 @@ Użycie:
   python3 tools/add_round.py "Meksyk R19" --html plik.html # ze strony zapisanej wcześniej
   python3 tools/add_round.py "Meksyk R19" --tsv plik.tsv   # z wklejonej tabeli: poz<TAB>nick<TAB>pkt
   python3 tools/add_round.py "USA R18" --replace           # podmienia ostatnią rundę o tej nazwie
+  python3 tools/add_round.py --auto                        # sam ustala, czy jest nowa rozliczona runda
+
+Tryb --auto (używany przez GitHub Actions): z listy typowań parcfer.me bierze ostatnie
+GP sezonu z wynikami. Numer rundy to jego kolejność w sezonie, nazwa — z data/round_names.json
+(albo z nazwy na parcfer.me). Jeśli ta runda już jest albo ranking nie został jeszcze
+przeliczony, kończy się bez zmian (kod 0). Nietypowe dane przerywają z błędem (kod 1).
 
 Ranking na parcfer.me pokazuje tylko stan bieżący, więc rundę trzeba pobrać
 po jej przeliczeniu, a przed kolejnym GP.
@@ -20,13 +26,42 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 URL = "https://parcfer.me/typowanie-ranking/{season}"
+CONTESTS_URL = "https://parcfer.me/typowanie"
+
+
+class NothingToDo(Exception):
+    """Brak nowej rundy — w trybie --auto to nie jest błąd."""
+
+
+def fetch(url):
+    req = urllib.request.Request(url, headers={"User-Agent": "parcferme-ranking"})
+    return urllib.request.urlopen(req, timeout=30).read().decode("utf-8", "replace")
+
+
+def next_data(text):
+    m = re.search(r'<script id="__NEXT_DATA__" type="application/json">(.*?)</script>', text, re.S)
+    return json.loads(m.group(1))["props"]["pageProps"] if m else None
+
+
+def auto_round_name(season):
+    """Nazwa ostatniej rozliczonej rundy sezonu, np. „Brazylia R20”."""
+    contests = [c for c in next_data(fetch(CONTESTS_URL))["typowania"] if str(c["sezon"]) == str(season)]
+    contests.sort(key=lambda c: c["closeAt"])
+    done = [i for i, c in enumerate(contests) if str(c["wyniki"]).lower() == "true"]
+    if not done:
+        raise NothingToDo("Brak rozliczonych typowań w sezonie")
+    i = done[-1]
+    gp = re.sub(rf"^Typowanie\s+GP\s+|\s+{season}$", "", contests[i]["name"].strip())
+    names_path = ROOT / "data/round_names.json"
+    names = json.loads(names_path.read_text(encoding="utf-8")) if names_path.exists() else {}
+    return f"{names.get(gp, gp)} R{i + 1}"
 
 
 def parse_html(text):
     """Zwraca listę (pozycja, nick, punkty, id). Id użytkownika (uId) jest w danych strony (__NEXT_DATA__)."""
-    m = re.search(r'<script id="__NEXT_DATA__" type="application/json">(.*?)</script>', text, re.S)
-    if m:
-        wyniki = json.loads(m.group(1))["props"]["pageProps"]["wyniki"]
+    data = next_data(text)
+    if data:
+        wyniki = data["wyniki"]
         # pozycje jak w tabeli na stronie: kolejne miejsca, także przy remisie punktów
         return [(i + 1, w["name"].strip(), int(w["suma"]), int(w["uId"])) for i, w in enumerate(wyniki)]
     table = text[text.find('<table class="tabelka_ranking">'):]
@@ -72,26 +107,41 @@ def write(path, d):
 
 
 def main():
+    try:
+        run()
+    except NothingToDo as e:
+        print("Bez zmian:", e)
+
+
+def run():
     ap = argparse.ArgumentParser()
-    ap.add_argument("round")
+    ap.add_argument("round", nargs="?")
+    ap.add_argument("--auto", action="store_true", help="ustal rundę z parcfer.me; brak nowej rundy to nie błąd")
     ap.add_argument("--season", type=int)
     src = ap.add_mutually_exclusive_group()
     src.add_argument("--html")
     src.add_argument("--tsv")
     ap.add_argument("--replace", action="store_true", help="podmień istniejącą rundę o tej nazwie")
     a = ap.parse_args()
+    if bool(a.round) == a.auto:
+        ap.error("podaj nazwę rundy albo --auto")
 
     season = a.season or json.loads((ROOT / "data/seasons.json").read_text(encoding="utf-8"))["default"]
     path = ROOT / f"data/{season}.json"
     d = json.loads(path.read_text(encoding="utf-8"))
+
+    if a.auto:
+        a.round = auto_round_name(season)
+        if a.round in [r["name"] for r in d["rounds"]]:
+            raise NothingToDo(f"runda {a.round} już jest w danych")
+        print("Nowa rozliczona runda:", a.round)
 
     if a.tsv:
         rows = parse_tsv(Path(a.tsv).read_text(encoding="utf-8"))
     elif a.html:
         rows = parse_html(Path(a.html).read_text(encoding="utf-8", errors="replace"))
     else:
-        req = urllib.request.Request(URL.format(season=season), headers={"User-Agent": "parcferme-ranking"})
-        rows = parse_html(urllib.request.urlopen(req, timeout=30).read().decode("utf-8", "replace"))
+        rows = parse_html(fetch(URL.format(season=season)))
 
     # kontrole danych
     if len(rows) < 100:
@@ -129,9 +179,14 @@ def main():
         new = keyed(standings)
         cut = len(d["rounds"][-1]["standings"])
         if all(prev.get(k) and prev[k]["points"] == s["points"] for k, s in list(new.items())[:cut]):
-            sys.exit("Ranking identyczny jak w poprzedniej rundzie — parcfer.me chyba jeszcze nie przeliczył punktów")
-        odd = [(k, s["points"] - prev[k]["points"]) for k, s in new.items() if k in prev and not 0 <= s["points"] - prev[k]["points"] <= 25]
+            msg = "ranking identyczny jak w poprzedniej rundzie — parcfer.me jeszcze nie przeliczył punktów"
+            if a.auto:
+                raise NothingToDo(msg)
+            sys.exit(msg[0].upper() + msg[1:])
+        odd = [(s["name"], s["points"] - prev[k]["points"]) for k, s in new.items() if k in prev and not 0 <= s["points"] - prev[k]["points"] <= 25]
         if odd:
+            if a.auto:
+                sys.exit(f"Nietypowe przyrosty punktów, przerywam: {odd[:20]}")
             print("UWAGA, nietypowe przyrosty:", odd[:20])
         top_new = [s["name"] for k, s in new.items() if s["pos"] <= 100 and k not in prev]
         print("Nowi w TOP 100:", top_new)

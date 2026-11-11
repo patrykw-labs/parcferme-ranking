@@ -16,11 +16,16 @@ Nieoficjalna, fanowska klasyfikacja typerów konkursu [parcfer.me](https://parcf
 - `data/seasons.json` — lista sezonów i sezon domyślny
 - `assets/` — grafiki (baner)
 - `tools/add_round.py` — dopisuje rundę z rankingu parcfer.me
+- `data/round_names.json` — krótkie nazwy rund (np. „Sao Paulo” → „Brazylia”)
 - `data/<rok>.json` — dane sezonu: lista rund, w każdej ranking `{ pos, name, points, id }` (`id` to numer użytkownika z parcfer.me)
 
 Konkretny sezon: `index.html?sezon=2026`. Przy ≥2 sezonach w nagłówku pojawia się przełącznik.
 
 ## Aktualizacja po rundzie
+
+**Automatycznie:** workflow `.github/workflows/update-ranking.yml` co 3 godziny uruchamia `python3 tools/add_round.py --auto`. Skrypt sprawdza na parcfer.me ostatnie rozliczone typowanie sezonu (numer rundy = kolejność typowania w sezonie, nazwa z `data/round_names.json`), a gdy ranking jest już przeliczony — dopisuje rundę, robi commit i zleca publikację na Pages. Ręcznie można go uruchomić w zakładce Actions („Run workflow”).
+
+**Ręcznie:**
 
 Po przeliczeniu punktów na parcfer.me (a przed kolejnym GP — strona pokazuje tylko stan bieżący):
 
