@@ -119,8 +119,8 @@ h1 em{font-style:normal;background:linear-gradient(90deg,var(--accent-2),var(--a
 .act-bar i{display:block;height:100%;border-radius:999px;background:var(--accent)}
 .top10 li{display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid var(--border);font-size:13px}
 .top10 li:last-child{border-bottom:0}
-.top10 .r{width:20px;font-weight:800;color:var(--muted);font-variant-numeric:tabular-nums}
-.top10 li:nth-child(1) .r{color:#d4a017}.top10 li:nth-child(2) .r{color:#9ca3af}.top10 li:nth-child(3) .r{color:#c2713b}
+.top10 .r{width:28px;font-weight:800;color:var(--muted);font-variant-numeric:tabular-nums}
+.top10 li.t1 .r{color:#d4a017}.top10 li.t2 .r{color:#9ca3af}.top10 li.t3 .r{color:#c2713b}
 .top10 .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
 .top10 .m{width:40px;text-align:right;font-size:11px;font-weight:700}
 .top10 .g{width:96px;text-align:right;font-size:12px;color:var(--muted)}
@@ -168,7 +168,7 @@ tr:last-child td{border-bottom:0}
 tbody tr:hover td{background:var(--accent-soft)}
 tbody tr:hover td.c-name{background:linear-gradient(var(--accent-soft),var(--accent-soft)),var(--card)}
 .c-name{text-align:left;position:sticky;left:0;background:var(--card);z-index:1;min-width:210px;max-width:260px;overflow:hidden;text-overflow:ellipsis;font-weight:700;box-shadow:1px 0 0 var(--border)}
-.c-name .rk{display:inline-block;width:30px;font-weight:800;font-variant-numeric:tabular-nums}
+.c-name .rk{display:inline-block;width:38px;font-weight:800;font-variant-numeric:tabular-nums}
 .c-name .mv{display:inline-block;width:46px;font-size:11px;font-weight:700}
 th.c-name{background:var(--card-2);z-index:3}
 .c-tot{font-size:15px;font-weight:800;font-variant-numeric:tabular-nums}
@@ -373,7 +373,7 @@ dialog.hist::backdrop{background:rgba(5,10,20,.6);backdrop-filter:blur(2px)}
   </dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <div class="note"><b>Nieoficjalne zestawienie fanowskie.</b> Źródło danych: publiczny ranking <a href="https://parcfer.me" target="_blank" rel="noopener">parcfer.me</a> (TOP 100 po każdej rundzie). <span id="ps-asof"></span> Kliknij nick, żeby zobaczyć historię gracza na wykresie. W komórce: punkty łącznie, a pod spodem miejsce w danej rundzie i przyrost punktów. Strzałka obok pozycji to zmiana miejsca względem poprzedniej rundy; „↑100” oznacza wejście do TOP 100, „NOWY” — nowego uczestnika. Ze starszych rund mamy tylko czołówkę (Spa R10: TOP 30, do Singapuru R17: TOP 100), więc osoby spoza niej mają tam „&gt; 30” lub „&gt; 100”. Od USA R18 zapisujemy pełny ranking. Gdy nick się powtarza, kolejne osoby oznaczono „(2)” według kolejności w rankingu. Strona zbiera anonimowe statystyki odwiedzin (<a href="https://www.goatcounter.com" target="_blank" rel="noopener">GoatCounter</a>, bez cookies).</div>
+  <div class="note"><b>Nieoficjalne zestawienie fanowskie.</b> Źródło danych: publiczny ranking <a href="https://parcfer.me" target="_blank" rel="noopener">parcfer.me</a> (TOP 100 po każdej rundzie). <span id="ps-asof"></span> Kliknij nick, żeby zobaczyć historię gracza na wykresie. W komórce: punkty łącznie, a pod spodem miejsce w danej rundzie i przyrost punktów. Strzałka obok pozycji to zmiana miejsca względem poprzedniej rundy; „↑100” oznacza wejście do TOP 100, „NOWY” — nowego uczestnika. Ze starszych rund mamy tylko czołówkę (Spa R10: TOP 30, do Singapuru R17: TOP 100), więc osoby spoza niej mają tam „&gt; 30” lub „&gt; 100”. Od USA R18 zapisujemy pełny ranking. „=” przy miejscu oznacza ex aequo — osoby z tą samą liczbą punktów mają wspólne miejsce (pełny zakres miejsc widać po najechaniu). Kolejność wewnątrz remisu jest jak na parcfer.me. Gdy nick się powtarza, kolejne osoby oznaczono „(2)” według kolejności w rankingu. Strona zbiera anonimowe statystyki odwiedzin (<a href="https://www.goatcounter.com" target="_blank" rel="noopener">GoatCounter</a>, bez cookies).</div>
 </main>
 
 <script>
@@ -538,7 +538,8 @@ function psRenderKpis(names) {
   document.getElementById('k-best-d').textContent = best ? psName(best.n) : '';
   document.getElementById('k-top10-r').textContent = last;
   document.getElementById('k-top10').innerHTML = names.slice(0, 10).map(function(x, i) {
-    return '<li data-k="' + psEsc(x) + '" class="' + (psIsMe(x) ? 'me' : '') + '"><span class="r">' + (i + 1) + '</span><span class="n" title="' + psEsc(psName(x)) + '">' + psEsc(psName(x)) + '</span><span class="m">' + psMoveHtml(psMove(x)) + '</span><span class="g">' + (function(d) { return d === null ? '' : '<b>' + psSigned(d) + '</b> w rundzie'; })(psRoundDelta(x, n - 1)) + '</span><span class="p">' + P[x][last].points + '</span></li>';
+    var tp = psPlace(last, P[x][last]).place;
+    return '<li data-k="' + psEsc(x) + '" class="' + (psIsMe(x) ? 'me ' : '') + (tp <= 3 ? 't' + tp : '') + '"><span class="r" title="' + psPlace(last, P[x][last]).title + '">' + psPlace(last, P[x][last]).txt + '</span><span class="n" title="' + psEsc(psName(x)) + '">' + psEsc(psName(x)) + '</span><span class="m">' + psMoveHtml(psMove(x)) + '</span><span class="g">' + (function(d) { return d === null ? '' : '<b>' + psSigned(d) + '</b> w rundzie'; })(psRoundDelta(x, n - 1)) + '</span><span class="p">' + P[x][last].points + '</span></li>';
   }).join('');
   var p100 = names[Math.min(99, names.length - 1)];
   var cut = P[p100][last] ? P[p100][last].points : null;
@@ -639,11 +640,12 @@ function psRenderTable(resetScroll) {
       else if (dl === 'top') note = ' · <span class="d-new">↑ TOP ' + psPrevSize(ri) + '</span>';
       else if (dl === 'new') note = ' · <span class="d-new">nowy</span>';
       else note = ' · <span class="' + (dl > 0 ? 'd-up' : 'd-zero') + '">' + psSigned(dl) + '</span>';
-      return '<td class="rc' + (ri === nR - 1 ? ' last' : '') + '"><b>' + d.points + '</b><span>P' + d.position + note + '</span></td>';
+      var pl = psPlace(r, d);
+      return '<td class="rc' + (ri === nR - 1 ? ' last' : '') + '"' + (pl.title ? ' title="' + pl.title + '"' : '') + '><b>' + d.points + '</b><span>P' + pl.txt + note + '</span></td>';
     }).join('');
-    var rk = rankOf[name];
-    var cls = (psIsMe(name) ? 'me ' : '') + (rk <= 3 ? 'm' + rk : '');
-    return '<tr class="' + cls + '" data-row="' + psEsc(name) + '"><td class="c-name" data-k="' + psEsc(name) + '" title="Historia: ' + psEsc(psName(name)) + '"><span class="rk">' + rk + '</span><span class="mv">' + psMoveHtml(psMove(name)) + '</span><span class="nm">' + psEsc(psName(name)) + '</span></td>' + cells + '<td class="c-tot">' + lastPts + '</td></tr>';
+    var cur = P[lastRound], pl = cur ? psPlace(lastRound, cur) : { txt: String(rankOf[name]), place: rankOf[name], title: '' };
+    var cls = (psIsMe(name) ? 'me ' : '') + (pl.place <= 3 ? 'm' + pl.place : '');
+    return '<tr class="' + cls + '" data-row="' + psEsc(name) + '"><td class="c-name" data-k="' + psEsc(name) + '" title="Historia: ' + psEsc(psName(name)) + (pl.title ? ' · ' + pl.title : '') + '"><span class="rk">' + pl.txt + '</span><span class="mv">' + psMoveHtml(psMove(name)) + '</span><span class="nm">' + psEsc(psName(name)) + '</span></td>' + cells + '<td class="c-tot">' + lastPts + '</td></tr>';
   }).join('');
 
   tbl.innerHTML = head + '<tbody>' + (body || '<tr><td colspan="' + (nR + 2) + '" class="empty">Brak uczestników pasujących do filtra</td></tr>') + '</tbody>';
@@ -655,14 +657,24 @@ function psRenderTable(resetScroll) {
   }
 }
 
-// ile osób ma w danej rundzie tyle samo punktów
-function psTie(round, pts) {
+// grupy remisowe w rundzie: punkty → {n: ile osób, a: pierwsze miejsce, b: ostatnie miejsce}
+function psTieGroup(round, pts) {
   var t = state.tie[round] || (state.tie[round] = (function() {
     var m = {};
-    Object.keys(state.participants).forEach(function(k) { var d = state.participants[k][round]; if (d) m[d.points] = (m[d.points] || 0) + 1; });
+    Object.keys(state.participants).forEach(function(k) {
+      var d = state.participants[k][round]; if (!d) return;
+      var g = m[d.points] || (m[d.points] = { n: 0, a: Infinity, b: 0 });
+      g.n++; g.a = Math.min(g.a, d.position); g.b = Math.max(g.b, d.position);
+    });
     return m;
   })());
-  return t[pts] || 0;
+  return t[pts] || { n: 0, a: 0, b: 0 };
+}
+function psTie(round, pts) { return psTieGroup(round, pts).n; }
+// miejsce do wyświetlenia: przy remisie wspólne pierwsze miejsce grupy z „=”
+function psPlace(round, d) {
+  var g = psTieGroup(round, d.points);
+  return g.n > 1 ? { txt: g.a + '=', place: g.a, title: 'ex aequo: miejsca ' + g.a + '–' + g.b + (psPartial(round) && g.b === state.size[round] ? '+' : '') + ' (' + d.points + ' pkt)' } : { txt: String(d.position), place: d.position, title: '' };
 }
 
 function psToast(msg) {
