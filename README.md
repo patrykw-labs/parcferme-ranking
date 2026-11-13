@@ -20,7 +20,7 @@ Nieoficjalna, fanowska klasyfikacja typerów konkursu [parcfer.me](https://parcf
 - **Historia gracza** — kliknięcie dowolnego nicka otwiera wykres miejsca po każdej rundzie i tabelę wszystkich rund (obecne i najlepsze miejsce, średnia punktów na rundę).
 - **Pojedynek** — dwa nicki obok siebie: różnica punktów po każdej rundzie na wykresie, bilans rund i tabela runda po rundzie.
 - **Ex aequo** — przy równej liczbie punktów wspólne miejsce z „=” (np. „2=”) w całej stronie; pełny zakres miejsc w dymku po najechaniu. Strzałki zmian liczone są ze wspólnych miejsc.
-- **Jasny i ciemny motyw**, wersja na telefon, podgląd linku (Open Graph) przy udostępnianiu na Messengerze czy Facebooku.
+- **Jasny i ciemny motyw**, wersja na telefon, obsługa klawiaturą (Tab / Enter), ikona i dodawanie do ekranu głównego, podgląd linku (Open Graph) przy udostępnianiu na Messengerze czy Facebooku.
 
 ### Linki
 
@@ -38,7 +38,7 @@ Nieoficjalna, fanowska klasyfikacja typerów konkursu [parcfer.me](https://parcf
 
 ## Aktualizacja po rundzie
 
-**Automatycznie:** workflow `.github/workflows/update-ranking.yml` co 3 godziny uruchamia `python3 tools/add_round.py --auto`. Skrypt sprawdza na parcfer.me ostatnie rozliczone typowanie sezonu (numer rundy = kolejność typowania w sezonie, nazwa z `data/round_names.json`), a gdy ranking jest już przeliczony — dopisuje rundę, robi commit i zleca publikację na Pages. Nietypowe dane (spadek punktów, przyrost ponad 25 na rundę) przerywają z błędem. Rundę starszą niż ostatnia skrypt wstawia na właściwe miejsce wg numeru (R3 przed R9) i sprawdza z rundami po obu stronach. Ręcznie: zakładka Actions → „Aktualizacja rankingu” → Run workflow.
+**Automatycznie:** workflow `.github/workflows/update-ranking.yml` co 3 godziny uruchamia `python3 tools/add_round.py --auto`. Skrypt sprawdza na parcfer.me ostatnie rozliczone typowanie sezonu (numer rundy = kolejność typowania w sezonie, nazwa z `data/round_names.json`), a gdy ranking jest już przeliczony — dopisuje rundę, robi commit i zleca publikację na Pages. Nietypowe dane (spadek punktów, przyrost ponad 25 na rundę) przerywają z błędem. Rundę starszą niż ostatnia skrypt wstawia na właściwe miejsce wg numeru (R3 przed R9) i sprawdza z rundami po obu stronach. Przed zapisem automat uruchamia też `tools/check_data.py`. Ręcznie: zakładka Actions → „Aktualizacja rankingu” → Run workflow.
 
 **Ręcznie:** po przeliczeniu punktów na parcfer.me, a przed kolejnym GP (strona pokazuje tylko stan bieżący):
 
@@ -54,9 +54,12 @@ Zamiast pobierania można podać `--html zapisana_strona.html` albo `--tsv tabel
 - `data/seasons.json` — lista sezonów i sezon domyślny
 - `data/<rok>.json` — dane sezonu
 - `data/round_names.json` — krótkie nazwy rund (np. „Sao Paulo” → „Brazylia”)
-- `tools/add_round.py` — dopisuje rundę z rankingu parcfer.me
+- `tools/add_round.py` — dopisuje rundę z rankingu parcfer.me (z ponawianiem przy chwilowej awarii strony)
+- `tools/check_data.py` — sprawdza spójność danych (kolejność, unikalne id, ciągłość punktów każdego gracza)
 - `.github/workflows/update-ranking.yml` — automatyczne pobieranie rund
-- `assets/` — baner i obrazek podglądu linku (`og.jpg`)
+- `.github/workflows/check-data.yml` — kontrola danych przy każdej zmianie w `data/` lub `tools/`
+- `assets/` — baner, obrazek podglądu linku (`og.jpg`) i ikony strony
+- `site.webmanifest` — nazwa i ikona przy dodawaniu strony do ekranu głównego telefonu
 
 ## Nowy sezon
 

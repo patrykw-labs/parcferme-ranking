@@ -29,6 +29,9 @@ jobs:
       - name: Pobierz nową rundę z parcfer.me
         run: python3 tools/add_round.py --auto
 
+      - name: Sprawdź spójność danych
+        run: python3 tools/check_data.py
+
       - name: Zapisz i opublikuj
         env:
           GH_TOKEN: ${{ github.token }}

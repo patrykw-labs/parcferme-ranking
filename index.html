@@ -4,6 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Klasyfikacja parcfer.me</title>
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
+<meta name="theme-color" content="#0b1120">
 <meta name="description" content="Nieoficjalna, fanowska klasyfikacja typerów parcfer.me (F1), runda po rundzie.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="parcferme.ranking">
@@ -186,6 +191,7 @@ tr.me .c-name::after{content:"TY";margin-left:8px;padding:1px 6px;border-radius:
 
 /* klikalne nicki → historia */
 [data-k]{cursor:pointer}
+[data-k]:focus-visible,[data-jump]:focus-visible,.btn:focus-visible,.seg button:focus-visible{outline:2px solid var(--accent-2);outline-offset:2px;border-radius:6px}
 .c-name[data-k]:hover .nm,.top10 li[data-k]:hover .n,.podium [data-k]:hover{text-decoration:underline;text-underline-offset:3px}
 tr.flash td{animation:flash 1.6s ease-out}
 @keyframes flash{0%,40%{background:var(--accent-soft);box-shadow:inset 0 0 0 9999px var(--accent-soft)}100%{box-shadow:none}}
@@ -817,6 +823,21 @@ document.addEventListener('click', function(e) {
   if (el && state.participants[el.getAttribute('data-k')]) psOpenHistory(el.getAttribute('data-k'));
 });
 document.getElementById('hist').addEventListener('click', function(e) { if (e.target === this) this.close(); });
+// klawiatura: elementy otwierające historię dostają fokus (Tab) i działają z Enter / spacją
+function psA11y(root) {
+  var list = [].slice.call(root.querySelectorAll('[data-k],[data-jump]'));
+  if (root.matches && root.matches('[data-k],[data-jump]')) list.push(root);
+  list.forEach(function(el) {
+    if (el.tagName === 'BUTTON' || el.hasAttribute('tabindex')) return;
+    el.tabIndex = 0; el.setAttribute('role', 'button');
+  });
+}
+new MutationObserver(function(ms) { ms.forEach(function(m) { m.addedNodes.forEach(function(n) { if (n.nodeType === 1) psA11y(n); }); }); })
+  .observe(document.body, { childList: true, subtree: true });
+psA11y(document.body);
+document.addEventListener('keydown', function(e) {
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('[role="button"][data-k],[role="button"][data-jump]')) { e.preventDefault(); e.target.click(); }
+});
 window.addEventListener('resize', function() { psDrawChart(); psDrawDuel(); });
 
 // ---------- pojedynek ----------

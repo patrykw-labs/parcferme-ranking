@@ -12,3 +12,7 @@ desktop.ini
 # Pliki robocze
 *.tmp
 *.bak
+
+# Python
+__pycache__/
+*.pyc

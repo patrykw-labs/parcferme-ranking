@@ -21,6 +21,8 @@ import html
 import json
 import re
 import sys
+import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -33,9 +35,22 @@ class NothingToDo(Exception):
     """Brak nowej rundy — w trybie --auto to nie jest błąd."""
 
 
-def fetch(url):
-    req = urllib.request.Request(url, headers={"User-Agent": "parcferme-ranking"})
-    return urllib.request.urlopen(req, timeout=30).read().decode("utf-8", "replace")
+def fetch(url, tries=3, wait=60):
+    """Pobiera stronę; przy chwilowym błędzie (sieć, timeout, błąd 5xx) ponawia po minucie."""
+    for attempt in range(1, tries + 1):
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "parcferme-ranking"})
+            return urllib.request.urlopen(req, timeout=30).read().decode("utf-8", "replace")
+        except urllib.error.HTTPError as e:
+            if e.code < 500 or attempt == tries:
+                raise
+            err = e
+        except (urllib.error.URLError, TimeoutError, ConnectionError) as e:
+            if attempt == tries:
+                raise
+            err = e
+        print(f"Nie udało się pobrać {url} ({err}), ponawiam za {wait} s ({attempt}/{tries})")
+        time.sleep(wait)
 
 
 def next_data(text):
