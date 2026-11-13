@@ -50,7 +50,7 @@ Zamiast pobierania można podać `--html zapisana_strona.html` albo `--tsv tabel
 
 ## Struktura
 
-- `index.html` — strona (czysty HTML + JS, bez zależności i bez kroku budowania)
+- `index.html` — struktura strony; `css/style.css` — wygląd; `js/app.js` — cała logika (czysty HTML + CSS + JS, bez zależności i bez kroku budowania)
 - `data/seasons.json` — lista sezonów i sezon domyślny
 - `data/<rok>.json` — dane sezonu
 - `data/round_names.json` — krótkie nazwy rund (np. „Sao Paulo” → „Brazylia”)
@@ -58,7 +58,7 @@ Zamiast pobierania można podać `--html zapisana_strona.html` albo `--tsv tabel
 - `tools/check_data.py` — sprawdza spójność danych (kolejność, unikalne id, ciągłość punktów każdego gracza)
 - `.github/workflows/update-ranking.yml` — automatyczne pobieranie rund
 - `.github/workflows/check-data.yml` — kontrola danych przy każdej zmianie w `data/` lub `tools/`
-- `assets/` — baner, obrazek podglądu linku (`og.jpg`) i ikony strony
+- `assets/` — baner (`banner.jpg` oraz lżejsze `banner-800/1600/3200` w WebP i JPEG — przeglądarka wybiera rozmiar pod ekran), obrazek podglądu linku (`og.jpg`) i ikony strony
 - `site.webmanifest` — nazwa i ikona przy dodawaniu strony do ekranu głównego telefonu
 
 ## Nowy sezon
@@ -70,6 +70,8 @@ Zamiast pobierania można podać `--html zapisana_strona.html` albo `--tsv tabel
 ## Podgląd lokalny
 
 Strona wczytuje JSON przez `fetch`, więc otwórz ją przez serwer, np. `python -m http.server`.
+
+Po zmianie `css/style.css` lub `js/app.js` podbij parametr `?v=…` w ich adresach w `index.html` — GitHub Pages trzyma pliki w pamięci podręcznej przez 10 minut.
 
 ## Publikacja
 
