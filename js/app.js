@@ -598,6 +598,60 @@ function psRenderForm(order) {
     : (missing ? 'Pominięto ' + missing + ' os. bez danych ze wszystkich ' + FORM_N + ' rund. ' : '')) + 'Kliknij nick, żeby zobaczyć historię.';
 }
 
+// ---------- rekordy sezonu (z zapisanych rund; przerwy i rundy z samą czołówką pomijane tam, gdzie nie da się liczyć) ----------
+var REC_MIN_ROUNDS = 8; // średnia i równość tylko dla graczy z co najmniej tyloma znanymi przyrostami
+function psRenderRecords() {
+  var R = state.rounds, n = R.length, keys = Object.keys(state.participants);
+  var best = function(list, better) { // [{k, v, extra}] → zwycięzcy (z remisami)
+    var top = [];
+    list.forEach(function(x) { if (!top.length || better(x.v, top[0].v)) top = [x]; else if (x.v === top[0].v) top.push(x); });
+    return top;
+  };
+  var gainList = [], climbList = [], leadList = [], top10List = [], avgList = [], steadyList = [];
+  keys.forEach(function(k) {
+    var P = state.participants[k], ds = [], lead = 0, t10 = 0;
+    R.forEach(function(r, i) {
+      var d = P[r]; if (!d) return;
+      var pl = psPlace(r, d).place;
+      if (pl === 1) lead++;
+      if (pl <= 10) t10++;
+      var g = psRoundDelta(k, i);
+      if (g !== null) { ds.push(g); gainList.push({ k: k, v: g, r: r }); }
+      var mv = psStatus(k, i, 'position');
+      if (typeof mv === 'number' && pl <= 100) climbList.push({ k: k, v: mv, r: r });
+    });
+    if (lead) leadList.push({ k: k, v: lead });
+    if (t10) top10List.push({ k: k, v: t10 });
+    if (ds.length >= REC_MIN_ROUNDS) {
+      var avg = ds.reduce(function(a, b) { return a + b; }, 0) / ds.length;
+      var sd = Math.sqrt(ds.reduce(function(a, b) { return a + (b - avg) * (b - avg); }, 0) / ds.length);
+      avgList.push({ k: k, v: Math.round(avg * 10) / 10, n: ds.length });
+      steadyList.push({ k: k, v: Math.round(sd * 10) / 10, avg: avg, n: ds.length });
+    }
+  });
+  var who = function(top, fmt) {
+    var names = top.slice(0, 2).map(function(x) { return '<span data-k="' + psEsc(x.k) + '">' + psEsc(psName(x.k)) + '</span>' + (fmt ? ' <span class="tie">' + fmt(x) + '</span>' : ''); });
+    return names.join(', ') + (top.length > 2 ? ' <span class="tie">i ' + (top.length - 2) + ' ' + (top.length - 2 === 1 ? 'inny' : 'innych') + '</span>' : '');
+  };
+  var hi = function(a, b) { return a > b; }, lo = function(a, b) { return a < b; };
+  // równość: wśród graczy ze średnią w górnej połowie (inaczej wygrywa ktoś, kto stale ma mało punktów)
+  var med = avgList.map(function(x) { return x.v; }).sort(function(a, b) { return a - b; })[Math.floor(avgList.length / 2)] || 0;
+  var cards = [
+    ['★ Najwięcej punktów w rundzie', best(gainList, hi), function(t) { return '+' + t[0].v + ' pkt'; }, function(x) { return x.r; }],
+    ['↗ Największy awans w rundzie', best(climbList, hi), function(t) { return '▲' + t[0].v; }, function(x) { return x.r; }],
+    ['👑 Najwięcej rund na prowadzeniu', best(leadList, hi), function(t) { return t[0].v + ' ' + (t[0].v === 1 ? 'runda' : t[0].v % 10 >= 2 && t[0].v % 10 <= 4 && (t[0].v % 100 < 10 || t[0].v % 100 >= 20) ? 'rundy' : 'rund'); }, null],
+    ['🔟 Najwięcej rund w TOP 10', best(top10List, hi), function(t) { return t[0].v + ' z ' + n; }, null],
+    ['Ø Najwyższa średnia na rundę', best(avgList, hi), function(t) { return t[0].v.toFixed(1).replace('.', ',') + ' pkt'; }, function(x) { return x.n + ' rund'; }],
+    ['≈ Najrówniej punktujący', best(steadyList.filter(function(x) { return x.avg >= med; }), lo), function(t) { return '±' + t[0].v.toFixed(1).replace('.', ','); }, function(x) { return 'śr. ' + x.avg.toFixed(1).replace('.', ',') + ' pkt'; }]
+  ];
+  document.getElementById('rec-grid').innerHTML = cards.map(function(c) {
+    var top = c[1];
+    if (!top.length) return '';
+    return '<div class="rec"><div class="label">' + c[0] + '</div><div class="v">' + c[2](top) + '</div><div class="who">' + who(top, c[3]) + '</div></div>';
+  }).join('');
+  document.getElementById('rec-cap').textContent = 'Liczone z zapisanych rund (' + R[0].replace(/ R\d+$/, '') + ' – ' + R[n - 1].replace(/ R\d+$/, '') + '). Przyrostów i awansów nie liczymy przez przerwę w danych (R4–R8) ani dla graczy spoza zapisanej czołówki w rundach Spa–Singapur. Średnia i równość: gracze z co najmniej ' + REC_MIN_ROUNDS + ' znanymi rundami; równość (najmniejsze odchylenie punktów od średniej) wśród graczy ze średnią w górnej połowie. Kliknij nick, żeby zobaczyć historię.';
+}
+
 function psRenderAll() {
   if (!state.rounds.length) {
     document.getElementById('ps-empty').style.display = 'block';
@@ -611,6 +665,7 @@ function psRenderAll() {
   psBuildLabels(order);
   psRenderKpis(order);
   psRenderForm(order);
+  psRenderRecords();
   psFillNicks(order);
   psRenderDuel();
   psRenderTable();

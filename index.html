@@ -28,7 +28,7 @@
 // motyw ustawiany przed renderem, żeby nie migał
 (function(){try{var t=localStorage.getItem('parcfer-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
 </script>
-<link rel="stylesheet" href="css/style.css?v=20261113">
+<link rel="stylesheet" href="css/style.css?v=20261113b">
 </head>
 <body>
 
@@ -78,6 +78,12 @@
     <div class="board-head"><h2>🔥 Forma — ostatnie 3 rundy <span class="chip blue" id="form-r">—</span></h2></div>
     <div class="tw" style="max-height:none"><table id="form-table"></table></div>
     <div class="cap" id="form-cap"></div>
+  </section>
+
+  <section class="card recs" id="rec-sec">
+    <div class="board-head"><h2>🏆 Rekordy sezonu</h2></div>
+    <div class="rec-grid" id="rec-grid"></div>
+    <div class="cap" id="rec-cap"></div>
   </section>
 
   <section class="card duel" id="duel-sec">
@@ -132,7 +138,7 @@
   <div class="note"><b>Nieoficjalne zestawienie fanowskie.</b> Źródło danych: publiczny ranking <a href="https://parcfer.me" target="_blank" rel="noopener">parcfer.me</a>. <span id="ps-asof"></span> Kliknij nick, żeby zobaczyć historię gracza na wykresie. W komórce: punkty łącznie, a pod spodem miejsce w danej rundzie i przyrost punktów. Strzałka obok pozycji to zmiana miejsca względem poprzedniej rundy; „↑100” oznacza wejście do TOP 100, „NOWY” — nowego uczestnika. Zapisane rundy: Japonia R3 i Silverstone R9 — pełny ranking (z kopii w Web Archive), Spa R10 — TOP 30, Węgry R11–Singapur R17 — TOP 100, od USA R18 — pełny ranking. Rund R1–R2 i R4–R8 nie mamy, więc przy Silverstone R9 nie ma przyrostu ani strzałek (to zmiana z kilku rund), a osoby spoza zapisanej czołówki mają „&gt; 30” lub „&gt; 100”. „=” przy miejscu oznacza ex aequo — osoby z tą samą liczbą punktów mają wspólne miejsce (pełny zakres miejsc widać po najechaniu). Kolejność wewnątrz remisu jest jak na parcfer.me. Gdy nick się powtarza, kolejne osoby oznaczono „(2)” według miejsca w rankingu. Nowe rundy możesz śledzić przez <a href="feed.xml">kanał RSS</a>. Strona zbiera anonimowe statystyki odwiedzin (<a href="https://www.goatcounter.com" target="_blank" rel="noopener">GoatCounter</a>, bez cookies).</div>
 </main>
 
-<script src="js/app.js?v=20261113"></script>
+<script src="js/app.js?v=20261113b"></script>
 <script data-goatcounter="https://parcferme.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </body>
 </html>
