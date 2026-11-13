@@ -139,6 +139,9 @@ h1 em{font-style:normal;background:linear-gradient(90deg,var(--accent-2),var(--a
 .search{height:38px;border-radius:999px;border:1px solid var(--border-strong);background:var(--card-2);padding:0 16px;width:220px;max-width:100%}
 .search:focus{outline:2px solid var(--accent);outline-offset:1px}
 .board-head .sp{flex:1}
+th.srt{cursor:pointer;user-select:none}
+th.srt:hover{color:var(--text)}
+th.srt.on{color:var(--accent-2)}
 .tw{overflow:auto;max-height:min(75vh,900px);overscroll-behavior:contain}
 .pager{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:12px 16px;border-top:1px solid var(--border)}
 .pager button{min-width:38px;height:34px;padding:0 10px;border-radius:10px;border:1px solid var(--border-strong);background:var(--card-2);font-size:12px;font-weight:700;color:var(--text-2);cursor:pointer}

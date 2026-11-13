@@ -251,7 +251,9 @@ function psRenderTable(resetScroll) {
   } else {
     var pages = Math.ceil(names.length / PAGE_SIZE);
     PAGE = Math.min(PAGE, pages - 1);
-    shown = names.slice(PAGE * PAGE_SIZE, (PAGE + 1) * PAGE_SIZE);
+    // przy sortowaniu po rundzie strony obejmują wszystkich posortowanych, nie tylko bieżącą setkę
+    var base = SORT_RI !== null ? names.slice().sort(psSortCmp(rankOf)) : names;
+    shown = base.slice(PAGE * PAGE_SIZE, (PAGE + 1) * PAGE_SIZE);
     var btns = '<button type="button" ' + (PAGE ? '' : 'disabled ') + 'onclick="psSetPage(' + (PAGE - 1) + ')" aria-label="Poprzednia strona">‹</button>';
     for (var i = 0; i < pages; i++) btns += '<button type="button" class="num' + (i === PAGE ? ' on' : '') + '" onclick="psSetPage(' + i + ')">' + (i * PAGE_SIZE + 1) + '–' + Math.min((i + 1) * PAGE_SIZE, names.length) + '</button>';
     btns += '<button type="button" ' + (PAGE < pages - 1 ? '' : 'disabled ') + 'onclick="psSetPage(' + (PAGE + 1) + ')" aria-label="Następna strona">›</button>';
@@ -262,12 +264,16 @@ function psRenderTable(resetScroll) {
   jb.style.display = exact ? 'inline-flex' : 'none';
   if (exact) { jb.textContent = 'Pokaż „' + psName(exact) + '” w tabeli'; jb.onclick = function() { psJumpTo(exact); }; }
   if (q) { shown = names.filter(function(n) { return psName(n).toLowerCase().indexOf(q) !== -1; }); pager = ''; }
+  if (SORT_RI !== null && (VIEW !== 'all' || q)) shown = shown.slice().sort(psSortCmp(rankOf));
   var pg = document.getElementById('ps-pager');
   pg.innerHTML = pager; pg.style.display = pager ? 'flex' : 'none';
 
   var head = '<thead><tr><th class="c-name"><span class="rk">#</span><span class="mv"></span>Uczestnik</th>';
-  state.rounds.forEach(function(r) { head += '<th>' + psEsc(r) + '</th>'; });
-  head += '<th>Suma</th></tr></thead>';
+  state.rounds.forEach(function(r, ri) {
+    var can = ri > 0 && !psGap(ri), on = SORT_RI === ri;
+    head += can ? '<th class="srt' + (on ? ' on' : '') + '" data-sort="' + ri + '" title="' + (on ? 'Wróć do kolejności rankingu' : 'Sortuj po punktach zdobytych w tej rundzie') + '">' + psEsc(r) + (on ? ' ▼' : '') + '</th>' : '<th>' + psEsc(r) + '</th>';
+  });
+  head += '<th class="srt" data-sort="-1" title="Kolejność rankingu">Suma' + (SORT_RI === null ? ' ▼' : '') + '</th></tr></thead>';
 
   var nR = state.rounds.length;
   var body = shown.map(function(name) {
@@ -340,6 +346,7 @@ async function psShare(nick) {
 function psJumpTo(key, stayAll) {
   var dlg = document.getElementById('hist'); if (dlg.open) dlg.close();
   document.getElementById('ps-filter').value = '';
+  SORT_RI = null;
   var order = psOrder(state.rounds[state.rounds.length - 1]), idx = order.indexOf(key);
   if (idx < 0) return;
   VIEW = stayAll || idx >= 100 ? 'all' : 'top'; PAGE = Math.floor(idx / PAGE_SIZE);
@@ -439,6 +446,8 @@ function psDrawChart() {
 }
 
 document.addEventListener('click', function(e) {
+  var srt = e.target.closest('th[data-sort]');
+  if (srt) { psSortBy(+srt.getAttribute('data-sort')); return; }
   var j = e.target.closest('[data-jump]');
   if (j) { psJumpTo(j.getAttribute('data-jump')); return; }
   var el = e.target.closest('[data-k]');
@@ -447,8 +456,8 @@ document.addEventListener('click', function(e) {
 document.getElementById('hist').addEventListener('click', function(e) { if (e.target === this) this.close(); });
 // klawiatura: elementy otwierające historię dostają fokus (Tab) i działają z Enter / spacją
 function psA11y(root) {
-  var list = [].slice.call(root.querySelectorAll('[data-k],[data-jump]'));
-  if (root.matches && root.matches('[data-k],[data-jump]')) list.push(root);
+  var list = [].slice.call(root.querySelectorAll('[data-k],[data-jump],[data-sort]'));
+  if (root.matches && root.matches('[data-k],[data-jump],[data-sort]')) list.push(root);
   list.forEach(function(el) {
     if (el.tagName === 'BUTTON' || el.hasAttribute('tabindex')) return;
     el.tabIndex = 0; el.setAttribute('role', 'button');
@@ -458,7 +467,7 @@ new MutationObserver(function(ms) { ms.forEach(function(m) { m.addedNodes.forEac
   .observe(document.body, { childList: true, subtree: true });
 psA11y(document.body);
 document.addEventListener('keydown', function(e) {
-  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('[role="button"][data-k],[role="button"][data-jump]')) { e.preventDefault(); e.target.click(); }
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('[role="button"][data-k],[role="button"][data-jump],[role="button"][data-sort]')) { e.preventDefault(); e.target.click(); }
 });
 window.addEventListener('resize', function() { psDrawChart(); psDrawDuel(); });
 
@@ -683,6 +692,42 @@ function psCalc() {
   else html += 'Zostały <b>' + left + '</b> ' + (left === 1 ? 'runda' : left % 10 >= 2 && left % 10 <= 4 && (left % 100 < 10 || left % 100 >= 20) ? 'rundy' : 'rund') +
     ' — trzeba zdobywać średnio <b>' + (Math.ceil(gap / left * 10) / 10).toFixed(1).replace('.', ',') + ' pkt na rundę więcej</b> niż ta osoba' + (gap / left > 20 ? ' (więcej, niż daje jedna runda — w praktyce poza zasięgiem)' : '') + '.';
   out.innerHTML = html;
+}
+
+// ---------- sortowanie po rundzie i eksport CSV ----------
+var SORT_RI = null;
+function psSortCmp(rankOf) {
+  return function(a, b) {
+    var ga = psRoundDelta(a, SORT_RI), gb = psRoundDelta(b, SORT_RI);
+    if (ga === null && gb === null) return rankOf[a] - rankOf[b];
+    if (ga === null) return 1;
+    if (gb === null) return -1;
+    return gb - ga || rankOf[a] - rankOf[b];
+  };
+}
+function psSortBy(ri) {
+  SORT_RI = ri < 0 || SORT_RI === ri ? null : ri;
+  PAGE = 0;
+  psRenderTable(true);
+}
+function psCsv() {
+  var R = state.rounds, last = R[R.length - 1], order = psOrder(last);
+  var q = function(v) { v = String(v); return /[";\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+  var rows = [['Miejsce', 'Nick', 'Id parcfer.me'].concat([].concat.apply([], R.map(function(r) { return [r + ' pkt', r + ' miejsce', r + ' w rundzie']; }))).concat(['Suma'])];
+  order.forEach(function(k) {
+    var P = state.participants[k], cur = P[last];
+    var row = [cur ? psPlace(last, cur).txt : '', psName(k), /^u\d+$/.test(k) ? k.slice(1) : ''];
+    R.forEach(function(r, i) { var d = P[r], g = psRoundDelta(k, i); row.push(d ? d.points : '', d ? psPlace(r, d).txt : '', g === null ? '' : g); });
+    row.push(cur ? cur.points : '');
+    rows.push(row);
+  });
+  var csv = '﻿' + rows.map(function(r) { return r.map(q).join(';'); }).join('\r\n') + '\r\n';
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = 'parcferme-ranking-' + SEASON + '-' + (last.match(/R\d+$/) || ['stan'])[0] + '.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function() { URL.revokeObjectURL(a.href); }, 1000);
+  psToast('Pobrano tabelę CSV (' + order.length + ' uczestników)');
 }
 
 function psRenderAll() {

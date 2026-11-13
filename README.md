@@ -12,7 +12,7 @@ Nieoficjalna, fanowska klasyfikacja typerów konkursu [parcfer.me](https://parcf
 
 ## Funkcje
 
-- **Tabela runda po rundzie** — suma punktów, miejsce i przyrost w każdej rundzie, strzałki zmiany miejsca (▲/▼), oznaczenia „↑100” (wejście do TOP 100) i „NOWY”. Trzy widoki: **TOP 100**, **Moja okolica** (±15 miejsc wokół Twojego nicka) i **Wszyscy** (strony po 100 osób). Tabela przewija się we własnym oknie z przyklejonym nagłówkiem.
+- **Tabela runda po rundzie** — suma punktów, miejsce i przyrost w każdej rundzie, strzałki zmiany miejsca (▲/▼), oznaczenia „↑100” (wejście do TOP 100) i „NOWY”. Trzy widoki: **TOP 100**, **Moja okolica** (±15 miejsc wokół Twojego nicka) i **Wszyscy** (strony po 100 osób). Tabela przewija się we własnym oknie z przyklejonym nagłówkiem. Kliknięcie nagłówka rundy sortuje po punktach zdobytych w tej rundzie, a przycisk **⬇ CSV** pobiera całą tabelę (Excel, Arkusze Google).
 - **Wyszukiwarka** po wszystkich uczestnikach; po wpisaniu pełnego nicka przycisk „Pokaż w tabeli” przenosi do jego wiersza.
 - **Twoja pozycja** — po wpisaniu nicka: miejsce, punkty, zmiana miejsca, punkty w rundzie i strata do lidera, podświetlenie w tabeli, „📍 Pokaż mnie” w widoku Wszyscy, przycisk „🔗 Udostępnij” i **kalkulator „ile brakuje”** do P1 / TOP 3 / TOP 10 / TOP 50 / TOP 100 (ile punktów i ile średnio na rundę do końca sezonu; liczba rund sezonu w `data/seasons.json` → `planned_rounds`).
 - **Kafelki rundy** — lider i podium, największy skok w TOP 100, najwięcej punktów w rundzie, aktywność (ile osób zdobyło punkty), rozrzut punktów w TOP 100 oraz lista **TOP 10**.
