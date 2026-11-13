@@ -1,9 +1,16 @@
 name: Wydanie
 
-# Po wypchnięciu tagu vX.Y.Z tworzy wydanie na GitHubie z treścią sekcji tej wersji z CHANGELOG.md.
+# Tworzy wydanie na GitHubie z treścią sekcji danej wersji z CHANGELOG.md:
+# - po wypchnięciu tagu vX.Y.Z,
+# - albo ręcznie: Actions → Wydanie → Run workflow → wpisz wersję (tag powstanie na bieżącym main).
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Wersja, np. v1.1.0 (musi mieć sekcję w CHANGELOG.md)"
+        required: true
 
 permissions:
   contents: write
@@ -17,18 +24,28 @@ jobs:
 
       - name: Notatki z CHANGELOG.md
         id: notes
+        env:
+          TAG: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || github.ref_name }}
         run: |
-          tag="${GITHUB_REF_NAME}"
+          case "$TAG" in v[0-9]*) ;; *) echo "Wersja musi zaczynać się od „v”, np. v1.1.0"; exit 1;; esac
           # sekcja od „## vX.Y.Z” do następnego „## v”
-          awk -v t="## ${tag} " 'index($0, t) == 1 {on=1; next} on && /^## v/ {exit} on {print}' CHANGELOG.md > notes.md
-          if [ ! -s notes.md ]; then echo "Brak sekcji ${tag} w CHANGELOG.md"; exit 1; fi
-          title=$(grep -m1 "^## ${tag} " CHANGELOG.md | sed -E 's/^## (v[^ ]+) \([^)]*\) — (.*)$/\1 — \2/')
+          awk -v t="## ${TAG} " 'index($0, t) == 1 {on=1; next} on && /^## v/ {exit} on {print}' CHANGELOG.md > notes.md
+          if [ ! -s notes.md ]; then echo "Brak sekcji ${TAG} w CHANGELOG.md"; exit 1; fi
+          title=$(grep -m1 "^## ${TAG} " CHANGELOG.md | sed -E 's/^## (v[^ ]+) \([^)]*\) — (.*)$/\1 — \2/')
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
           echo "title=${title}" >> "$GITHUB_OUTPUT"
           cat notes.md
 
       - name: Utwórz wydanie
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.notes.outputs.tag }}
+          TITLE: ${{ steps.notes.outputs.title }}
         run: |
           printf '\n**Strona:** https://patrykw-labs.github.io/parcferme-ranking/\n' >> notes.md
-          gh release create "${GITHUB_REF_NAME}" --title "${{ steps.notes.outputs.title }}" --notes-file notes.md --verify-tag
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            # ręcznie: tag zakładany na commicie, z którego uruchomiono workflow
+            gh release create "$TAG" --title "$TITLE" --notes-file notes.md --target "$GITHUB_SHA"
+          else
+            gh release create "$TAG" --title "$TITLE" --notes-file notes.md --verify-tag
+          fi
