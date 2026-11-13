@@ -66,9 +66,9 @@ Zamiast pobierania można podać `--html zapisana_strona.html` albo `--tsv tabel
 
 ## Nowy sezon
 
-1. Utwórz `data/2027.json` (ten sam format, `"season": 2027`, puste `rounds`).
-2. W `data/seasons.json` dopisz rok do `seasons` i ustaw `default`.
-3. W razie potrzeby dopisz nowe tory w `data/round_names.json`.
+**Automatycznie:** gdy na parcfer.me pojawią się rozliczone typowania kolejnego sezonu, `add_round.py --auto` sam zakłada `data/<rok>.json`, dopisuje rok do `data/seasons.json`, ustawia go jako domyślny i pobiera pierwszą rundę. Poprzedni sezon zostaje dostępny pod `?sezon=<rok>`.
+
+**Do uzupełnienia ręcznie:** liczba rund nowego sezonu w `data/seasons.json` → `planned_rounds` (bez niej kalkulator nie pokazuje, ile rund zostało) oraz ewentualnie nowe tory w `data/round_names.json`.
 
 ## Podgląd lokalny
 

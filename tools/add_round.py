@@ -61,10 +61,36 @@ def next_data(text):
     return json.loads(m.group(1))["props"]["pageProps"] if m else None
 
 
+def contests_of(season, contests=None):
+    contests = contests if contests is not None else next_data(fetch(CONTESTS_URL))["typowania"]
+    out = [c for c in contests if str(c["sezon"]) == str(season)]
+    out.sort(key=lambda c: c["closeAt"])
+    return out
+
+
+def maybe_start_next_season(season):
+    """Gdy parcfer.me ma rozliczone typowania następnego sezonu, zakłada jego plik i ustawia go jako domyślny."""
+    nxt = int(season) + 1
+    path = ROOT / f"data/{nxt}.json"
+    if path.exists():
+        return season
+    done = [c for c in contests_of(nxt) if str(c["wyniki"]).lower() == "true"]
+    if not done:
+        return season
+    path.write_text(json.dumps({"source": URL.format(season=nxt), "season": nxt, "rounds": []}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    sp = ROOT / "data/seasons.json"
+    cfg = json.loads(sp.read_text(encoding="utf-8"))
+    if nxt not in cfg["seasons"]:
+        cfg["seasons"].append(nxt)
+    cfg["default"] = nxt
+    sp.write_text(json.dumps(cfg, ensure_ascii=False) + "\n", encoding="utf-8")
+    print(f"Nowy sezon {nxt}: utworzono {path.relative_to(ROOT)} i ustawiono go jako domyślny")
+    return nxt
+
+
 def auto_round_name(season):
     """Nazwa ostatniej rozliczonej rundy sezonu, np. „Brazylia R20”."""
-    contests = [c for c in next_data(fetch(CONTESTS_URL))["typowania"] if str(c["sezon"]) == str(season)]
-    contests.sort(key=lambda c: c["closeAt"])
+    contests = contests_of(season)
     done = [i for i, c in enumerate(contests) if str(c["wyniki"]).lower() == "true"]
     if not done:
         raise NothingToDo("Brak rozliczonych typowań w sezonie")
@@ -152,6 +178,8 @@ def run():
         ap.error("podaj nazwę rundy albo --auto")
 
     season = a.season or json.loads((ROOT / "data/seasons.json").read_text(encoding="utf-8"))["default"]
+    if a.auto and not a.season:
+        season = maybe_start_next_season(season)
     path = ROOT / f"data/{season}.json"
     d = json.loads(path.read_text(encoding="utf-8"))
 
