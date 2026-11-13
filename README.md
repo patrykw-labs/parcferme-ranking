@@ -4,6 +4,8 @@
 
 <a href="https://www.buymeacoffee.com/patrykw"><img src="https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&amp;emoji=&amp;slug=patrykw&amp;button_colour=FFDD00&amp;font_colour=000000&amp;font_family=Cookie&amp;outline_colour=000000&amp;coffee_colour=ffffff" alt="Buy me a coffee" /></a>
 
+[![Wersja](https://img.shields.io/github/v/release/patrykw-labs/parcferme-ranking?label=wersja)](https://github.com/patrykw-labs/parcferme-ranking/releases) [![Test strony](https://github.com/patrykw-labs/parcferme-ranking/actions/workflows/check-page.yml/badge.svg)](https://github.com/patrykw-labs/parcferme-ranking/actions/workflows/check-page.yml) [![Aktualizacja rankingu](https://github.com/patrykw-labs/parcferme-ranking/actions/workflows/update-ranking.yml/badge.svg)](https://github.com/patrykw-labs/parcferme-ranking/actions/workflows/update-ranking.yml)
+
 Nieoficjalna, fanowska klasyfikacja typerów konkursu [parcfer.me](https://parcfer.me) (F1), runda po rundzie. Ranking aktualizuje się sam po każdym rozliczonym GP.
 
 **Strona:** https://patrykw-labs.github.io/parcferme-ranking/
@@ -34,7 +36,7 @@ Nieoficjalna, fanowska klasyfikacja typerów konkursu [parcfer.me](https://parcf
 
 ## Dane
 
-- `data/<rok>.json` — lista rund (`name`, `date` — dzień rozliczenia, `standings`), w każdej ranking `{ pos, name, points, id }`; `id` to numer użytkownika z parcfer.me. Daty rund sprzed listopada 2026 to dzień po zamknięciu typowania.
+- `data/<rok>.json` — lista rund (`name`, `date` — dzień rozliczenia, `standings`), w każdej ranking `{ pos, name, points, id }`; `id` to numer użytkownika z parcfer.me. Daty rund dodanych przed 13.11.2026 odtworzono jako dzień po zamknięciu typowania; nowe rundy dostają datę pobrania.
 - Zapisane rundy: **Japonia R3** i **Silverstone R9** — pełny ranking odtworzony z kopii strony w Web Archive (10.04 i 16.07.2026), **Spa R10** — TOP 30, **Węgry R11–Singapur R17** — TOP 100, od **USA R18** — pełny ranking wszystkich uczestników. Rund R1–R2 i R4–R8 nie ma. Osoby spoza zapisanej czołówki mają w starszych rundach „> 30” / „> 100”, a przez przerwę w danych (R3 → R9) strona nie pokazuje przyrostu ani strzałek zmiany miejsca.
 - Uczestników rozróżnia `id`, więc powtarzające się nicki („Oskar”, „Oskar (2)”) nie mieszają się między rundami. W rundach do Singapuru R17 `id` dopisano wstecz po nicku (przy powtórzeniach po kolejności, sprawdzonej z ciągłością punktów).
 
@@ -48,12 +50,12 @@ Nieoficjalna, fanowska klasyfikacja typerów konkursu [parcfer.me](https://parcf
 python3 tools/add_round.py "Meksyk R19"
 ```
 
-Zamiast pobierania można podać `--html zapisana_strona.html` albo `--tsv tabela.tsv` (kolumny: pozycja, nick, punkty); `--replace` podmienia ostatnią rundę.
+Zamiast pobierania można podać `--html zapisana_strona.html` albo `--tsv tabela.tsv` (kolumny: pozycja, nick, punkty); `--replace` podmienia ostatnią rundę, a `--date RRRR-MM-DD` ustawia datę rozliczenia.
 
 ## Struktura
 
 - `index.html` — struktura strony; `css/style.css` — wygląd; `js/app.js` — cała logika (czysty HTML + CSS + JS, bez zależności i bez kroku budowania)
-- `data/seasons.json` — lista sezonów i sezon domyślny
+- `data/seasons.json` — lista sezonów, sezon domyślny, liczba rund (`planned_rounds`) i rundy ze sprintem (`sprints`)
 - `data/<rok>.json` — dane sezonu
 - `data/round_names.json` — krótkie nazwy rund (np. „Sao Paulo” → „Brazylia”)
 - `tools/add_round.py` — dopisuje rundę z rankingu parcfer.me (z ponawianiem przy chwilowej awarii strony)
@@ -61,6 +63,10 @@ Zamiast pobierania można podać `--html zapisana_strona.html` albo `--tsv tabel
 - `tools/check_data.py` — sprawdza spójność danych (kolejność, unikalne id, ciągłość punktów każdego gracza)
 - `.github/workflows/update-ranking.yml` — automatyczne pobieranie rund
 - `.github/workflows/check-data.yml` — kontrola danych przy każdej zmianie w `data/` lub `tools/`
+- `.github/workflows/check-page.yml` + `tests/smoke.mjs` — test strony w przeglądarce (Playwright): widoki, historia, pojedynek, CSV, brak błędów JS
+- `.github/workflows/release.yml` — wydanie na GitHubie po wypchnięciu tagu `vX.Y.Z`, z notatkami z `CHANGELOG.md`
+- `.github/dependabot.yml` — cotygodniowe podbijanie wersji akcji GitHub Actions
+- `.github/FUNDING.yml` — przycisk Sponsor (Buy Me a Coffee) na stronie repozytorium
 - `assets/` — baner (`banner.jpg` oraz lżejsze `banner-800/1600/3200` w WebP i JPEG — przeglądarka wybiera rozmiar pod ekran), obrazek podglądu linku (`og.jpg`) i ikony strony
 - `site.webmanifest` — nazwa i ikona przy dodawaniu strony do ekranu głównego telefonu
 
@@ -69,6 +75,18 @@ Zamiast pobierania można podać `--html zapisana_strona.html` albo `--tsv tabel
 **Automatycznie:** gdy na parcfer.me pojawią się rozliczone typowania kolejnego sezonu, `add_round.py --auto` sam zakłada `data/<rok>.json`, dopisuje rok do `data/seasons.json`, ustawia go jako domyślny i pobiera pierwszą rundę. Poprzedni sezon zostaje dostępny pod `?sezon=<rok>`.
 
 **Konfiguracja sezonów** w `data/seasons.json`: `planned_rounds` — liczba rund (dla kalkulatora „ile brakuje”), `sprints` — numery rund z weekendem sprinterskim (oznaczenie ⚡). Na podstawie kalendarzy parcfer.me: 2026 — 23 rundy, sprinty R2, R4, R5, R9, R12, R17; 2027 — 24 rundy, sprinty R1, R3, R4, R7, R8, R10, R14, R21, R23, R24. Przy zmianach w kalendarzu (np. odwołane GP) popraw te liczby; nowe tory dopisz w `data/round_names.json`.
+
+## Wydania
+
+Historia wersji jest w [CHANGELOG.md](CHANGELOG.md). Nowe wydanie: dopisz sekcję `## vX.Y.Z (RRRR-MM-DD) — tytuł` na górze `CHANGELOG.md`, a potem `git tag vX.Y.Z && git push origin vX.Y.Z` — workflow „Wydanie” utworzy wydanie z treścią tej sekcji.
+
+## Test strony lokalnie
+
+```
+cd tests && npm install && npx playwright install chromium && cd ..
+python3 -m http.server 8000 &
+node tests/smoke.mjs http://127.0.0.1:8000/
+```
 
 ## Podgląd lokalny
 

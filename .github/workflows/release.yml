@@ -1,0 +1,34 @@
+name: Wydanie
+
+# Po wypchnięciu tagu vX.Y.Z tworzy wydanie na GitHubie z treścią sekcji tej wersji z CHANGELOG.md.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Notatki z CHANGELOG.md
+        id: notes
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          # sekcja od „## vX.Y.Z” do następnego „## v”
+          awk -v t="## ${tag} " 'index($0, t) == 1 {on=1; next} on && /^## v/ {exit} on {print}' CHANGELOG.md > notes.md
+          if [ ! -s notes.md ]; then echo "Brak sekcji ${tag} w CHANGELOG.md"; exit 1; fi
+          title=$(grep -m1 "^## ${tag} " CHANGELOG.md | sed -E 's/^## (v[^ ]+) \([^)]*\) — (.*)$/\1 — \2/')
+          echo "title=${title}" >> "$GITHUB_OUTPUT"
+          cat notes.md
+
+      - name: Utwórz wydanie
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          printf '\n**Strona:** https://patrykw-labs.github.io/parcferme-ranking/\n' >> notes.md
+          gh release create "${GITHUB_REF_NAME}" --title "${{ steps.notes.outputs.title }}" --notes-file notes.md --verify-tag

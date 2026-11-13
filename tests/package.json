@@ -1,0 +1,9 @@
+{
+  "name": "parcferme-ranking-tests",
+  "private": true,
+  "description": "Test strony w przeglądarce (Playwright) — uruchamiany w GitHub Actions",
+  "type": "module",
+  "devDependencies": {
+    "playwright": "1.65.0"
+  }
+}

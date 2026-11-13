@@ -1,0 +1,33 @@
+name: Test strony
+
+# Po każdej zmianie strony lub danych otwiera ją w przeglądarce (Playwright)
+# i sprawdza widoki, historię, pojedynek, CSV oraz brak błędów JS.
+on:
+  push:
+    paths: ["index.html", "css/**", "js/**", "data/**", "assets/**", "feed.xml", "site.webmanifest", "tests/**", ".github/workflows/check-page.yml"]
+  pull_request:
+    paths: ["index.html", "css/**", "js/**", "data/**", "assets/**", "tests/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Playwright i Chromium
+        working-directory: tests
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Test w przeglądarce
+        run: |
+          python3 -m http.server 8000 >/dev/null 2>&1 &
+          sleep 1
+          NODE_PATH=tests/node_modules node tests/smoke.mjs http://127.0.0.1:8000/
