@@ -43,6 +43,12 @@ button,input{font:inherit;color:inherit}
 .icon-btn{width:38px;height:38px;border-radius:10px;border:1px solid var(--border-strong);background:var(--card);display:grid;place-items:center;cursor:pointer}
 .icon-btn:hover{border-color:var(--accent)}
 .icon-btn svg{width:18px;height:18px}
+.icon-btn.rss{color:#f26522;text-decoration:none}
+.icon-btn.rss:hover{border-color:#f26522}
+.rss-cta{display:inline-flex;align-items:center;gap:10px;margin-top:14px;padding:8px 14px 8px 10px;border-radius:999px;border:1px solid rgba(242,101,34,.45);background:rgba(242,101,34,.10);color:var(--text);text-decoration:none;font-size:13px}
+.rss-cta:hover{background:rgba(242,101,34,.18);border-color:#f26522}
+.rss-cta svg{width:18px;height:18px;flex:none;color:#fff;background:#f26522;border-radius:6px;padding:3px;box-sizing:content-box}
+.rss-cta b{color:#f26522}
 .coffee-btn{display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 16px;border-radius:999px;background:#FFDD00;color:#111;font-weight:700;text-decoration:none;white-space:nowrap;box-shadow:0 4px 14px rgba(255,221,0,.25)}
 .coffee-btn:hover{filter:brightness(1.05)}
 
@@ -140,6 +146,8 @@ h1 em{font-style:normal;background:linear-gradient(90deg,var(--accent-2),var(--a
 .search:focus{outline:2px solid var(--accent);outline-offset:1px}
 .board-head .sp{flex:1}
 th.srt{cursor:pointer;user-select:none}
+.spr{font-size:.95em;margin-left:2px;filter:saturate(1.2)}
+th .spr{font-size:12px}
 th.srt:hover{color:var(--text)}
 th.srt.on{color:var(--accent-2)}
 .tw{overflow:auto;max-height:min(75vh,900px);overscroll-behavior:contain}

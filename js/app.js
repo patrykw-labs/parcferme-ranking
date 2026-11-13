@@ -87,6 +87,11 @@ function psOrder(round) {
   });
 }
 // numer rundy z nazwy („USA R18” → 18) i przerwa w danych (np. Japonia R3 → Silverstone R9)
+// weekendy ze sprintem (numery rund z data/seasons.json → sprints)
+var SPRINTS = [];
+function psIsSprint(r) { return SPRINTS.indexOf(psRoundNo(r)) !== -1; }
+function psRoundLabel(r) { return psEsc(r) + (psIsSprint(r) ? ' <span class="spr" title="Weekend ze sprintem">⚡</span>' : ''); }
+function psRoundText(r) { return r + (psIsSprint(r) ? ' (sprint)' : ''); }
 function psRoundNo(r) { var m = /R(\d+)$/.exec(r); return m ? +m[1] : null; }
 function psGap(ri) {
   var a = psRoundNo(state.rounds[ri - 1]), b = psRoundNo(state.rounds[ri]);
@@ -268,10 +273,11 @@ function psRenderTable(resetScroll) {
   var pg = document.getElementById('ps-pager');
   pg.innerHTML = pager; pg.style.display = pager ? 'flex' : 'none';
 
+  document.getElementById('spr-legend').style.display = state.rounds.some(psIsSprint) ? '' : 'none';
   var head = '<thead><tr><th class="c-name"><span class="rk">#</span><span class="mv"></span>Uczestnik</th>';
   state.rounds.forEach(function(r, ri) {
     var can = ri > 0 && !psGap(ri), on = SORT_RI === ri;
-    head += can ? '<th class="srt' + (on ? ' on' : '') + '" data-sort="' + ri + '" title="' + (on ? 'Wróć do kolejności rankingu' : 'Sortuj po punktach zdobytych w tej rundzie') + '">' + psEsc(r) + (on ? ' ▼' : '') + '</th>' : '<th>' + psEsc(r) + '</th>';
+    head += can ? '<th class="srt' + (on ? ' on' : '') + '" data-sort="' + ri + '" title="' + (on ? 'Wróć do kolejności rankingu' : 'Sortuj po punktach zdobytych w tej rundzie') + '">' + psRoundLabel(r) + (on ? ' ▼' : '') + '</th>' : '<th>' + psRoundLabel(r) + '</th>';
   });
   head += '<th class="srt" data-sort="-1" title="Kolejność rankingu">Suma' + (SORT_RI === null ? ' ▼' : '') + '</th></tr></thead>';
 
@@ -380,11 +386,11 @@ function psOpenHistory(key) {
   // tabela (dostępna wersja danych z wykresu)
   var rows = R.map(function(r, i) {
     var d = P[r];
-    if (!d) return '<tr><td>' + psEsc(r) + '</td><td colspan="3" class="tie">' + (psPartial(r) ? 'poza TOP ' + state.size[r] + ' (z tej rundy mamy tylko czołówkę)' : '—') + '</td></tr>';
+    if (!d) return '<tr><td>' + psRoundLabel(r) + '</td><td colspan="3" class="tie">' + (psPartial(r) ? 'poza TOP ' + state.size[r] + ' (z tej rundy mamy tylko czołówkę)' : '—') + '</td></tr>';
     var g = psStatus(key, i, 'points'), t = psTie(r, d.points);
     var gt = g === null ? '—' : g === 'top' ? '↑ TOP ' + psPrevSize(i) : g === 'new' ? 'nowy' : psSigned(g);
     var hp = psPlace(r, d);
-    return '<tr><td>' + psEsc(r) + '</td><td' + (hp.title ? ' title="' + hp.title + '"' : '') + '>P' + hp.txt + '</td><td><b>' + d.points + '</b></td><td>' + gt + '</td></tr>';
+    return '<tr><td>' + psRoundLabel(r) + '</td><td' + (hp.title ? ' title="' + hp.title + '"' : '') + '>P' + hp.txt + '</td><td><b>' + d.points + '</b></td><td>' + gt + '</td></tr>';
   }).reverse().join('');
   document.getElementById('h-table').innerHTML = '<thead><tr><th>Runda</th><th>Miejsce</th><th>Punkty</th><th>W rundzie</th></tr></thead><tbody>' + rows + '</tbody>';
   document.getElementById('h-actions').innerHTML = cur
@@ -415,7 +421,7 @@ function psDrawChart() {
   svg += '<g class="grid">' + ticks.map(function(t) { return '<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + Y(t) + '" y2="' + Y(t) + '"/>'; }).join('') + '</g>';
   svg += ticks.map(function(t) { return '<text class="ax" x="' + (m.l - 8) + '" y="' + (Y(t) + 4) + '" text-anchor="end">P' + t + '</text>'; }).join('');
   var every = W < 480 && n > 8 ? 2 : 1;
-  svg += R.map(function(r, i) { var lab = (r.match(/R\d+$/) || [r])[0]; return (i % every && i !== n - 1) ? '' : '<text class="ax" x="' + X(i) + '" y="' + (H - 8) + '" text-anchor="middle">' + psEsc(lab) + '</text>'; }).join('');
+  svg += R.map(function(r, i) { var lab = (r.match(/R\d+$/) || [r])[0] + (psIsSprint(r) ? '⚡' : ''); return (i % every && i !== n - 1) ? '' : '<text class="ax" x="' + X(i) + '" y="' + (H - 8) + '" text-anchor="middle">' + psEsc(lab) + '</text>'; }).join('');
   // linia z przerwami tam, gdzie brak danych
   var d = '', pen = false;
   vals.forEach(function(v, i) { if (v === null || (i > 0 && psGap(i))) pen = false; if (v === null) return; d += (pen ? 'L' : 'M') + X(i) + ' ' + Y(v); pen = true; });
@@ -434,7 +440,7 @@ function psDrawChart() {
     var dt = P[R[i]], g = psStatus(HIST, i, 'points');
     cross.setAttribute('x1', X(i)); cross.setAttribute('x2', X(i)); cross.style.display = '';
     var dot = el.querySelector('.dot[data-i="' + i + '"]'); if (dot) dot.classList.add('on');
-    tip.innerHTML = '<b>' + psEsc(R[i]) + '</b><br>' + (dt ? 'P' + psPlace(R[i], dt).txt + ' · ' + dt.points + ' pkt' + (typeof g === 'number' ? ' (' + psSigned(g) + ')' : '') : (psPartial(R[i]) ? 'poza TOP ' + state.size[R[i]] : 'brak danych'));
+    tip.innerHTML = '<b>' + psEsc(psRoundText(R[i])) + '</b><br>' + (dt ? 'P' + psPlace(R[i], dt).txt + ' · ' + dt.points + ' pkt' + (typeof g === 'number' ? ' (' + psSigned(g) + ')' : '') : (psPartial(R[i]) ? 'poza TOP ' + state.size[R[i]] : 'brak danych'));
     tip.style.display = 'block';
     var px = X(i) * rect.width / W, tw = tip.offsetWidth;
     tip.style.left = Math.max(tw / 2, Math.min(rect.width - tw / 2, px)) + 'px';
@@ -502,7 +508,7 @@ function psRenderDuel() {
     if (ga !== null && gb !== null) { if (ga > gb) { wa++; w = '<span class="win"><i style="background:var(--va)"></i>' + psEsc(psName(a)) + '</span>'; } else if (gb > ga) { wb++; w = '<span class="win"><i style="background:var(--vb)"></i>' + psEsc(psName(b)) + '</span>'; } else { tie++; w = 'remis'; } }
     var cell = function(d, g) { return d ? '<b>' + d.points + '</b> <span class="tie">P' + psPlace(r, d).txt + (g !== null ? ' · ' + psSigned(g) : '') + '</span>' : '<span class="tie">' + (psPartial(r) ? '&gt; ' + state.size[r] : '—') + '</span>'; };
     var diff = da && db ? psSigned(da.points - db.points) : '—';
-    return '<tr><td>' + psEsc(r) + '</td><td>' + cell(da, ga) + '</td><td>' + cell(db, gb) + '</td><td>' + diff + '</td><td class="rd2">' + (w || '—') + '</td></tr>';
+    return '<tr><td>' + psRoundLabel(r) + '</td><td>' + cell(da, ga) + '</td><td>' + cell(db, gb) + '</td><td>' + diff + '</td><td class="rd2">' + (w || '—') + '</td></tr>';
   }).reverse().join('');
   var ca = PA[last], cb = PB[last];
   var gap = ca && cb ? ca.points - cb.points : null;
@@ -559,7 +565,7 @@ function psDrawDuel() {
   function show(ev) {
     var rect = el.getBoundingClientRect(), x = (ev.clientX - rect.left) * W / rect.width;
     var i = Math.max(0, Math.min(n - 1, Math.floor((x - m.l) / (iw / n)))), r = R[i], v = g[i];
-    tip.innerHTML = '<b>' + psEsc(r) + '</b><br>' + (v === null ? 'brak danych obu graczy'
+    tip.innerHTML = '<b>' + psEsc(psRoundText(r)) + '</b><br>' + (v === null ? 'brak danych obu graczy'
       : psEsc(psName(DUEL.a)) + ': ' + PA[r].points + ' · ' + psEsc(psName(DUEL.b)) + ': ' + PB[r].points + '<br>' + (v === 0 ? 'remis' : 'prowadzi ' + psEsc(psName(v > 0 ? DUEL.a : DUEL.b)) + ' o ' + Math.abs(v)));
     tip.style.display = 'block';
     var px = X(i) * rect.width / W, tw = tip.offsetWidth;
@@ -607,7 +613,7 @@ function psRenderForm(order) {
   var mi = rows.findIndex(function(r) { return psIsMe(r.k); });
   if (mi >= FORM_TOP) body += '<tr class="gap"><td colspan="' + (FORM_N + 4) + '">⋯</td></tr>' + line(rows[mi], mi);
   document.getElementById('form-table').innerHTML = '<thead><tr><th class="fr">#</th><th class="nm-c">Uczestnik</th>' +
-    idx.map(function(i) { return '<th class="rd">' + psEsc(R[i]) + '</th>'; }).join('') + '<th>Suma ' + FORM_N + ' rund</th><th>Ogólnie</th></tr></thead><tbody>' + body + '</tbody>';
+    idx.map(function(i) { return '<th class="rd">' + psRoundLabel(R[i]) + '</th>'; }).join('') + '<th>Suma ' + FORM_N + ' rund</th><th>Ogólnie</th></tr></thead><tbody>' + body + '</tbody>';
   // rundy bazowe z samą czołówką ograniczają, kogo da się porównać
   var partial = []; for (var j = n - FORM_N - 1; j < n - 1; j++) if (psPartial(R[j])) partial.push(R[j]);
   document.getElementById('form-cap').textContent = (partial.length
@@ -690,7 +696,7 @@ function psCalc() {
   if (left === null) html += '';
   else if (left === 0) html += 'To była ostatnia runda sezonu.';
   else html += 'Zostały <b>' + left + '</b> ' + (left === 1 ? 'runda' : left % 10 >= 2 && left % 10 <= 4 && (left % 100 < 10 || left % 100 >= 20) ? 'rundy' : 'rund') +
-    ' — trzeba zdobywać średnio <b>' + (Math.ceil(gap / left * 10) / 10).toFixed(1).replace('.', ',') + ' pkt na rundę więcej</b> niż ta osoba' + (gap / left > 20 ? ' (więcej, niż daje jedna runda — w praktyce poza zasięgiem)' : '') + '.';
+    ' — trzeba zdobywać średnio <b>' + (Math.ceil(gap / left * 10) / 10).toFixed(1).replace('.', ',') + ' pkt na rundę więcej</b> niż ten gracz' + (gap / left > 20 ? ' (więcej, niż daje jedna runda — w praktyce poza zasięgiem)' : '') + '.';
   out.innerHTML = html;
 }
 
@@ -713,7 +719,7 @@ function psSortBy(ri) {
 function psCsv() {
   var R = state.rounds, last = R[R.length - 1], order = psOrder(last);
   var q = function(v) { v = String(v); return /[";\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
-  var rows = [['Miejsce', 'Nick', 'Id parcfer.me'].concat([].concat.apply([], R.map(function(r) { return [r + ' pkt', r + ' miejsce', r + ' w rundzie']; }))).concat(['Suma'])];
+  var rows = [['Miejsce', 'Nick', 'Id parcfer.me'].concat([].concat.apply([], R.map(function(r) { r = psRoundText(r); return [r + ' pkt', r + ' miejsce', r + ' w rundzie']; }))).concat(['Suma'])];
   order.forEach(function(k) {
     var P = state.participants[k], cur = P[last];
     var row = [cur ? psPlace(last, cur).txt : '', psName(k), /^u\d+$/.test(k) ? k.slice(1) : ''];
@@ -755,6 +761,7 @@ function psRenderAll() {
     var qs = parseInt(new URLSearchParams(location.search).get('sezon'), 10);
     SEASON = idx.seasons.indexOf(qs) !== -1 ? qs : idx['default'];
     PLANNED = idx.planned_rounds && idx.planned_rounds[SEASON] || null;
+    SPRINTS = idx.sprints && idx.sprints[SEASON] || [];
     psBuildSeasonPicker(idx.seasons);
     var json = await (await fetch('data/' + SEASON + '.json', { cache: 'no-cache' })).json();
     document.getElementById('ps-season').textContent = SEASON;

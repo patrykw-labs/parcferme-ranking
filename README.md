@@ -12,7 +12,7 @@ Nieoficjalna, fanowska klasyfikacja typerów konkursu [parcfer.me](https://parcf
 
 ## Funkcje
 
-- **Tabela runda po rundzie** — suma punktów, miejsce i przyrost w każdej rundzie, strzałki zmiany miejsca (▲/▼), oznaczenia „↑100” (wejście do TOP 100) i „NOWY”. Trzy widoki: **TOP 100**, **Moja okolica** (±15 miejsc wokół Twojego nicka) i **Wszyscy** (strony po 100 osób). Tabela przewija się we własnym oknie z przyklejonym nagłówkiem. Kliknięcie nagłówka rundy sortuje po punktach zdobytych w tej rundzie, a przycisk **⬇ CSV** pobiera całą tabelę (Excel, Arkusze Google).
+- **Tabela runda po rundzie** — suma punktów, miejsce i przyrost w każdej rundzie, strzałki zmiany miejsca (▲/▼), oznaczenia „↑100” (wejście do TOP 100) i „NOWY”. Trzy widoki: **TOP 100**, **Moja okolica** (±15 miejsc wokół Twojego nicka) i **Wszyscy** (strony po 100 osób). Tabela przewija się we własnym oknie z przyklejonym nagłówkiem. Rundy z weekendem sprinterskim mają ⚡ (legenda przy tytule tabeli). Kliknięcie nagłówka rundy sortuje po punktach zdobytych w tej rundzie, a przycisk **⬇ CSV** pobiera całą tabelę (Excel, Arkusze Google).
 - **Wyszukiwarka** po wszystkich uczestnikach; po wpisaniu pełnego nicka przycisk „Pokaż w tabeli” przenosi do jego wiersza.
 - **Twoja pozycja** — po wpisaniu nicka: miejsce, punkty, zmiana miejsca, punkty w rundzie i strata do lidera, podświetlenie w tabeli, „📍 Pokaż mnie” w widoku Wszyscy, przycisk „🔗 Udostępnij” i **kalkulator „ile brakuje”** do P1 / TOP 3 / TOP 10 / TOP 50 / TOP 100 (ile punktów i ile średnio na rundę do końca sezonu; liczba rund sezonu w `data/seasons.json` → `planned_rounds`).
 - **Kafelki rundy** — lider i podium, największy skok w TOP 100, najwięcej punktów w rundzie, aktywność (ile osób zdobyło punkty), rozrzut punktów w TOP 100 oraz lista **TOP 10**.
@@ -21,7 +21,7 @@ Nieoficjalna, fanowska klasyfikacja typerów konkursu [parcfer.me](https://parcf
 - **Historia gracza** — kliknięcie dowolnego nicka otwiera wykres miejsca po każdej rundzie i tabelę wszystkich rund (obecne i najlepsze miejsce, średnia punktów na rundę).
 - **Pojedynek** — dwa nicki obok siebie: różnica punktów po każdej rundzie na wykresie, bilans rund i tabela runda po rundzie.
 - **Ex aequo** — przy równej liczbie punktów wspólne miejsce z „=” (np. „2=”) w całej stronie; pełny zakres miejsc w dymku po najechaniu. Strzałki zmian liczone są ze wspólnych miejsc.
-- **Kanał RSS** (`feed.xml`) — wpis po każdej nowej rundzie: lider, TOP 10, największe awanse i aktywność.
+- **Kanał RSS** (`feed.xml`, ikona w górnym pasku i przycisk pod tytułem) — wpis po każdej nowej rundzie: lider, TOP 10, największe awanse i aktywność.
 - **Jasny i ciemny motyw**, wersja na telefon, obsługa klawiaturą (Tab / Enter), ikona i dodawanie do ekranu głównego, podgląd linku (Open Graph) przy udostępnianiu na Messengerze czy Facebooku.
 
 ### Linki
@@ -68,7 +68,7 @@ Zamiast pobierania można podać `--html zapisana_strona.html` albo `--tsv tabel
 
 **Automatycznie:** gdy na parcfer.me pojawią się rozliczone typowania kolejnego sezonu, `add_round.py --auto` sam zakłada `data/<rok>.json`, dopisuje rok do `data/seasons.json`, ustawia go jako domyślny i pobiera pierwszą rundę. Poprzedni sezon zostaje dostępny pod `?sezon=<rok>`.
 
-**Do uzupełnienia ręcznie:** liczba rund nowego sezonu w `data/seasons.json` → `planned_rounds` (bez niej kalkulator nie pokazuje, ile rund zostało) oraz ewentualnie nowe tory w `data/round_names.json`.
+**Konfiguracja sezonów** w `data/seasons.json`: `planned_rounds` — liczba rund (dla kalkulatora „ile brakuje”), `sprints` — numery rund z weekendem sprinterskim (oznaczenie ⚡). Na podstawie kalendarzy parcfer.me: 2026 — 23 rundy, sprinty R2, R4, R5, R9, R12, R17; 2027 — 24 rundy, sprinty R1, R3, R4, R7, R8, R10, R14, R21, R23, R24. Przy zmianach w kalendarzu (np. odwołane GP) popraw te liczby; nowe tory dopisz w `data/round_names.json`.
 
 ## Podgląd lokalny
 

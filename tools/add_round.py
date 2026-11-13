@@ -83,7 +83,7 @@ def maybe_start_next_season(season):
     if nxt not in cfg["seasons"]:
         cfg["seasons"].append(nxt)
     cfg["default"] = nxt
-    sp.write_text(json.dumps(cfg, ensure_ascii=False) + "\n", encoding="utf-8")
+    sp.write_text(json.dumps(cfg, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"Nowy sezon {nxt}: utworzono {path.relative_to(ROOT)} i ustawiono go jako domyślny")
     return nxt
 

@@ -73,13 +73,15 @@ def main():
     season = seasons["default"]
     d = json.loads((ROOT / f"data/{season}.json").read_text(encoding="utf-8"))
     rounds = d["rounds"]
+    sprints = set(seasons.get("sprints", {}).get(str(season), []))
     items = []
     for i in range(len(rounds) - 1, max(-1, len(rounds) - 1 - MAX_ITEMS), -1):
         r = rounds[i]
         prev = rounds[i - 1] if i > 0 else None
         date = datetime.date.fromisoformat(r.get("date", "2026-01-01"))
         pub = email.utils.format_datetime(datetime.datetime(date.year, date.month, date.day, 12, tzinfo=datetime.timezone.utc))
-        title = f"{r['name']} — lider {r['standings'][0]['name']} ({r['standings'][0]['points']} pkt)"
+        sprint = " ⚡ sprint" if round_number(r["name"]) in sprints else ""
+        title = f"{r['name']}{sprint} — lider {r['standings'][0]['name']} ({r['standings'][0]['points']} pkt)"
         guid = f"{SITE}#{season}-{r['name'].replace(' ', '-')}"
         items.append(
             "    <item>\n"

@@ -28,13 +28,16 @@
 // motyw ustawiany przed renderem, żeby nie migał
 (function(){try{var t=localStorage.getItem('parcfer-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
 </script>
-<link rel="stylesheet" href="css/style.css?v=20261113d">
+<link rel="stylesheet" href="css/style.css?v=20261113e">
 </head>
 <body>
 
 <header class="top"><div class="top-in">
   <a class="brand" href="./"><span class="brand-ico">P</span><span>parcferme<span style="color:var(--accent-2)">.</span>ranking</span></a>
   <div class="top-sp"></div>
+  <a class="icon-btn rss" href="feed.xml" title="Kanał RSS — powiadomienie o każdej nowej rundzie" aria-label="Kanał RSS z nowymi rundami">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 11a8 8 0 0 1 8 8"/><path d="M5 4a15 15 0 0 1 15 15"/><circle cx="6" cy="18" r="1.6" fill="currentColor" stroke="none"/></svg>
+  </a>
   <button class="icon-btn" id="theme-btn" type="button" aria-label="Przełącz jasny/ciemny motyw" title="Jasny / ciemny motyw" onclick="psToggleTheme()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
   </button>
@@ -46,6 +49,10 @@
   <h1>Klasyfikacja <em>typerów F1 <span id="ps-season"></span></em></h1>
   <p class="lead" id="ps-subtitle">Ładowanie…</p>
   <div class="seasons" id="ps-seasons"></div>
+  <a class="rss-cta" href="feed.xml" title="Dodaj ten adres do czytnika RSS (np. Feedly, Inoreader)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M5 11a8 8 0 0 1 8 8"/><path d="M5 4a15 15 0 0 1 15 15"/><circle cx="6" cy="18" r="1.6" fill="currentColor" stroke="none"/></svg>
+    <span><b>Subskrybuj RSS</b> — powiadomienie o każdej nowej rundzie</span>
+  </a>
 
   <a class="banner" data-goatcounter-click="buymeacoffee-banner" data-goatcounter-title="Klik: baner Buy me a coffee" href="https://www.buymeacoffee.com/patrykw" target="_blank" rel="noopener"><picture>
     <source type="image/webp" srcset="assets/banner-800.webp 800w, assets/banner-1600.webp 1600w, assets/banner-3200.webp 3200w" sizes="(max-width: 1100px) calc(100vw - 32px), 1068px">
@@ -103,7 +110,7 @@
 
   <section class="card board">
     <div class="board-head">
-      <h2>Tabela runda po rundzie</h2>
+      <h2>Tabela runda po rundzie <span class="chip gold" id="spr-legend" title="Rundy z weekendem sprinterskim">⚡ weekend ze sprintem</span></h2>
       <div class="sp"></div>
       <div class="seg" role="tablist">
         <button type="button" id="seg-top" class="on" onclick="psSetView('top')">TOP 100</button>
@@ -136,10 +143,10 @@
   </dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <div class="note"><b>Nieoficjalne zestawienie fanowskie.</b> Źródło danych: publiczny ranking <a href="https://parcfer.me" target="_blank" rel="noopener">parcfer.me</a>. <span id="ps-asof"></span> Kliknij nick, żeby zobaczyć historię gracza na wykresie. W komórce: punkty łącznie, a pod spodem miejsce w danej rundzie i przyrost punktów. Strzałka obok pozycji to zmiana miejsca względem poprzedniej rundy; „↑100” oznacza wejście do TOP 100, „NOWY” — nowego uczestnika. Zapisane rundy: Japonia R3 i Silverstone R9 — pełny ranking (z kopii w Web Archive), Spa R10 — TOP 30, Węgry R11–Singapur R17 — TOP 100, od USA R18 — pełny ranking. Rund R1–R2 i R4–R8 nie mamy, więc przy Silverstone R9 nie ma przyrostu ani strzałek (to zmiana z kilku rund), a osoby spoza zapisanej czołówki mają „&gt; 30” lub „&gt; 100”. „=” przy miejscu oznacza ex aequo — osoby z tą samą liczbą punktów mają wspólne miejsce (pełny zakres miejsc widać po najechaniu). Kolejność wewnątrz remisu jest jak na parcfer.me. Gdy nick się powtarza, kolejne osoby oznaczono „(2)” według miejsca w rankingu. Nowe rundy możesz śledzić przez <a href="feed.xml">kanał RSS</a>. Strona zbiera anonimowe statystyki odwiedzin (<a href="https://www.goatcounter.com" target="_blank" rel="noopener">GoatCounter</a>, bez cookies).</div>
+  <div class="note"><b>Nieoficjalne zestawienie fanowskie.</b> Źródło danych: publiczny ranking <a href="https://parcfer.me" target="_blank" rel="noopener">parcfer.me</a>. <span id="ps-asof"></span> Kliknij nick, żeby zobaczyć historię gracza na wykresie. W komórce: punkty łącznie, a pod spodem miejsce w danej rundzie i przyrost punktów. Strzałka obok pozycji to zmiana miejsca względem poprzedniej rundy; „↑100” oznacza wejście do TOP 100, „NOWY” — nowego uczestnika. Zapisane rundy: Japonia R3 i Silverstone R9 — pełny ranking (z kopii w Web Archive), Spa R10 — TOP 30, Węgry R11–Singapur R17 — TOP 100, od USA R18 — pełny ranking. Rund R1–R2 i R4–R8 nie mamy, więc przy Silverstone R9 nie ma przyrostu ani strzałek (to zmiana z kilku rund), a osoby spoza zapisanej czołówki mają „&gt; 30” lub „&gt; 100”. ⚡ przy nazwie rundy oznacza weekend ze sprintem. „=” przy miejscu oznacza ex aequo — osoby z tą samą liczbą punktów mają wspólne miejsce (pełny zakres miejsc widać po najechaniu). Kolejność wewnątrz remisu jest jak na parcfer.me. Gdy nick się powtarza, kolejne osoby oznaczono „(2)” według miejsca w rankingu. Nowe rundy możesz śledzić przez <a href="feed.xml">kanał RSS</a>. Strona zbiera anonimowe statystyki odwiedzin (<a href="https://www.goatcounter.com" target="_blank" rel="noopener">GoatCounter</a>, bez cookies).</div>
 </main>
 
-<script src="js/app.js?v=20261113d"></script>
+<script src="js/app.js?v=20261113e"></script>
 <script data-goatcounter="https://parcferme.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </body>
 </html>
