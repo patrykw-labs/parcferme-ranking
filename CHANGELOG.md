@@ -21,6 +21,7 @@ Format: każda wersja to nagłówek `## vX.Y.Z (RRRR-MM-DD) — tytuł`. Workflo
 - Ikona strony i dodawanie do ekranu głównego telefonu; obsługa klawiaturą (Tab / Enter).
 - Lżejszy baner — na telefonie ok. 20–60 KB zamiast 360 KB.
 - Kolor medalu na podium wg miejsca (remis „2=” — oba srebrne).
+- Nowy baner i obrazek podglądu linku — „wszyscy typerzy” zamiast „TOP 100”.
 
 ### Pod spodem
 - Style i skrypt w osobnych plikach (`css/style.css`, `js/app.js`).
