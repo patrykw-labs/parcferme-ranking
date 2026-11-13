@@ -78,7 +78,7 @@ Zamiast pobierania można podać `--html zapisana_strona.html` albo `--tsv tabel
 
 ## Wydania
 
-Historia wersji jest w [CHANGELOG.md](CHANGELOG.md). Nowe wydanie: dopisz sekcję `## vX.Y.Z (RRRR-MM-DD) — tytuł` na górze `CHANGELOG.md`, a potem albo `git tag vX.Y.Z && git push origin vX.Y.Z`, albo w zakładce Actions → „Wydanie” → Run workflow wpisz wersję (tag powstanie na bieżącym `main`). Workflow utworzy wydanie z treścią tej sekcji.
+Historia wersji jest w [CHANGELOG.md](CHANGELOG.md). Nowe wydanie: dopisz na górze `CHANGELOG.md` sekcję `## vX.Y.Z (RRRR-MM-DD) — tytuł` i wypchnij na `main` — workflow „Wydanie” sam zauważy wersję bez tagu, założy tag i utworzy wydanie z treścią tej sekcji. Działa też wypchnięcie tagu `vX.Y.Z` albo ręczne uruchomienie (Actions → „Wydanie” → Run workflow, pole wersji).
 
 ## Test strony lokalnie
 

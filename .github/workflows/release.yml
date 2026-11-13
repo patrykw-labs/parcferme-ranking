@@ -1,10 +1,13 @@
 name: Wydanie
 
 # Tworzy wydanie na GitHubie z treścią sekcji danej wersji z CHANGELOG.md:
+# - automatycznie: push na main zmieniający CHANGELOG.md, gdy najwyższa wersja w CHANGELOG nie ma jeszcze tagu,
 # - po wypchnięciu tagu vX.Y.Z,
-# - albo ręcznie: Actions → Wydanie → Run workflow → wpisz wersję (tag powstanie na bieżącym main).
+# - ręcznie: Actions → Wydanie → Run workflow → wpisz wersję (tag powstanie na bieżącym main).
 on:
   push:
+    branches: [main]
+    paths: ["CHANGELOG.md"]
     tags: ["v*"]
   workflow_dispatch:
     inputs:
@@ -15,6 +18,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -22,11 +29,22 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Notatki z CHANGELOG.md
+      - name: Wersja i notatki z CHANGELOG.md
         id: notes
         env:
-          TAG: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || github.ref_name }}
+          GH_TOKEN: ${{ github.token }}
+          INPUT: ${{ github.event.inputs.version }}
         run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then TAG="$INPUT"
+          elif [ "${{ github.ref_type }}" = "tag" ]; then TAG="${{ github.ref_name }}"
+          else
+            # push na main: najwyższa (pierwsza) wersja w CHANGELOG.md
+            TAG=$(grep -m1 -oE '^## v[0-9]+\.[0-9]+\.[0-9]+' CHANGELOG.md | sed 's/^## //')
+            if [ -z "$TAG" ]; then echo "Brak wersji w CHANGELOG.md"; exit 0; fi
+            if gh release view "$TAG" >/dev/null 2>&1 || git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+              echo "Wersja $TAG już wydana — nic do zrobienia."; echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0
+            fi
+          fi
           case "$TAG" in v[0-9]*) ;; *) echo "Wersja musi zaczynać się od „v”, np. v1.1.0"; exit 1;; esac
           # sekcja od „## vX.Y.Z” do następnego „## v”
           awk -v t="## ${TAG} " 'index($0, t) == 1 {on=1; next} on && /^## v/ {exit} on {print}' CHANGELOG.md > notes.md
@@ -37,15 +55,16 @@ jobs:
           cat notes.md
 
       - name: Utwórz wydanie
+        if: steps.notes.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.notes.outputs.tag }}
           TITLE: ${{ steps.notes.outputs.title }}
         run: |
           printf '\n**Strona:** https://patrykw-labs.github.io/parcferme-ranking/\n' >> notes.md
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            # ręcznie: tag zakładany na commicie, z którego uruchomiono workflow
-            gh release create "$TAG" --title "$TITLE" --notes-file notes.md --target "$GITHUB_SHA"
-          else
+          if [ "${{ github.ref_type }}" = "tag" ]; then
             gh release create "$TAG" --title "$TITLE" --notes-file notes.md --verify-tag
+          else
+            # push na main albo ręcznie: tag zakładany na commicie, z którego uruchomiono workflow
+            gh release create "$TAG" --title "$TITLE" --notes-file notes.md --target "$GITHUB_SHA"
           fi
