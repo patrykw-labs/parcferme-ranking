@@ -82,6 +82,11 @@ def parse_tsv(text):
     return rows
 
 
+def round_number(name):
+    m = re.search(r"R(\d+)$", name or "")
+    return int(m.group(1)) if m else None
+
+
 def keyed(standings):
     """Klucz uczestnika: id z parcfer.me, a bez id (stare dane, --tsv) nick z sufiksem „ (2)” wg kolejności."""
     seen, out = {}, {}
@@ -174,16 +179,25 @@ def run():
     elif a.replace:
         sys.exit(f"Nie ma rundy {a.round!r} do podmiany")
 
-    prev = keyed(d["rounds"][-1]["standings"]) if d["rounds"] else {}
-    if prev:
-        new = keyed(standings)
-        cut = len(d["rounds"][-1]["standings"])
+    # miejsce wstawienia wg numeru rundy (R3 trafi przed R10), domyślnie na koniec
+    num = round_number(a.round)
+    at = len(d["rounds"])
+    if num is not None:
+        at = next((i for i, r in enumerate(d["rounds"]) if (round_number(r["name"]) or 0) > num), at)
+    before = d["rounds"][at - 1] if at > 0 else None
+    after = d["rounds"][at] if at < len(d["rounds"]) else None
+
+    new = keyed(standings)
+    if before:
+        prev = keyed(before["standings"])
+        gap = max(1, (num or 0) - (round_number(before["name"]) or 0)) if num else 1
+        cut = len(before["standings"])
         if all(prev.get(k) and prev[k]["points"] == s["points"] for k, s in list(new.items())[:cut]):
             msg = "ranking identyczny jak w poprzedniej rundzie — parcfer.me jeszcze nie przeliczył punktów"
             if a.auto:
                 raise NothingToDo(msg)
             sys.exit(msg[0].upper() + msg[1:])
-        odd = [(s["name"], s["points"] - prev[k]["points"]) for k, s in new.items() if k in prev and not 0 <= s["points"] - prev[k]["points"] <= 25]
+        odd = [(s["name"], s["points"] - prev[k]["points"]) for k, s in new.items() if k in prev and not 0 <= s["points"] - prev[k]["points"] <= 25 * gap]
         if odd:
             if a.auto:
                 sys.exit(f"Nietypowe przyrosty punktów, przerywam: {odd[:20]}")
@@ -191,8 +205,15 @@ def run():
         top_new = [s["name"] for k, s in new.items() if s["pos"] <= 100 and k not in prev]
         print("Nowi w TOP 100:", top_new)
         print("Nowi uczestnicy:", [s["name"] for k, s in new.items() if k not in prev and s["pos"] > 100][:20])
+    if after:
+        # wstawiana starsza runda: punkty nie mogą przewyższać punktów z następnej rundy
+        nxt = keyed(after["standings"])
+        gap = max(1, (round_number(after["name"]) or 0) - (num or 0)) if num else 1
+        odd = [(s["name"], nxt[k]["points"] - s["points"]) for k, s in new.items() if k in nxt and not 0 <= nxt[k]["points"] - s["points"] <= 25 * gap]
+        if odd:
+            sys.exit(f"Niespójne z następną rundą {after['name']}: {odd[:20]}")
 
-    d["rounds"].append({"name": a.round, "standings": standings})
+    d["rounds"].insert(at, {"name": a.round, "standings": standings})
     write(path, d)
     print(f"Zapisano {a.round}: {len(standings)} uczestników → {path.relative_to(ROOT)}")
 
