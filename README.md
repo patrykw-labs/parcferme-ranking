@@ -20,6 +20,7 @@ Nieoficjalna, fanowska klasyfikacja typerów konkursu [parcfer.me](https://parcf
 - **Historia gracza** — kliknięcie dowolnego nicka otwiera wykres miejsca po każdej rundzie i tabelę wszystkich rund (obecne i najlepsze miejsce, średnia punktów na rundę).
 - **Pojedynek** — dwa nicki obok siebie: różnica punktów po każdej rundzie na wykresie, bilans rund i tabela runda po rundzie.
 - **Ex aequo** — przy równej liczbie punktów wspólne miejsce z „=” (np. „2=”) w całej stronie; pełny zakres miejsc w dymku po najechaniu. Strzałki zmian liczone są ze wspólnych miejsc.
+- **Kanał RSS** (`feed.xml`) — wpis po każdej nowej rundzie: lider, TOP 10, największe awanse i aktywność.
 - **Jasny i ciemny motyw**, wersja na telefon, obsługa klawiaturą (Tab / Enter), ikona i dodawanie do ekranu głównego, podgląd linku (Open Graph) przy udostępnianiu na Messengerze czy Facebooku.
 
 ### Linki
@@ -32,7 +33,7 @@ Nieoficjalna, fanowska klasyfikacja typerów konkursu [parcfer.me](https://parcf
 
 ## Dane
 
-- `data/<rok>.json` — lista rund, w każdej ranking `{ pos, name, points, id }`; `id` to numer użytkownika z parcfer.me.
+- `data/<rok>.json` — lista rund (`name`, `date` — dzień rozliczenia, `standings`), w każdej ranking `{ pos, name, points, id }`; `id` to numer użytkownika z parcfer.me. Daty rund sprzed listopada 2026 to dzień po zamknięciu typowania.
 - Zapisane rundy: **Japonia R3** i **Silverstone R9** — pełny ranking odtworzony z kopii strony w Web Archive (10.04 i 16.07.2026), **Spa R10** — TOP 30, **Węgry R11–Singapur R17** — TOP 100, od **USA R18** — pełny ranking wszystkich uczestników. Rund R1–R2 i R4–R8 nie ma. Osoby spoza zapisanej czołówki mają w starszych rundach „> 30” / „> 100”, a przez przerwę w danych (R3 → R9) strona nie pokazuje przyrostu ani strzałek zmiany miejsca.
 - Uczestników rozróżnia `id`, więc powtarzające się nicki („Oskar”, „Oskar (2)”) nie mieszają się między rundami. W rundach do Singapuru R17 `id` dopisano wstecz po nicku (przy powtórzeniach po kolejności, sprawdzonej z ciągłością punktów).
 
@@ -55,6 +56,7 @@ Zamiast pobierania można podać `--html zapisana_strona.html` albo `--tsv tabel
 - `data/<rok>.json` — dane sezonu
 - `data/round_names.json` — krótkie nazwy rund (np. „Sao Paulo” → „Brazylia”)
 - `tools/add_round.py` — dopisuje rundę z rankingu parcfer.me (z ponawianiem przy chwilowej awarii strony)
+- `tools/build_feed.py` — buduje kanał RSS `feed.xml` (uruchamiany automatycznie po dodaniu rundy)
 - `tools/check_data.py` — sprawdza spójność danych (kolejność, unikalne id, ciągłość punktów każdego gracza)
 - `.github/workflows/update-ranking.yml` — automatyczne pobieranie rund
 - `.github/workflows/check-data.yml` — kontrola danych przy każdej zmianie w `data/` lub `tools/`

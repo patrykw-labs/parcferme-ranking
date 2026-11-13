@@ -2,7 +2,7 @@
   "source": "https://parcfer.me/typowanie-ranking/2026",
   "season": 2026,
   "rounds": [
-    {"name": "Japonia R3", "standings": [
+    {"name": "Japonia R3", "date": "2026-03-29", "standings": [
       {"pos": 1, "name": "Anna", "points": 34, "id": 7799},
       {"pos": 2, "name": "IceMan0", "points": 34, "id": 2125},
       {"pos": 3, "name": "Kapexis", "points": 32, "id": 3333},
@@ -796,7 +796,7 @@
       {"pos": 791, "name": "Łysy", "points": 2, "id": 8730},
       {"pos": 792, "name": "Hedos", "points": 1, "id": 6194}
     ]},
-    {"name": "Silverstone R9", "standings": [
+    {"name": "Silverstone R9", "date": "2026-07-04", "standings": [
       {"pos": 1, "name": "Arek", "points": 93, "id": 187},
       {"pos": 2, "name": "igordzie", "points": 93, "id": 5971},
       {"pos": 3, "name": "Agnieszka", "points": 92, "id": 9758},
@@ -1635,7 +1635,7 @@
       {"pos": 836, "name": "Łysy", "points": 2, "id": 8730},
       {"pos": 837, "name": "Hedos", "points": 1, "id": 6194}
     ]},
-    {"name": "Spa R10", "standings": [
+    {"name": "Spa R10", "date": "2026-07-19", "standings": [
       {"pos": 1, "name": "Kapexis", "points": 105, "id": 3333},
       {"pos": 2, "name": "TomiLi", "points": 105, "id": 6686},
       {"pos": 3, "name": "igordzie", "points": 105, "id": 5971},
@@ -1667,7 +1667,7 @@
       {"pos": 29, "name": "Pat", "points": 94, "id": 9994},
       {"pos": 30, "name": "Sinesizzu", "points": 94, "id": 2730}
     ]},
-    {"name": "Węgry R11", "standings": [
+    {"name": "Węgry R11", "date": "2026-07-26", "standings": [
       {"pos": 1, "name": "TomiLi", "points": 112, "id": 6686},
       {"pos": 2, "name": "igordzie", "points": 111, "id": 5971},
       {"pos": 3, "name": "Arek", "points": 110, "id": 187},
@@ -1769,7 +1769,7 @@
       {"pos": 99, "name": "Aśka", "points": 89, "id": 5442},
       {"pos": 100, "name": "Bezzenzu", "points": 89, "id": 565}
     ]},
-    {"name": "Zandvoort R12", "standings": [
+    {"name": "Zandvoort R12", "date": "2026-08-22", "standings": [
       {"pos": 1, "name": "Kapexis", "points": 123, "id": 3333},
       {"pos": 2, "name": "TomiLi", "points": 123, "id": 6686},
       {"pos": 3, "name": "igordzie", "points": 122, "id": 5971},
@@ -1871,7 +1871,7 @@
       {"pos": 99, "name": "Bvrtollini", "points": 97, "id": 24},
       {"pos": 100, "name": "Daniel", "points": 97, "id": 2678}
     ]},
-    {"name": "Monza R13", "standings": [
+    {"name": "Monza R13", "date": "2026-09-06", "standings": [
       {"pos": 1, "name": "Kapexis", "points": 131, "id": 3333},
       {"pos": 2, "name": "igordzie", "points": 131, "id": 5971},
       {"pos": 3, "name": "Adam", "points": 129, "id": 2552},
@@ -1973,7 +1973,7 @@
       {"pos": 99, "name": "Bezzenzu", "points": 104, "id": 565},
       {"pos": 100, "name": "Daniel", "points": 104, "id": 2678}
     ]},
-    {"name": "Madryt R14", "standings": [
+    {"name": "Madryt R14", "date": "2026-09-13", "standings": [
       {"pos": 1, "name": "igordzie", "points": 142, "id": 5971},
       {"pos": 2, "name": "Kapexis", "points": 140, "id": 3333},
       {"pos": 3, "name": "Adam", "points": 139, "id": 2552},
@@ -2075,7 +2075,7 @@
       {"pos": 99, "name": "kuligkrystian11", "points": 112, "id": 12084},
       {"pos": 100, "name": "Bezzenzu", "points": 111, "id": 565}
     ]},
-    {"name": "Baku R15", "standings": [
+    {"name": "Baku R15", "date": "2026-09-26", "standings": [
       {"pos": 1, "name": "igordzie", "points": 155, "id": 5971},
       {"pos": 2, "name": "adekf1", "points": 152, "id": 6647},
       {"pos": 3, "name": "Kapexis", "points": 151, "id": 3333},
@@ -2177,7 +2177,7 @@
       {"pos": 99, "name": "Mario", "points": 119, "id": 10546},
       {"pos": 100, "name": "Swiatlowstret", "points": 119, "id": 9776}
     ]},
-    {"name": "Malezja R16", "standings": [
+    {"name": "Malezja R16", "date": "2026-10-04", "standings": [
       {"pos": 1, "name": "igordzie", "points": 163, "id": 5971},
       {"pos": 2, "name": "Adam", "points": 161, "id": 2552},
       {"pos": 3, "name": "Kapexis", "points": 159, "id": 3333},
@@ -2279,7 +2279,7 @@
       {"pos": 99, "name": "gajewski", "points": 128, "id": 11103},
       {"pos": 100, "name": "Bezzenzu", "points": 127, "id": 565}
     ]},
-    {"name": "Singapur R17", "standings": [
+    {"name": "Singapur R17", "date": "2026-10-10", "standings": [
       {"pos": 1, "name": "Kapexis", "points": 176, "id": 3333},
       {"pos": 2, "name": "TomiLi", "points": 173, "id": 6686},
       {"pos": 3, "name": "Elliv", "points": 172, "id": 8192},
@@ -2381,7 +2381,7 @@
       {"pos": 99, "name": "Tomek2805", "points": 137, "id": 6895},
       {"pos": 100, "name": "FrozeN", "points": 136, "id": 3439}
     ]},
-    {"name": "USA R18", "standings": [
+    {"name": "USA R18", "date": "2026-10-25", "standings": [
       {"pos": 1, "name": "Kapexis", "points": 184, "id": 3333},
       {"pos": 2, "name": "Elliv", "points": 183, "id": 8192},
       {"pos": 3, "name": "igordzie", "points": 183, "id": 5971},
@@ -3245,7 +3245,7 @@
       {"pos": 861, "name": "Łysy", "points": 2, "id": 8730},
       {"pos": 862, "name": "Hedos", "points": 1, "id": 6194}
     ]},
-    {"name": "Meksyk R19", "standings": [
+    {"name": "Meksyk R19", "date": "2026-11-01", "standings": [
       {"pos": 1, "name": "Elliv", "points": 191, "id": 8192},
       {"pos": 2, "name": "Lukiduki", "points": 191, "id": 5869},
       {"pos": 3, "name": "igordzie", "points": 191, "id": 5971},
@@ -4110,7 +4110,7 @@
       {"pos": 862, "name": "Łysy", "points": 2, "id": 8730},
       {"pos": 863, "name": "Hedos", "points": 1, "id": 6194}
     ]},
-    {"name": "Brazylia R20", "standings": [
+    {"name": "Brazylia R20", "date": "2026-11-08", "standings": [
       {"pos": 1, "name": "Elliv", "points": 203, "id": 8192},
       {"pos": 2, "name": "Lukiduki", "points": 200, "id": 5869},
       {"pos": 3, "name": "igordzie", "points": 200, "id": 5971},

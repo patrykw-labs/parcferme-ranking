@@ -17,6 +17,7 @@ Ranking na parcfer.me pokazuje tylko stan bieżący, więc rundę trzeba pobrać
 po jej przeliczeniu, a przed kolejnym GP.
 """
 import argparse
+import datetime
 import html
 import json
 import re
@@ -27,6 +28,8 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import build_feed  # noqa: E402  (kanał RSS odświeżany po każdej nowej rundzie)
 URL = "https://parcfer.me/typowanie-ranking/{season}"
 CONTESTS_URL = "https://parcfer.me/typowanie"
 
@@ -118,7 +121,8 @@ def keyed(standings):
 def write(path, d):
     out = ["{", f'  "source": {json.dumps(d["source"], ensure_ascii=False)},', f'  "season": {d["season"]},', '  "rounds": [']
     for i, rnd in enumerate(d["rounds"]):
-        out.append(f'    {{"name": {json.dumps(rnd["name"], ensure_ascii=False)}, "standings": [')
+        date = f', "date": {json.dumps(rnd["date"])}' if rnd.get("date") else ""
+        out.append(f'    {{"name": {json.dumps(rnd["name"], ensure_ascii=False)}{date}, "standings": [')
         n = len(rnd["standings"])
         out += ["      " + json.dumps(s, ensure_ascii=False) + ("," if j < n - 1 else "") for j, s in enumerate(rnd["standings"])]
         out.append("    ]}" + ("," if i < len(d["rounds"]) - 1 else ""))
@@ -142,6 +146,7 @@ def run():
     src.add_argument("--html")
     src.add_argument("--tsv")
     ap.add_argument("--replace", action="store_true", help="podmień istniejącą rundę o tej nazwie")
+    ap.add_argument("--date", help="data rozliczenia rundy RRRR-MM-DD (domyślnie dziś)")
     a = ap.parse_args()
     if bool(a.round) == a.auto:
         ap.error("podaj nazwę rundy albo --auto")
@@ -228,8 +233,9 @@ def run():
         if odd:
             sys.exit(f"Niespójne z następną rundą {after['name']}: {odd[:20]}")
 
-    d["rounds"].insert(at, {"name": a.round, "standings": standings})
+    d["rounds"].insert(at, {"name": a.round, "date": a.date or datetime.date.today().isoformat(), "standings": standings})
     write(path, d)
+    build_feed.main()
     print(f"Zapisano {a.round}: {len(standings)} uczestników → {path.relative_to(ROOT)}")
 
 
