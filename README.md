@@ -33,12 +33,12 @@ Nieoficjalna, fanowska klasyfikacja typerów konkursu [parcfer.me](https://parcf
 ## Dane
 
 - `data/<rok>.json` — lista rund, w każdej ranking `{ pos, name, points, id }`; `id` to numer użytkownika z parcfer.me.
-- Spa R10: zapisany TOP 30, od Węgier R11 do Singapuru R17: TOP 100, od USA R18: pełny ranking wszystkich uczestników. Osoby spoza zapisanej czołówki mają w starszych rundach „> 30” / „> 100”.
+- Zapisane rundy: **Japonia R3** i **Silverstone R9** — pełny ranking odtworzony z kopii strony w Web Archive (10.04 i 16.07.2026), **Spa R10** — TOP 30, **Węgry R11–Singapur R17** — TOP 100, od **USA R18** — pełny ranking wszystkich uczestników. Rund R1–R2 i R4–R8 nie ma. Osoby spoza zapisanej czołówki mają w starszych rundach „> 30” / „> 100”, a przez przerwę w danych (R3 → R9) strona nie pokazuje przyrostu ani strzałek zmiany miejsca.
 - Uczestników rozróżnia `id`, więc powtarzające się nicki („Oskar”, „Oskar (2)”) nie mieszają się między rundami. W rundach do Singapuru R17 `id` dopisano wstecz po nicku (przy powtórzeniach po kolejności, sprawdzonej z ciągłością punktów).
 
 ## Aktualizacja po rundzie
 
-**Automatycznie:** workflow `.github/workflows/update-ranking.yml` co 3 godziny uruchamia `python3 tools/add_round.py --auto`. Skrypt sprawdza na parcfer.me ostatnie rozliczone typowanie sezonu (numer rundy = kolejność typowania w sezonie, nazwa z `data/round_names.json`), a gdy ranking jest już przeliczony — dopisuje rundę, robi commit i zleca publikację na Pages. Nietypowe dane (spadek punktów, przyrost ponad 25) przerywają z błędem. Ręcznie: zakładka Actions → „Aktualizacja rankingu” → Run workflow.
+**Automatycznie:** workflow `.github/workflows/update-ranking.yml` co 3 godziny uruchamia `python3 tools/add_round.py --auto`. Skrypt sprawdza na parcfer.me ostatnie rozliczone typowanie sezonu (numer rundy = kolejność typowania w sezonie, nazwa z `data/round_names.json`), a gdy ranking jest już przeliczony — dopisuje rundę, robi commit i zleca publikację na Pages. Nietypowe dane (spadek punktów, przyrost ponad 25 na rundę) przerywają z błędem. Rundę starszą niż ostatnia skrypt wstawia na właściwe miejsce wg numeru (R3 przed R9) i sprawdza z rundami po obu stronach. Ręcznie: zakładka Actions → „Aktualizacja rankingu” → Run workflow.
 
 **Ręcznie:** po przeliczeniu punktów na parcfer.me, a przed kolejnym GP (strona pokazuje tylko stan bieżący):
 

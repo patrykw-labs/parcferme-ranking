@@ -374,7 +374,7 @@ dialog.hist::backdrop{background:rgba(5,10,20,.6);backdrop-filter:blur(2px)}
   </dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <div class="note"><b>Nieoficjalne zestawienie fanowskie.</b> Źródło danych: publiczny ranking <a href="https://parcfer.me" target="_blank" rel="noopener">parcfer.me</a> (TOP 100 po każdej rundzie). <span id="ps-asof"></span> Kliknij nick, żeby zobaczyć historię gracza na wykresie. W komórce: punkty łącznie, a pod spodem miejsce w danej rundzie i przyrost punktów. Strzałka obok pozycji to zmiana miejsca względem poprzedniej rundy; „↑100” oznacza wejście do TOP 100, „NOWY” — nowego uczestnika. Ze starszych rund mamy tylko czołówkę (Spa R10: TOP 30, do Singapuru R17: TOP 100), więc osoby spoza niej mają tam „&gt; 30” lub „&gt; 100”. Od USA R18 zapisujemy pełny ranking. „=” przy miejscu oznacza ex aequo — osoby z tą samą liczbą punktów mają wspólne miejsce (pełny zakres miejsc widać po najechaniu). Kolejność wewnątrz remisu jest jak na parcfer.me. Gdy nick się powtarza, kolejne osoby oznaczono „(2)” według kolejności w rankingu. Strona zbiera anonimowe statystyki odwiedzin (<a href="https://www.goatcounter.com" target="_blank" rel="noopener">GoatCounter</a>, bez cookies).</div>
+  <div class="note"><b>Nieoficjalne zestawienie fanowskie.</b> Źródło danych: publiczny ranking <a href="https://parcfer.me" target="_blank" rel="noopener">parcfer.me</a>. <span id="ps-asof"></span> Kliknij nick, żeby zobaczyć historię gracza na wykresie. W komórce: punkty łącznie, a pod spodem miejsce w danej rundzie i przyrost punktów. Strzałka obok pozycji to zmiana miejsca względem poprzedniej rundy; „↑100” oznacza wejście do TOP 100, „NOWY” — nowego uczestnika. Zapisane rundy: Japonia R3 i Silverstone R9 — pełny ranking (z kopii w Web Archive), Spa R10 — TOP 30, Węgry R11–Singapur R17 — TOP 100, od USA R18 — pełny ranking. Rund R1–R2 i R4–R8 nie mamy, więc przy Silverstone R9 nie ma przyrostu ani strzałek (to zmiana z kilku rund), a osoby spoza zapisanej czołówki mają „&gt; 30” lub „&gt; 100”. „=” przy miejscu oznacza ex aequo — osoby z tą samą liczbą punktów mają wspólne miejsce (pełny zakres miejsc widać po najechaniu). Kolejność wewnątrz remisu jest jak na parcfer.me. Gdy nick się powtarza, kolejne osoby oznaczono „(2)” według miejsca w rankingu. Strona zbiera anonimowe statystyki odwiedzin (<a href="https://www.goatcounter.com" target="_blank" rel="noopener">GoatCounter</a>, bez cookies).</div>
 </main>
 
 <script>
@@ -466,8 +466,14 @@ function psOrder(round) {
     return (da ? da.position : Infinity) - (db ? db.position : Infinity);
   });
 }
+// numer rundy z nazwy („USA R18” → 18) i przerwa w danych (np. Japonia R3 → Silverstone R9)
+function psRoundNo(r) { var m = /R(\d+)$/.exec(r); return m ? +m[1] : null; }
+function psGap(ri) {
+  var a = psRoundNo(state.rounds[ri - 1]), b = psRoundNo(state.rounds[ri]);
+  return a !== null && b !== null && b - a > 1;
+}
 function psRoundDelta(name, ri) {
-  if (ri === 0) return null;
+  if (ri === 0 || psGap(ri)) return null; // przez przerwę to nie jest „przyrost w rundzie”
   var d = state.participants[name][state.rounds[ri]], p = state.participants[name][state.rounds[ri - 1]];
   return d && p ? d.points - p.points : null;
 }
@@ -475,7 +481,7 @@ function psRoundDelta(name, ri) {
 function psPartial(round) { return state.size[round] <= 100; }
 // stan względem poprzedniej rundy: liczba (zmiana), 'top' (wejście do TOP 100), 'new' (nowy uczestnik) albo null (brak danych)
 function psStatus(name, ri, field) {
-  if (ri < 1) return null;
+  if (ri < 1 || psGap(ri)) return null;
   var cur = state.participants[name][state.rounds[ri]], prevR = state.rounds[ri - 1], prev = state.participants[name][prevR];
   if (!cur) return null;
   // zmiana miejsca liczona ze wspólnych miejsc (ex aequo), tak jak są pokazywane
@@ -748,7 +754,7 @@ function psOpenHistory(key) {
   document.getElementById('h-table').innerHTML = '<thead><tr><th>Runda</th><th>Miejsce</th><th>Punkty</th><th>W rundzie</th></tr></thead><tbody>' + rows + '</tbody>';
   document.getElementById('h-actions').innerHTML = cur
     ? '<button type="button" class="btn" onclick="psJumpTo(HIST)">Pokaż w tabeli</button><button type="button" class="btn" onclick="psShare(psName(HIST))">🔗 Link do tego gracza</button>' : '';
-  document.getElementById('h-cap').textContent = have.length < n ? 'Przerwa na wykresie = runda, w której gracz był poza zapisaną czołówką (do Singapuru R17 mamy tylko TOP 100, ze Spa — TOP 30).' : '';
+  document.getElementById('h-cap').textContent = 'Przerwa w linii = brak danych: rundy R4–R8 nie są zapisane, a w rundach Spa R10 (TOP 30) i Węgry R11–Singapur R17 (TOP 100) gracz mógł być poza zapisaną czołówką.';
   var dlg = document.getElementById('hist');
   if (!dlg.open) dlg.showModal();
   psDrawChart();
@@ -777,7 +783,7 @@ function psDrawChart() {
   svg += R.map(function(r, i) { var lab = (r.match(/R\d+$/) || [r])[0]; return (i % every && i !== n - 1) ? '' : '<text class="ax" x="' + X(i) + '" y="' + (H - 8) + '" text-anchor="middle">' + psEsc(lab) + '</text>'; }).join('');
   // linia z przerwami tam, gdzie brak danych
   var d = '', pen = false;
-  vals.forEach(function(v, i) { if (v === null) { pen = false; return; } d += (pen ? 'L' : 'M') + X(i) + ' ' + Y(v); pen = true; });
+  vals.forEach(function(v, i) { if (v === null || (i > 0 && psGap(i))) pen = false; if (v === null) return; d += (pen ? 'L' : 'M') + X(i) + ' ' + Y(v); pen = true; });
   svg += '<line class="cross" id="h-cross" x1="0" x2="0" y1="' + m.t + '" y2="' + (H - m.b) + '" style="display:none"/>';
   svg += '<path class="ln" d="' + d + '"/>';
   svg += vals.map(function(v, i) { return v === null ? '' : '<circle class="dot" data-i="' + i + '" cx="' + X(i) + '" cy="' + Y(v) + '" r="4.5"/>'; }).join('');
