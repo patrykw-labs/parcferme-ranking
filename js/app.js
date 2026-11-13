@@ -216,7 +216,15 @@ function psRenderKpis(names) {
     '<span class="chip gold">' + (ld.points - md.points) + ' pkt do lidera</span></div>' +
     '<div class="me-actions"><button type="button" class="btn pri" data-k="' + psEsc(me) + '">📈 Historia</button>' +
     '<button type="button" class="btn" data-jump="' + psEsc(me) + '">Pokaż w tabeli</button>' +
-    '<button type="button" class="btn" onclick="psShare()">🔗 Udostępnij</button></div>';
+    '<button type="button" class="btn" onclick="psShare()">🔗 Udostępnij</button></div>' +
+    '<div class="calc"><label for="calc-t">Ile brakuje do</label> <select id="calc-t" onchange="psCalc()">' +
+    [[1, 'P1'], [3, 'TOP 3'], [10, 'TOP 10'], [50, 'TOP 50'], [100, 'TOP 100']].map(function(o) { return '<option value="' + o[0] + '">' + o[1] + '</option>'; }).join('') +
+    '</select><div class="calc-out" id="calc-out"></div></div>';
+  // domyślny cel: najbliższy próg powyżej obecnego miejsca
+  var targets = [1, 3, 10, 50, 100], cur = mpl.place, def = targets.filter(function(t) { return t < cur; }).pop() || 1;
+  document.getElementById('calc-t').value = String(CALC_T && CALC_ME === me && CALC_T < cur ? CALC_T : def);
+  CALC_ME = me;
+  psCalc();
 }
 
 function psRenderTable(resetScroll) {
@@ -652,6 +660,31 @@ function psRenderRecords() {
   document.getElementById('rec-cap').textContent = 'Liczone z zapisanych rund (' + R[0].replace(/ R\d+$/, '') + ' – ' + R[n - 1].replace(/ R\d+$/, '') + '). Przyrostów i awansów nie liczymy przez przerwę w danych (R4–R8) ani dla graczy spoza zapisanej czołówki w rundach Spa–Singapur. Średnia i równość: gracze z co najmniej ' + REC_MIN_ROUNDS + ' znanymi rundami; równość (najmniejsze odchylenie punktów od średniej) wśród graczy ze średnią w górnej połowie. Kliknij nick, żeby zobaczyć historię.';
 }
 
+// ---------- kalkulator „ile mi brakuje” ----------
+var CALC_T = null, CALC_ME = null, PLANNED = null;
+function psCalc() {
+  var sel = document.getElementById('calc-t'), out = document.getElementById('calc-out');
+  if (!sel || !out) return;
+  CALC_T = +sel.value;
+  var n = state.rounds.length, last = state.rounds[n - 1], order = psOrder(last);
+  var me = order.find(psIsMe); if (!me) return;
+  var md = state.participants[me][last], target = order[Math.min(CALC_T, order.length) - 1], td = state.participants[target][last];
+  var gap = td.points - md.points, label = CALC_T === 1 ? 'P1' : 'TOP ' + CALC_T;
+  var lastNo = psRoundNo(last), left = PLANNED && lastNo ? Math.max(0, PLANNED - lastNo) : null;
+  if (psPlace(last, md).place <= CALC_T) {
+    // pierwsza osoba, której wspólne miejsce jest już poza progiem
+    var out1 = order.find(function(k) { var d = state.participants[k][last]; return d && psPlace(last, d).place > CALC_T; });
+    out.innerHTML = 'Jesteś w ' + label + '. ' + (out1 ? 'Przewaga nad pierwszą osobą poza ' + label + ' (' + psEsc(psName(out1)) + '): <b>' + (md.points - state.participants[out1][last].points) + ' pkt</b>.' : '');
+    return;
+  }
+  var html = 'Do ' + label + ' brakuje <b>' + gap + ' pkt</b> (' + psEsc(psName(target)) + ', P' + psPlace(last, td).txt + ', ma ' + td.points + ' pkt). ';
+  if (left === null) html += '';
+  else if (left === 0) html += 'To była ostatnia runda sezonu.';
+  else html += 'Zostały <b>' + left + '</b> ' + (left === 1 ? 'runda' : left % 10 >= 2 && left % 10 <= 4 && (left % 100 < 10 || left % 100 >= 20) ? 'rundy' : 'rund') +
+    ' — trzeba zdobywać średnio <b>' + (Math.ceil(gap / left * 10) / 10).toFixed(1).replace('.', ',') + ' pkt na rundę więcej</b> niż ta osoba' + (gap / left > 20 ? ' (więcej, niż daje jedna runda — w praktyce poza zasięgiem)' : '') + '.';
+  out.innerHTML = html;
+}
+
 function psRenderAll() {
   if (!state.rounds.length) {
     document.getElementById('ps-empty').style.display = 'block';
@@ -676,6 +709,7 @@ function psRenderAll() {
     var idx = await (await fetch('data/seasons.json', { cache: 'no-cache' })).json();
     var qs = parseInt(new URLSearchParams(location.search).get('sezon'), 10);
     SEASON = idx.seasons.indexOf(qs) !== -1 ? qs : idx['default'];
+    PLANNED = idx.planned_rounds && idx.planned_rounds[SEASON] || null;
     psBuildSeasonPicker(idx.seasons);
     var json = await (await fetch('data/' + SEASON + '.json', { cache: 'no-cache' })).json();
     document.getElementById('ps-season').textContent = SEASON;
