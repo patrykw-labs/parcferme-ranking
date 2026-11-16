@@ -29,10 +29,10 @@ async function open(url, opts = {}) {
   page.errs = [];
   page.on('pageerror', e => page.errs.push('JS: ' + e.message));
   // „Failed to load resource” pomijamy: to celowo zablokowane usługi zewnętrzne, a brakujące pliki strony łapie nasłuch odpowiedzi niżej
-  page.on('console', m => { if (m.type() === 'error' && !/Failed to load resource|goatcounter|zgo\.at|fonts\.g/.test(m.text())) page.errs.push('console: ' + m.text()); });
-  page.on('response', r => { if (r.status() >= 400 && !/goatcounter|zgo\.at|fonts\.g|img\.buymeacoffee/.test(r.url())) page.errs.push(r.status() + ' ' + r.url()); });
+  page.on('console', m => { if (m.type() === 'error' && !/Failed to load resource|goatcounter|zgo\.at|fonts\.g|api\.github/.test(m.text())) page.errs.push('console: ' + m.text()); });
+  page.on('response', r => { if (r.status() >= 400 && !/goatcounter|zgo\.at|fonts\.g|img\.buymeacoffee|api\.github/.test(r.url())) page.errs.push(r.status() + ' ' + r.url()); });
   // zewnętrzne usługi nie są częścią testu
-  await page.route(/fonts\.(googleapis|gstatic)\.com|gc\.zgo\.at|goatcounter|img\.buymeacoffee/, r => r.abort());
+  await page.route(/fonts\.(googleapis|gstatic)\.com|gc\.zgo\.at|goatcounter|img\.buymeacoffee|api\.github\.com/, r => r.abort());
   await page.goto(BASE + url);
   await page.waitForSelector('#ps-table tbody tr:nth-child(5)');
   return page;
@@ -42,8 +42,8 @@ console.log('Komputer, motyw ciemny');
 let p = await open('', { colorScheme: 'dark' });
 check((await p.$$('#ps-table tbody tr')).length === TOP, `tabela TOP 100 (${TOP} wierszy z remisem na granicy)`);
 check((await p.textContent('#ps-subtitle')).includes('uczestników'), 'nagłówek z liczbą uczestników');
-// version.json powstaje przy publikacji (tools/version.py) — w CI przed testem
-if (fs.existsSync('version.json')) check(/^v\d|^[0-9a-f]{7}/.test((await p.textContent('#ps-ver')).trim()), 'wersja strony w górnym pasku: ' + (await p.textContent('#ps-ver')).trim());
+await p.waitForSelector('#ps-ver:not([hidden])', { timeout: 5000 }).catch(() => {});
+check(/^v\d+\.\d+\.\d+/.test((await p.textContent('#ps-ver')).trim()), 'wersja strony w górnym pasku: ' + (await p.textContent('#ps-ver')).trim());
 check((await p.$$('#k-top10 li')).length === 10, 'kafelek TOP 10');
 check((await p.$$('#rec-grid .rec')).length >= 4, 'rekordy sezonu');
 await p.click('#seg-all');

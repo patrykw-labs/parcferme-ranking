@@ -75,8 +75,7 @@ Zamiast pobierania można podać `--html zapisana_strona.html` albo `--tsv tabel
 - `tools/add_round.py` — dopisuje rundę z rankingu parcfer.me (z ponawianiem przy chwilowej awarii strony)
 - `tools/build_feed.py` — buduje kanał RSS `feed.xml` (uruchamiany automatycznie po dodaniu rundy)
 - `tools/check_data.py` — sprawdza spójność danych (kolejność, unikalne id, ciągłość punktów każdego gracza)
-- `.github/workflows/update-ranking.yml` — automatyczne pobieranie rund (po nowej rundzie wywołuje publikację)
-- `.github/workflows/deploy-pages.yml` + `tools/version.py` — publikacja na GitHub Pages z numerem wersji w górnym pasku
+- `.github/workflows/update-ranking.yml` — automatyczne pobieranie rund
 - `.github/workflows/check-data.yml` — kontrola danych przy każdej zmianie w `data/` lub `tools/`
 - `.github/workflows/check-page.yml` + `tests/smoke.mjs` — test strony w przeglądarce (Playwright): widoki, historia, pojedynek, CSV, brak błędów JS
 - `.github/workflows/release.yml` — wydanie na GitHubie po dopisaniu nowej wersji do `CHANGELOG.md` (albo po tagu `vX.Y.Z`)
@@ -100,7 +99,6 @@ Historia wersji jest w [CHANGELOG.md](CHANGELOG.md). Nowe wydanie: dopisz na gó
 
 ```
 cd tests && npm install && npx playwright install chromium && cd ..
-python3 tools/version.py
 python3 -m http.server 8000 &
 node tests/smoke.mjs http://127.0.0.1:8000/
 ```
@@ -113,12 +111,14 @@ Po zmianie `css/style.css` lub `js/app.js` podbij parametr `?v=…` w ich adresa
 
 ## Publikacja
 
-GitHub Pages przez GitHub Actions: Settings → Pages → Build and deployment → Source: **GitHub Actions**. Workflow `.github/workflows/deploy-pages.yml` publikuje stronę po każdym pushu na `main`, po każdej nowej rundzie (wywołuje go „Aktualizacja rankingu”) i po każdym wydaniu. Przy publikacji `tools/version.py` zapisuje `version.json`, a górny pasek strony pokazuje wersję:
+GitHub Pages: Settings → Pages → Deploy from a branch → `main` / `(root)`. Plik `.nojekyll` wyłącza przetwarzanie przez Jekyll — pliki są serwowane bez zmian.
 
-- `v1.2.0` — strona dokładnie z wydania,
-- `v1.2.0+3 · abc1234` — 3 commity po wydaniu (np. nowe rundy), z linkiem do commita; na telefonie sam numer wersji i liczba commitów.
+**Wersja w górnym pasku** (bez kroku budowania): wydanie z pierwszej sekcji `## vX.Y.Z` w `CHANGELOG.md`, a liczba commitów na `main` po nim i skrót ostatniego commita z API GitHuba (wynik pamiętany 15 minut w przeglądarce):
 
-`version.json` nie jest w repozytorium (powstaje przy publikacji); lokalnie: `python3 tools/version.py` (po `git fetch --tags`).
+- `v1.2.0` — strona odpowiada wydaniu,
+- `v1.2.0+3 · abc1234` — 3 commity po wydaniu (np. nowe rundy); skrót prowadzi do porównania zmian. Na telefonie sam numer i liczba commitów.
+
+Bez odpowiedzi API (limit zapytań, brak sieci) pasek pokazuje samo wydanie.
 
 ## Statystyki
 

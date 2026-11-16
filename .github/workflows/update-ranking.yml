@@ -9,8 +9,7 @@ on:
 
 permissions:
   contents: write
-  pages: write      # publikacja strony (deploy-pages.yml)
-  id-token: write
+  pages: write
 
 concurrency:
   group: update-ranking
@@ -20,8 +19,6 @@ jobs:
   update:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    outputs:
-      changed: ${{ steps.save.outputs.changed }}
     steps:
       - uses: actions/checkout@v7
 
@@ -35,8 +32,9 @@ jobs:
       - name: Sprawdź spójność danych
         run: python3 tools/check_data.py
 
-      - name: Zapisz
-        id: save
+      - name: Zapisz i opublikuj
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           if git diff --quiet; then
             echo "Brak nowej rundy."
@@ -51,7 +49,8 @@ jobs:
           git add data/ feed.xml
           git commit -m "$msg"
           git push
-          echo "changed=true" >> "$GITHUB_OUTPUT"
+          # push z tokenu Actions nie zawsze uruchamia budowanie Pages — zlecamy je wprost
+          gh api -X POST "repos/${{ github.repository }}/pages/builds" || echo "Nie udało się zlecić budowania Pages"
 
       # GitHub wyłącza harmonogram w publicznym repo po 60 dniach bez commitów (przerwa zimowa),
       # a pominiętej rundy nie da się potem odtworzyć — pusty commit co ok. 50 dni bez aktywności
@@ -69,9 +68,3 @@ jobs:
           else
             echo "Ostatni commit $(( ($(date +%s) - last) / 86400 )) dni temu — keepalive niepotrzebny."
           fi
-
-  # push z tokenu Actions nie uruchamia workflow „Publikacja strony”, więc wywołujemy go wprost
-  deploy:
-    needs: update
-    if: needs.update.outputs.changed == 'true'
-    uses: ./.github/workflows/deploy-pages.yml

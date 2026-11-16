@@ -849,21 +849,35 @@ function psRenderAll() {
   psRenderTable();
 }
 
-// wersja strony w górnym pasku: version.json z workflow publikacji (wydanie, commity po nim, commit)
-var REPO = 'https://github.com/patrykw-labs/parcferme-ranking';
+// wersja strony w górnym pasku (bez kroku budowania): wydanie z CHANGELOG.md (pierwsza sekcja „## vX.Y.Z”),
+// a liczba commitów na main po wydaniu i skrót ostatniego commita z API GitHuba (pamięć 15 min w localStorage).
+// Bez odpowiedzi API — samo wydanie.
+var REPO = 'patrykw-labs/parcferme-ranking', VER_KEY = 'parcfer-wersja';
 async function psVersion() {
-  try {
-    var r = await fetch('version.json', { cache: 'no-cache' });
-    if (!r.ok) return; // podgląd lokalny bez version.json — bez wersji
-    var v = await r.json(), el = document.getElementById('ps-ver');
-    if (!v || !v.commit) return;
-    var sha = v.commit.slice(0, 7), date = v.date ? new Date(v.date).toLocaleString('pl-PL', { dateStyle: 'medium', timeStyle: 'short' }) : '';
-    var rel = v.version ? '<a href="' + REPO + '/releases/tag/' + psEsc(v.version) + '">' + psEsc(v.version) + '</a>' : '';
-    var commit = '<a href="' + REPO + '/commit/' + psEsc(v.commit) + '">' + sha + '</a>';
-    el.innerHTML = !v.version ? commit : !v.ahead ? rel : rel + '<span class="ver-c">+' + v.ahead + '<span class="ver-h"> · ' + commit + '</span></span>';
-    el.title = (v.version ? 'Strona z wydania ' + v.version + (v.ahead ? ' + ' + v.ahead + ' ' + (v.ahead === 1 ? 'commit' : v.ahead % 10 >= 2 && v.ahead % 10 <= 4 && (v.ahead % 100 < 10 || v.ahead % 100 >= 20) ? 'commity' : 'commitów') + ' po nim' : '') : 'Strona') + ' · commit ' + sha + (date ? ' z ' + date : '');
-    el.hidden = false;
-  } catch (e) { /* brak wersji nie psuje strony */ }
+  var el = document.getElementById('ps-ver'), rel = null, gh = null;
+  try { var m = /^## (v\d+\.\d+\.\d+)/m.exec(await (await fetch('CHANGELOG.md', { cache: 'no-cache' })).text()); if (m) rel = m[1]; } catch (e) {}
+  if (!rel) return;
+  try { var c = JSON.parse((lsGet(VER_KEY) || {}).value || 'null'); if (c && c.rel === rel && Date.now() - c.t < 15 * 60e3) gh = c; } catch (e) {}
+  if (!gh) {
+    try {
+      var j = function(u) { return fetch(u).then(function(r) { return r.ok ? r.json() : Promise.reject(new Error(r.status)); }); };
+      var res = await Promise.all([j('https://api.github.com/repos/' + REPO + '/compare/' + rel + '...main?per_page=1'), j('https://api.github.com/repos/' + REPO + '/git/ref/heads/main')]);
+      gh = { rel: rel, t: Date.now(), ahead: +res[0].ahead_by || 0, sha: String(res[1].object.sha).slice(0, 7) };
+      lsSet(VER_KEY, JSON.stringify(gh));
+    } catch (e) { gh = null; }
+  }
+  var base = 'https://github.com/' + REPO;
+  var relA = '<a href="' + base + '/releases/tag/' + rel + '">' + rel + '</a>';
+  if (gh && gh.ahead > 0) {
+    var k = gh.ahead, word = k === 1 ? 'commit' : k % 10 >= 2 && k % 10 <= 4 && (k % 100 < 10 || k % 100 >= 20) ? 'commity' : 'commitów';
+    el.innerHTML = relA + '<span class="ver-c">+' + k + '<span class="ver-h"> · <a href="' + base + '/compare/' + rel + '...' + gh.sha + '">' + gh.sha + '</a></span></span>';
+    el.title = 'Strona z gałęzi main: ' + k + ' ' + word + ' po wydaniu ' + rel + ' (ostatni: ' + gh.sha + ') — kliknij skrót, aby zobaczyć zmiany';
+  } else {
+    el.innerHTML = relA;
+    el.title = gh ? 'Strona odpowiada wydaniu ' + rel + ' (commit ' + gh.sha + ')' : 'Wydanie ' + rel;
+  }
+  el.setAttribute('aria-label', 'Wersja strony: ' + el.title);
+  el.hidden = false;
 }
 psVersion();
 

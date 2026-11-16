@@ -20,6 +20,3 @@ __pycache__/
 # Testy
 tests/node_modules
 tests/package-lock.json
-
-# Generowany przy publikacji (tools/version.py)
-version.json
