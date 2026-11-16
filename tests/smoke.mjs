@@ -97,6 +97,20 @@ check((await p.$$eval('#ps-table tbody tr[data-row]', rows => rows.length)) >= f
 await p.fill('#ps-filter', '');
 check(p.errs.length === 0, 'brak błędów: ' + (p.errs.join(' | ') || 'OK'));
 
+// archiwum sezonów: mistrzowie z data/history.json i strona zakończonego sezonu
+const hist = fs.existsSync('data/history.json') ? JSON.parse(fs.readFileSync('data/history.json', 'utf8')) : null;
+const pastSeason = seasons.seasons.find(y => y !== seasons.default);
+if (hist && Object.keys(hist.champions).length) {
+  await p.waitForSelector('#champs:not([hidden])', { timeout: 5000 }).catch(() => {});
+  check(await p.isVisible('#champs'), 'mistrzowie sezonów');
+}
+if (pastSeason) {
+  console.log(`Sezon archiwalny ${pastSeason}`);
+  const pa = await open(`?sezon=${pastSeason}`);
+  check((await pa.textContent('#ps-season')).trim() === String(pastSeason) && (await pa.$$('#ps-table tbody tr')).length >= 100, `tabela sezonu ${pastSeason}`);
+  check(pa.errs.length === 0, 'brak błędów: ' + (pa.errs.join(' | ') || 'OK'));
+}
+
 console.log('Link do gracza po id');
 p = await open(`?id=${last[2].id}`);
 check(await p.evaluate(id => ME === 'u' + id, last[2].id), 'link ?id= pokazuje właściwego gracza');

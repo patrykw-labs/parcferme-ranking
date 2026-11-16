@@ -38,6 +38,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import build_feed  # noqa: E402  (kanał RSS odświeżany po każdej nowej rundzie)
 import check_data  # noqa: E402  (limit punktów na rundę)
+import build_history  # noqa: E402  (data/history.json — sezony każdego gracza)
 URL = "https://parcfer.me/typowanie-ranking/{season}"
 CONTESTS_URL = "https://parcfer.me/typowanie"
 CONTEST_URL = "https://parcfer.me/typowanie/{link}"
@@ -366,6 +367,7 @@ def run():
     d["rounds"].insert(at, rnd)
     write(path, d)
     build_feed.main()
+    build_history.main()
     print(f"Zapisano {a.round}: {len(standings)} uczestników → {path.relative_to(ROOT)}")
 
 

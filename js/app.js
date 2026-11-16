@@ -6,7 +6,7 @@ var THEME_KEY = 'parcfer-theme';
 var state = { rounds: [], participants: {} };
 var myName = '', myKey = null;
 var ME = null, ME_MULTI = []; // „ja” po rozpoznaniu nicka: klucz osoby albo lista osób z tym samym nickiem
-var SEASON = null;
+var SEASON = null, DEFAULT_SEASON = null;
 var VIEW = 'top', PAGE = 0, PAGE_SIZE = 100, NEAR = 15;
 
 function psEsc(s) {
@@ -454,7 +454,12 @@ function psOpenHistory(key) {
   document.getElementById('h-table').innerHTML = '<thead><tr><th>Runda</th><th>Miejsce</th><th>Punkty</th><th>W rundzie</th></tr></thead><tbody>' + rows + '</tbody>';
   document.getElementById('h-actions').innerHTML = cur
     ? '<button type="button" class="btn" onclick="psJumpTo(HIST)">Pokaż w tabeli</button><button type="button" class="btn" onclick="psShare(HIST)">🔗 Link do tego gracza</button>' : '';
-  document.getElementById('h-cap').textContent = 'Przerwa w linii = brak danych: rundy R4–R8 nie są zapisane, a w rundach Spa R10 (TOP 30) i Węgry R11–Singapur R17 (TOP 100) gracz mógł być poza zapisaną czołówką.';
+  psRenderSeasons(key);
+  // opis braków w danych tylko wtedy, gdy sezon je ma (przerwy w numeracji, rundy z samą czołówką)
+  var gaps = R.some(function(r, i) { return i > 0 && psGap(i); }), part = R.filter(psPartial);
+  document.getElementById('h-cap').textContent = gaps || part.length ? 'Przerwa w linii = brak danych' + (gaps ? ': nie wszystkie rundy są zapisane' : '') +
+    (part.length ? (gaps ? ', a' : ':') + ' w rundach ' + part[0] + (part.length > 1 ? ' – ' + part[part.length - 1] : '') + ' mamy tylko czołówkę, więc gracz mógł być poza nią' : '') + '.' :
+    (n === 1 ? 'Z tego sezonu mamy tylko stan końcowy (' + R[0] + ').' : '');
   var dlg = document.getElementById('hist');
   if (!dlg.open) dlg.showModal();
   psDrawChart();
@@ -699,6 +704,32 @@ function psRenderTitle(order) {
   document.getElementById('title-cap').textContent = 'Maksimum za typowanie: ' + MAXPTS.race + ' pkt, w weekend ze sprintem ' + MAXPTS.sprint + ' pkt (data/seasons.json; zwykłe typowanie ma 20 pytań, liczba pytań sprinterskich to założenie). Równa liczba punktów na koniec sezonu to wspólne P1. „Trzeba więcej niż lider” — ile średnio na rundę trzeba zdobywać ponad punkty lidera. Kliknij nick, żeby zobaczyć historię.';
 }
 
+// ---------- archiwum sezonów (data/history.json): mistrzowie i „Twoje sezony” ----------
+var HISTORY = null;
+function psSeasonUrl(y, id) { return '?sezon=' + y + (id ? '&id=' + id : ''); }
+function psRenderChamps() {
+  var el = document.getElementById('champs');
+  if (!HISTORY) return;
+  var ys = Object.keys(HISTORY.champions).sort().reverse();
+  if (!ys.length) { el.hidden = true; return; }
+  el.innerHTML = '<div class="label">🏅 Mistrzowie sezonów</div>' + ys.map(function(y) {
+    var c = HISTORY.champions[y];
+    var who = c.ids.map(function(id, i) { var k = 'u' + id; return state.participants[k] ? '<span data-k="' + k + '">' + psEsc(c.names[i]) + '</span>' : psEsc(c.names[i]); }).join(', ');
+    return '<span class="c"><a href="' + psSeasonUrl(y) + '" title="Tabela sezonu ' + y + '">' + y + '</a><b>' + who + '</b><span class="tie">' + c.points + ' pkt</span></span>';
+  }).join('');
+  el.hidden = false;
+}
+function psRenderSeasons(key) {
+  var box = document.getElementById('h-seasons'), id = /^u\d+$/.test(key) ? key.slice(1) : null;
+  var mine = HISTORY && id && HISTORY.players[id];
+  if (!mine || Object.keys(mine).filter(function(y) { return +y !== SEASON; }).length === 0) { box.innerHTML = ''; return; }
+  var rows = Object.keys(mine).sort().reverse().map(function(y) {
+    var s = HISTORY.seasons[y], v = mine[y];
+    return '<tr' + (+y === SEASON ? ' class="cur"' : '') + '><td><a href="' + psSeasonUrl(y, id) + '">' + y + '</a>' + (s && !s.final ? ' <span class="tie">(trwa)</span>' : '') + '</td><td>P' + v[0] + (HISTORY.champions[y] && v[0] === 1 ? ' 🏅' : '') + '</td><td><b>' + v[1] + '</b></td><td>' + (s ? psNum(s.players) : '') + '</td></tr>';
+  }).join('');
+  box.innerHTML = '<div class="label" style="margin-top:16px">Sezony gracza</div><table><thead><tr><th>Sezon</th><th>Miejsce</th><th>Punkty</th><th>Graczy</th></tr></thead><tbody>' + rows + '</tbody></table>';
+}
+
 // forma: suma punktów z ostatnich FORM_N rund (tylko osoby z danymi ze wszystkich tych rund)
 var FORM_N = 3, FORM_TOP = 10;
 function psRenderForm(order) {
@@ -898,6 +929,7 @@ function psRenderAll() {
   psRenderTitle(order);
   psRenderForm(order);
   psRenderRecords();
+  psRenderChamps();
   if (!psFillNicks.done) { psFillNicks(order); psFillNicks.done = true; } // lista nicków nie zależy od „ja”
   psRenderDuel();
   psRenderTable();
@@ -940,6 +972,7 @@ psVersion();
     var idx = await (await fetch('data/seasons.json', { cache: 'no-cache' })).json();
     var qs = parseInt(new URLSearchParams(location.search).get('sezon'), 10);
     SEASON = idx.seasons.indexOf(qs) !== -1 ? qs : idx['default'];
+    DEFAULT_SEASON = idx['default'];
     PLANNED = idx.planned_rounds && idx.planned_rounds[SEASON] || idx.calendar && idx.calendar[SEASON] && idx.calendar[SEASON].length || null;
     SPRINTS = idx.sprints && idx.sprints[SEASON] || [];
     MAXPTS = idx.max_points || null;
@@ -958,6 +991,14 @@ psVersion();
   }
   state = buildSeedState();
   psBuildLabels();
+  // opis zapisanych rund w notce dotyczy bieżącego sezonu; archiwalne sezony mają tylko stan końcowy
+  if (SEASON !== DEFAULT_SEASON && state.rounds.length === 1) document.getElementById('note-rounds').textContent = 'Sezon ' + SEASON + ': z parcfer.me mamy tylko końcowy ranking (stan po ' + state.rounds[0] + '), więc nie ma przyrostów, strzałek ani historii runda po rundzie.';
+  // archiwum sezonów wczytywane w tle — nie opóźnia pierwszego widoku
+  fetch('data/history.json', { cache: 'no-cache' }).then(function(r) { return r.ok ? r.json() : null; }).then(function(h) {
+    if (!h) return;
+    HISTORY = h; psRenderChamps();
+    if (HIST && document.getElementById('hist').open) psRenderSeasons(HIST);
+  }).catch(function() {});
   // ?id=… (albo starsze ?nick=…) z udostępnionego linku pokazuje tę osobę, ale nie nadpisuje zapisanej
   var qs2 = new URLSearchParams(location.search);
   var sid = 'u' + (qs2.get('id') || '').trim(), sharedKey = state.participants[sid] ? sid : null;
