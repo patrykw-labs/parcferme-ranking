@@ -16,6 +16,8 @@ Nieoficjalna, fanowska klasyfikacja typerów konkursu [parcfer.me](https://parcf
 
 - **Ranking po wybranej rundzie** — lista „Stan po rundzie” pod tytułem pokazuje całą stronę (lider, kafelki, tabela, forma, rekordy, walka o tytuł, Twoja pozycja) tak, jak wyglądała po dowolnej zapisanej rundzie; link `?runda=R19`. Każdy wpis RSS prowadzi do stanu po swojej rundzie.
 - **Tabela runda po rundzie** — suma punktów, miejsce i przyrost w każdej rundzie, strzałki zmiany miejsca (▲/▼), oznaczenia „↑100” (wejście do TOP 100) i „NOWY”. Trzy widoki: **TOP 100** (wszyscy z miejscem do 100, także przy remisie na granicy), **Moja okolica** (±15 miejsc wokół Twojego nicka) i **Wszyscy** (strony po 100 osób). Tabela przewija się we własnym oknie z przyklejonym nagłówkiem. Rundy z weekendem sprinterskim mają ⚡ (legenda przy tytule tabeli). Kliknięcie nagłówka rundy sortuje po punktach zdobytych w tej rundzie, a przycisk **⬇ CSV** pobiera całą tabelę (Excel, Arkusze Google).
+- **Tylko aktywni** — przełącznik przy tabeli pokazuje graczy, którzy zdobyli punkty w co najmniej jednej z 2 ostatnich rund (np. 237 z 865 po Brazylii R20); w karcie „Twoja pozycja” — miejsce wśród aktywnych. Działa, gdy ostatnie rundy mają pełny ranking.
+- **Obserwowani / mini-liga** — gwiazdka ☆ przy nicku (w tabeli i w historii gracza) dodaje do listy zapisanej w przeglądarce: widok **⭐ Obserwowani** w tabeli i wspólny wykres miejsc (do 8 graczy, z Tobą), a „🔗 Link do ligi” (`?liga=id,id,…`) pozwala pokazać listę komuś innemu bez nadpisywania jego własnej.
 - **Wyszukiwarka** po wszystkich uczestnikach, bez wielkości liter i polskich znaków („lukasz” znajdzie „Łukasz”); po wpisaniu pełnego nicka przycisk „Pokaż w tabeli” przenosi do jego wiersza.
 - **Twoja pozycja** — pole podpowiada nicki; gdy nick ma kilka osób (np. 7 × „Michał”), strona pokazuje listę z miejscem i punktami do wybrania siebie i zapamiętuje wybór. Po wpisaniu nicka: miejsce, punkty, zmiana miejsca, punkty w rundzie i strata do lidera, podświetlenie w tabeli, „📍 Pokaż mnie” w widoku Wszyscy, przycisk „🔗 Udostępnij” i **kalkulator „ile brakuje”** do P1 / TOP 3 / TOP 10 / TOP 50 / TOP 100 (ile punktów i ile średnio na rundę do końca sezonu; liczba rund sezonu w `data/seasons.json` → `planned_rounds`).
 - **Kafelki rundy** — lider (przy remisie na P1 wszyscy liderzy) i podium, największy skok w TOP 100 i najwięcej punktów w rundzie (z remisami), aktywność (ile osób zdobyło punkty), rozrzut punktów w TOP 100 oraz lista **TOP 10**.
@@ -36,6 +38,7 @@ Nieoficjalna, fanowska klasyfikacja typerów konkursu [parcfer.me](https://parcf
 | `?id=9684` | podświetla gracza (numer użytkownika z parcfer.me) i otwiera „Moją okolicę”; nie nadpisuje nicka zapisanego w przeglądarce. Takie linki tworzą przyciski „🔗 Udostępnij” |
 | `?id=9684&vsid=1650` | otwiera pojedynek dwóch graczy |
 | `?nick=Pat`, `?nick=Pat&vs=Kapexis` | starsze linki po nicku — nadal działają, ale przy powtórzonym nicku wskazują osobę wg etykiety „(2)” |
+| `?liga=8192,5869` | mini-liga: widok „Obserwowani” i wspólny wykres podanych graczy (nie zmienia listy zapisanej w przeglądarce, dopóki nie klikniesz gwiazdki) |
 | `?runda=R19` | stan rankingu po wybranej rundzie (bez parametru — bieżący); łączy się z `?id=`, `?sezon=` |
 | `?sezon=2026` | konkretny sezon (przy ≥2 sezonach w nagłówku pojawia się przełącznik) |
 

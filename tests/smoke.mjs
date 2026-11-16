@@ -78,7 +78,7 @@ await p.click('#ps-table tbody tr:nth-child(2) td.c-name');
 await p.waitForSelector('#hist[open] svg', { timeout: 5000 }).catch(() => {});
 check(await p.$eval('#hist', d => d.open), 'okno historii gracza z wykresem');
 await p.keyboard.press('Escape');
-await p.focus('#ps-table tbody tr:nth-child(3) td.c-name button');
+await p.focus('#ps-table tbody tr:nth-child(3) td.c-name button.nm');
 await p.keyboard.press('Enter');
 check(await p.$eval('#hist', d => d.open), 'historia otwierana z klawiatury (Enter)');
 await p.keyboard.press('Escape');
@@ -121,6 +121,26 @@ if (season.rounds.length > 1) {
   check((await pr.textContent('#ps-subtitle')).includes('stan po ' + season.rounds[season.rounds.length - 1].name) && !(await pr.isVisible('#ps-past')), 'powrót do bieżącego stanu');
   check(pr.errs.length === 0, 'brak błędów: ' + (pr.errs.join(' | ') || 'OK'));
 }
+
+// filtr aktywnych (gdy ostatnie rundy są pełne) i obserwowani
+if (await p.isVisible('#act-only-l')) {
+  await p.click('#seg-all');
+  await p.check('#act-only');
+  check((await p.textContent('#ps-pager .info')).includes('aktywnych'), 'filtr „tylko aktywni”: ' + (await p.textContent('#ps-pager .info')).trim());
+  await p.uncheck('#act-only');
+  await p.click('#seg-top');
+}
+await p.click('#ps-table tbody tr:nth-child(1) .star');
+await p.click('#ps-table tbody tr:nth-child(2) .star');
+await p.waitForSelector('#watch-chart svg', { timeout: 5000 }).catch(() => {});
+check(await p.isVisible('#watch-sec') && !!(await p.$('#watch-chart svg')), 'obserwowani: sekcja z wykresem');
+await p.click('#seg-watch');
+check((await p.$$('#ps-table tbody tr[data-row]')).length >= 2, 'widok „Obserwowani” w tabeli');
+console.log('Link do ligi');
+const lg = await open(`?liga=${last.slice(0, 5).map(s => s.id).join(",")}`); // open() czeka na 5 wierszy tabeli
+await lg.waitForSelector('#watch-chart svg', { timeout: 5000 }).catch(() => {});
+check(await lg.evaluate(() => VIEW === 'watch') && !!(await lg.$('#watch-chart svg')), 'liga z linku ?liga=');
+check(lg.errs.length === 0, 'brak błędów: ' + (lg.errs.join(' | ') || 'OK'));
 
 console.log('Link do gracza po id');
 p = await open(`?id=${last[2].id}`);

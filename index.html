@@ -26,7 +26,7 @@
 // motyw ustawiany przed renderem, żeby nie migał
 (function(){try{var t=localStorage.getItem('parcfer-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
 </script>
-<link rel="stylesheet" href="css/style.css?v=20261116g">
+<link rel="stylesheet" href="css/style.css?v=20261116h">
 </head>
 <body>
 
@@ -104,6 +104,21 @@
     <div class="cap" id="rec-cap"></div>
   </section>
 
+  <section class="card watch" id="watch-sec" hidden>
+    <div class="board-head">
+      <h2>⭐ Obserwowani <span class="chip blue" id="watch-n">—</span></h2>
+      <div class="sp"></div>
+      <button type="button" class="btn" onclick="psSetView('watch'); document.querySelector('.board').scrollIntoView({ behavior: 'smooth' })">Tabela</button>
+      <button type="button" class="btn" id="watch-share" onclick="psShareLeague()">🔗 Link do ligi</button>
+    </div>
+    <div class="watch-body">
+      <div class="label">Miejsce w rankingu po każdej rundzie</div>
+      <div class="legend" id="watch-legend"></div>
+      <div class="chart" id="watch-chart"><div class="tip" id="watch-tip"></div></div>
+      <div class="cap" id="watch-cap"></div>
+    </div>
+  </section>
+
   <section class="card duel" id="duel-sec">
     <div class="board-head">
       <h2>⚔️ Pojedynek</h2>
@@ -127,7 +142,9 @@
         <button type="button" id="seg-top" class="on" aria-pressed="true" onclick="psSetView('top')" title="Miejsca 1–100 (z remisem na 100. miejscu)">TOP 100</button>
         <button type="button" id="seg-near" aria-pressed="false" onclick="psSetView('near')" title="±15 miejsc wokół Twojego nicka">Moja okolica</button>
         <button type="button" id="seg-all" aria-pressed="false" onclick="psSetView('all')">Wszyscy</button>
+        <button type="button" id="seg-watch" aria-pressed="false" onclick="psSetView('watch')" title="Gracze oznaczeni gwiazdką ☆ (i Ty)">⭐ Obserwowani</button>
       </div>
+      <label class="act-only" id="act-only-l" hidden title="Tylko gracze, którzy zdobyli punkty w co najmniej jednej z ostatnich rund (numer przy nicku to nadal miejsce ogólne)"><input type="checkbox" id="act-only" onchange="psSetActiveOnly(this.checked)"> tylko aktywni</label>
       <input class="search" type="text" id="ps-filter" placeholder="Szukaj nicku…" oninput="psRenderTable()" aria-label="Szukaj nicku w tabeli">
       <button type="button" class="btn jump" id="ps-jump"></button>
       <button type="button" class="btn pri jump" id="ps-me-jump">📍 Pokaż mnie</button>
@@ -171,7 +188,7 @@
   </div>
 </main>
 
-<script src="js/app.js?v=20261116g"></script>
+<script src="js/app.js?v=20261116h"></script>
 <script data-goatcounter="https://parcferme.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </body>
 </html>

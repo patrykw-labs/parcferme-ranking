@@ -225,6 +225,30 @@ tr.me td.c-name{background:linear-gradient(var(--me),var(--me)),var(--card)!impo
 tr.me .c-name::after{content:"TY";margin-left:8px;padding:1px 6px;border-radius:6px;background:var(--gold);color:#111;font-size:10px;font-weight:800;vertical-align:1px}
 .empty{padding:28px;text-align:center;color:var(--muted)}
 
+/* obserwowani (gwiazdka) i filtr aktywnych */
+.star{background:none;border:0;padding:0 6px 0 0;margin:0;font:inherit;font-size:14px;line-height:1;color:var(--muted);cursor:pointer;vertical-align:-1px;min-width:20px;min-height:24px}
+.star[aria-pressed="true"]{color:var(--gold)}
+.star:hover{color:var(--gold)}
+.star:focus-visible{outline:2px solid var(--accent-2);outline-offset:1px;border-radius:4px}
+.act-only{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--text-2);cursor:pointer;white-space:nowrap;min-height:24px}
+.act-only[hidden]{display:none}
+.act-only input{width:16px;height:16px;accent-color:var(--accent-strong)}
+.watch{margin-top:16px;overflow:hidden}
+.watch[hidden]{display:none}
+.watch-body{padding:16px 20px 18px}
+.watch-body .legend{margin-top:8px}
+.watch-body .legend [data-k]{font-weight:700;color:var(--text)}
+.watch-body .cap{margin-top:10px;font-size:12px;color:var(--muted)}
+.chart .wl{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.chart .wd{stroke:var(--card);stroke-width:2}
+.chart .wlab{font-size:12px;font-weight:700;font-family:var(--font);fill:var(--text)}
+.watch .tip .sw{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:6px}
+/* paleta kategorialna (dataviz: 8 barw sprawdzonych pod daltonizm), osobne stopnie dla ciemnego motywu */
+:root{--s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#eda100;--s5:#e87ba4;--s6:#008300;--s7:#6250d6;--s8:#e34948}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--s5:#d55181;--s6:#0ca30c;--s7:#9085e9;--s8:#e66767}}
+:root[data-theme="dark"]{--s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--s5:#d55181;--s6:#0ca30c;--s7:#9085e9;--s8:#e66767}
+@media (max-width:560px){.watch-body{padding:14px}}
+
 /* klikalne nicki → historia */
 [data-k]{cursor:pointer}
 .lnk{background:none;border:0;font:inherit;color:inherit;padding:0;margin:0;text-align:inherit;cursor:pointer;letter-spacing:inherit;text-transform:inherit}

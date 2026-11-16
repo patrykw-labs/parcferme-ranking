@@ -3,6 +3,7 @@ function lsSet(k,v){try{localStorage.setItem(k,v);return true;}catch(e){return f
 var MYNAME_KEY = 'parcfer-public-myname';
 var MYKEY_KEY = 'parcfer-public-mykey'; // wybrana osoba (klucz 'u' + id), gdy nick ma kilka osób
 var THEME_KEY = 'parcfer-theme';
+var WATCH_KEY = 'parcfer-watch', ACTIVE_KEY = 'parcfer-active';
 var state = { rounds: [], participants: {} };
 var myName = '', myKey = null;
 var ME = null, ME_MULTI = []; // „ja” po rozpoznaniu nicka: klucz osoby albo lista osób z tym samym nickiem
@@ -95,7 +96,7 @@ function psPickMe(k) {
   psRenderAll();
 }
 function psSegUpdate() {
-  ['top', 'near', 'all'].forEach(function(k) { var b = document.getElementById('seg-' + k); b.classList.toggle('on', k === VIEW); b.setAttribute('aria-pressed', k === VIEW ? 'true' : 'false'); });
+  ['top', 'near', 'all', 'watch'].forEach(function(k) { var b = document.getElementById('seg-' + k); b.classList.toggle('on', k === VIEW); b.setAttribute('aria-pressed', k === VIEW ? 'true' : 'false'); });
 }
 function psSetView(v) {
   VIEW = v; PAGE = 0;
@@ -270,7 +271,7 @@ function psRenderKpis(names) {
   meEl.innerHTML = '<div class="me-stat"' + (mpl.title ? ' title="' + mpl.title + '"' : '') + '>P' + mpl.txt + '<small>' + md.points + ' pkt' + (tie > 1 ? ' · ex aequo z ' + (tie - 1) + ' ' + (tie - 1 === 1 ? 'osobą' : 'osobami') + ' (miejsca ' + mg.a + '–' + mg.b + ')' : '') + '</small></div>' +
     '<div class="me-row" style="margin-top:10px;flex-wrap:wrap">' + chip +
     (mr !== null ? '<span class="chip blue">' + psSigned(mr) + ' pkt w rundzie</span>' : '') +
-    '<span class="chip gold">' + (ld.points - md.points) + ' pkt do lidera</span></div>' +
+    '<span class="chip gold">' + (ld.points - md.points) + ' pkt do lidera</span>' + psActiveChip(me) + '</div>' +
     '<div class="me-actions"><button type="button" class="btn pri" data-k="' + psEsc(me) + '">📈 Historia</button>' +
     '<button type="button" class="btn" data-jump="' + psEsc(me) + '">Pokaż w tabeli</button>' +
     '<button type="button" class="btn" onclick="psShare(ME)">🔗 Udostępnij</button></div>' +
@@ -290,17 +291,29 @@ function psRenderTable(resetScroll) {
   var names = psOrder(lastRound);
   var rankOf = {};
   names.forEach(function(n, i) { rankOf[n] = i + 1; });
+  // filtr „tylko aktywni” (numer przy nicku zostaje miejscem ogólnym)
+  var act = psActive(), filtered = ACTIVE_ONLY && act;
+  document.getElementById('act-only-l').hidden = !act;
+  if (filtered) names = names.filter(function(k) { return act.set[k]; });
 
   var shown = names, pager = '', hint = '';
-  var meKey = ME && state.participants[ME][lastRound] ? ME : null;
+  var meKey = ME && state.participants[ME][lastRound] && names.indexOf(ME) !== -1 ? ME : null;
+  var watched = names.filter(function(k) { return psWatched(k) || k === meKey; });
+  var sw = document.getElementById('seg-watch');
+  sw.disabled = !WATCH.length;
+  sw.textContent = '⭐ Obserwowani' + (WATCH.length ? ' (' + WATCH.length + ')' : '');
+  if (VIEW === 'watch' && !WATCH.length) VIEW = 'top';
+  psSegUpdate();
   // „Pokaż mnie” w widoku Wszyscy: przejście na stronę z nickiem z karty „Twoja pozycja”
   var mj = document.getElementById('ps-me-jump');
   mj.style.display = VIEW === 'all' && meKey ? 'inline-flex' : 'none';
   if (meKey) { mj.title = 'Przejdź do: ' + psName(meKey); mj.onclick = function() { psJumpTo(meKey, true); }; }
   document.getElementById('seg-near').disabled = !meKey;
   if (VIEW === 'near' && !meKey) VIEW = 'top';
-  if (VIEW === 'top') {
-    shown = names.slice(0, psTopCount(names, lastRound));
+  if (VIEW === 'watch') {
+    shown = watched;
+  } else if (VIEW === 'top') {
+    shown = names.slice(0, filtered ? 100 : psTopCount(names, lastRound));
     if (meKey && !shown.some(psIsMe)) shown.push(meKey);
   } else if (VIEW === 'near') {
     var mi = names.indexOf(meKey);
@@ -314,7 +327,7 @@ function psRenderTable(resetScroll) {
     var btns = '<button type="button" ' + (PAGE ? '' : 'disabled ') + 'onclick="psSetPage(' + (PAGE - 1) + ')" aria-label="Poprzednia strona">‹</button>';
     for (var i = 0; i < pages; i++) btns += '<button type="button" class="num' + (i === PAGE ? ' on' : '') + '" onclick="psSetPage(' + i + ')">' + (i * PAGE_SIZE + 1) + '–' + Math.min((i + 1) * PAGE_SIZE, names.length) + '</button>';
     btns += '<button type="button" ' + (PAGE < pages - 1 ? '' : 'disabled ') + 'onclick="psSetPage(' + (PAGE + 1) + ')" aria-label="Następna strona">›</button>';
-    pager = btns + '<span class="info">' + names.length + ' uczestników</span>';
+    pager = btns + '<span class="info">' + names.length + (filtered ? ' aktywnych' : ' uczestników') + '</span>';
   }
   // wyszukiwanie bez wielkości liter i polskich znaków („lukasz” znajdzie „Łukasz”)
   var q = psFold((document.getElementById('ps-filter').value || '').trim());
@@ -351,7 +364,7 @@ function psRenderTable(resetScroll) {
     }).join('');
     var cur = P[lastRound], pl = cur ? psPlace(lastRound, cur) : { txt: String(rankOf[name]), place: rankOf[name], title: '' };
     var cls = (psIsMe(name) ? 'me ' : '') + (pl.place <= 3 ? 'm' + pl.place : '');
-    return '<tr class="' + cls + '" data-row="' + psEsc(name) + '"><td class="c-name" data-k="' + psEsc(name) + '" title="Historia: ' + psEsc(psName(name)) + (pl.title ? ' · ' + pl.title : '') + '"><span class="rk">' + pl.txt + '</span><span class="mv">' + psMoveHtml(psMove(name)) + '</span><button type="button" class="lnk nm" data-k="' + psEsc(name) + '">' + psEsc(psName(name)) + '</button></td>' + cells + '<td class="c-tot">' + lastPts + '</td></tr>';
+    return '<tr class="' + cls + '" data-row="' + psEsc(name) + '"><td class="c-name" data-k="' + psEsc(name) + '" title="Historia: ' + psEsc(psName(name)) + (pl.title ? ' · ' + pl.title : '') + '"><span class="rk">' + pl.txt + '</span><span class="mv">' + psMoveHtml(psMove(name)) + '</span>' + psStarHtml(name) + '<button type="button" class="lnk nm" data-k="' + psEsc(name) + '">' + psEsc(psName(name)) + '</button></td>' + cells + '<td class="c-tot">' + lastPts + '</td></tr>';
   }).join('');
 
   tbl.innerHTML = head + '<tbody>' + (body || '<tr><td colspan="' + (nR + 2) + '" class="empty">Brak uczestników pasujących do filtra</td></tr>') + '</tbody>';
@@ -408,9 +421,11 @@ function psJumpTo(key, stayAll) {
   var dlg = document.getElementById('hist'); if (dlg.open) dlg.close();
   document.getElementById('ps-filter').value = '';
   SORT_RI = null;
-  var last = state.rounds[state.rounds.length - 1], order = psOrder(last), idx = order.indexOf(key);
+  var last = state.rounds[state.rounds.length - 1], order = psOrder(last), act = ACTIVE_ONLY && psActive();
+  if (act && !act.set[key]) psSetActiveOnly(false, true); else if (act) order = order.filter(function(k) { return act.set[k]; });
+  var idx = order.indexOf(key);
   if (idx < 0) return;
-  VIEW = stayAll || idx >= psTopCount(order, last) ? 'all' : 'top'; PAGE = Math.floor(idx / PAGE_SIZE);
+  VIEW = stayAll || idx >= (act && act.set[key] ? 100 : psTopCount(order, last)) ? 'all' : 'top'; PAGE = Math.floor(idx / PAGE_SIZE);
   psSegUpdate();
   psRenderTable();
   var wrap = document.querySelector('.board .tw'), row = [].find.call(document.querySelectorAll('#ps-table tr[data-row]'), function(r) { return r.getAttribute('data-row') === key; });
@@ -456,7 +471,8 @@ function psOpenHistory(key) {
   }).reverse().join('');
   document.getElementById('h-table').innerHTML = '<thead><tr><th>Runda</th><th>Miejsce</th><th>Punkty</th><th>W rundzie</th></tr></thead><tbody>' + rows + '</tbody>';
   document.getElementById('h-actions').innerHTML = cur
-    ? '<button type="button" class="btn" onclick="psJumpTo(HIST)">Pokaż w tabeli</button><button type="button" class="btn" onclick="psShare(HIST)">🔗 Link do tego gracza</button>' : '';
+    ? '<button type="button" class="btn" onclick="psJumpTo(HIST)">Pokaż w tabeli</button><button type="button" class="btn" onclick="psShare(HIST)">🔗 Link do tego gracza</button>' +
+      '<button type="button" class="btn" id="h-watch" data-star="' + psEsc(key) + '" aria-pressed="' + psWatched(key) + '">' + (psWatched(key) ? '★ Obserwujesz' : '☆ Obserwuj') + '</button>' : '';
   psRenderSeasons(key);
   // opis braków w danych tylko wtedy, gdy sezon je ma (przerwy w numeracji, rundy z samą czołówką)
   var gaps = R.some(function(r, i) { return i > 0 && psGap(i); }), part = R.filter(psPartial);
@@ -519,6 +535,8 @@ function psDrawChart() {
 }
 
 document.addEventListener('click', function(e) {
+  var st = e.target.closest('[data-star]');
+  if (st) { psToggleWatch(st.getAttribute('data-star')); return; }
   var pk = e.target.closest('[data-pick]');
   if (pk) { psPickMe(pk.getAttribute('data-pick')); return; }
   var srt = e.target.closest('[data-sort]');
@@ -545,7 +563,7 @@ psA11y(document.body);
 document.addEventListener('keydown', function(e) {
   if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('[role="button"][data-k],[role="button"][data-jump],[role="button"][data-sort]')) { e.preventDefault(); e.target.click(); }
 });
-window.addEventListener('resize', function() { psDrawChart(); psDrawDuel(); });
+window.addEventListener('resize', function() { psDrawChart(); psDrawDuel(); psDrawWatch(); });
 
 // ---------- pojedynek ----------
 var DUEL = null, duelAuto = true;
@@ -705,6 +723,151 @@ function psRenderTitle(order) {
     '<p>' + clinch + '</p>' + meLine + '</div>' +
     '<div class="tw" style="max-height:none"><table><thead><tr><th>#</th><th class="nm-c">Gracz</th><th>Pkt</th><th>Strata</th><th class="opt">Trzeba więcej niż lider</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
   document.getElementById('title-cap').textContent = 'Maksimum za typowanie: ' + MAXPTS.race + ' pkt, w weekend ze sprintem ' + MAXPTS.sprint + ' pkt (data/seasons.json; zwykłe typowanie ma 20 pytań, liczba pytań sprinterskich to założenie). Równa liczba punktów na koniec sezonu to wspólne P1. „Trzeba więcej niż lider” — ile średnio na rundę trzeba zdobywać ponad punkty lidera. Kliknij nick, żeby zobaczyć historię.';
+}
+
+// ---------- aktywni: punkty w co najmniej jednej z ACTIVE_N ostatnich rund ----------
+// liczone tylko z pełnych, kolejnych rund (z samej czołówki nie wiadomo, kto zdobył punkty)
+var ACTIVE_N = 2, ACTIVE_ONLY = false, ACTIVE_CACHE = null;
+function psActive() {
+  var R = state.rounds, n = R.length;
+  if (ACTIVE_CACHE && ACTIVE_CACHE.st === state) return ACTIVE_CACHE.v;
+  var v = null;
+  if (n > ACTIVE_N) {
+    var ok = true;
+    for (var i = n - ACTIVE_N - 1; i < n; i++) if (psPartial(R[i]) || (i > n - ACTIVE_N - 1 && psGap(i))) ok = false;
+    if (ok) {
+      var set = {}, cnt = 0, last = R[n - 1];
+      Object.keys(state.participants).forEach(function(k) {
+        var P = state.participants[k]; if (!P[last]) return;
+        for (var i = n - ACTIVE_N; i < n; i++) {
+          var d = P[R[i]], p = P[R[i - 1]];
+          if (d && (p ? d.points > p.points : d.points > 0)) { set[k] = true; cnt++; return; }
+        }
+      });
+      v = { set: set, n: cnt, from: R[n - ACTIVE_N] };
+    }
+  }
+  ACTIVE_CACHE = { st: state, v: v };
+  return v;
+}
+function psActivePlace(k) {
+  var act = psActive(), last = state.rounds[state.rounds.length - 1];
+  if (!act || !act.set[k]) return null;
+  var pts = state.participants[k][last].points, above = 0;
+  Object.keys(act.set).forEach(function(x) { if (state.participants[x][last].points > pts) above++; });
+  return above + 1;
+}
+function psActiveChip(k) {
+  var act = psActive(); if (!act) return '';
+  var p = psActivePlace(k), short = function(r) { return (r.match(/R\d+$/) || [r])[0]; };
+  return p ? '<span class="chip blue" title="Miejsce wśród ' + act.n + ' graczy z punktami w rundach ' + short(act.from) + '–' + short(state.rounds[state.rounds.length - 1]) + '">P' + p + ' wśród aktywnych (' + act.n + ')</span>'
+    : '<span class="chip red" title="Brak punktów w ' + ACTIVE_N + ' ostatnich rundach">nieaktywny w ' + ACTIVE_N + ' ostatnich rundach</span>';
+}
+function psSetActiveOnly(on, quiet) {
+  ACTIVE_ONLY = !!on; PAGE = 0;
+  document.getElementById('act-only').checked = ACTIVE_ONLY;
+  lsSet(ACTIVE_KEY, ACTIVE_ONLY ? '1' : '');
+  if (!quiet) psRenderTable(true);
+}
+
+// ---------- obserwowani gracze / mini-liga (gwiazdka, widok w tabeli, wspólny wykres, link ?liga=) ----------
+var WATCH = [], WATCH_MAX_CHART = 8;
+function psWatched(k) { return WATCH.indexOf(k) !== -1; }
+function psStarHtml(k) { var on = psWatched(k); return '<button type="button" class="star" data-star="' + psEsc(k) + '" aria-pressed="' + on + '" aria-label="' + (on ? 'Przestań obserwować ' : 'Obserwuj ') + psEsc(psName(k)) + '" title="' + (on ? 'Przestań obserwować' : 'Obserwuj — lista „⭐ Obserwowani”') + '">' + (on ? '★' : '☆') + '</button>'; }
+function psSaveWatch() { lsSet(WATCH_KEY, JSON.stringify(WATCH)); }
+function psToggleWatch(k) {
+  var i = WATCH.indexOf(k);
+  if (i === -1) WATCH.push(k); else WATCH.splice(i, 1);
+  psSaveWatch();
+  psToast(i === -1 ? 'Obserwujesz: ' + psName(k) : 'Nie obserwujesz: ' + psName(k));
+  var hb = document.getElementById('h-watch');
+  if (hb && hb.getAttribute('data-star') === k) { hb.setAttribute('aria-pressed', String(i === -1)); hb.textContent = i === -1 ? '★ Obserwujesz' : '☆ Obserwuj'; }
+  psRenderWatch(psOrder(state.rounds[state.rounds.length - 1]));
+  psRenderTable();
+}
+function psLeagueKeys() {
+  // na wykresie obserwowani w kolejności dodania (kolor przypisany do osoby, nie do miejsca) + Ty na końcu
+  var keys = WATCH.filter(function(k) { return state.participants[k]; });
+  if (ME && keys.indexOf(ME) === -1 && keys.length) keys.push(ME);
+  return keys;
+}
+function psRenderWatch() {
+  var sec = document.getElementById('watch-sec'), keys = psLeagueKeys();
+  if (!keys.length) { sec.hidden = true; return; }
+  sec.hidden = false;
+  var last = state.rounds[state.rounds.length - 1], shown = keys.slice(0, WATCH_MAX_CHART);
+  document.getElementById('watch-n').textContent = keys.length + (keys.length === 1 ? ' gracz' : ' graczy');
+  document.getElementById('watch-legend').innerHTML = shown.map(function(k, i) {
+    var d = state.participants[k][last];
+    return '<span><i style="background:var(--s' + (i + 1) + ')"></i><span data-k="' + psEsc(k) + '">' + psEsc(psName(k)) + '</span>' + (k === ME ? ' (Ty)' : '') + (d ? ' · P' + psPlace(last, d).txt : '') + '</span>';
+  }).join('');
+  document.getElementById('watch-cap').textContent = (keys.length > WATCH_MAX_CHART ? 'Na wykresie pierwszych ' + WATCH_MAX_CHART + ' z ' + keys.length + ' obserwowanych (wszyscy są w tabeli). ' : '') +
+    'Gwiazdka ☆ przy nicku w tabeli albo w historii gracza dodaje do listy. Lista jest zapisana w tej przeglądarce; „Link do ligi” pozwala ją komuś pokazać.';
+  psDrawWatch();
+}
+function psDrawWatch() {
+  var box = document.getElementById('watch-chart'), tip = document.getElementById('watch-tip');
+  if (!box || document.getElementById('watch-sec').hidden) return;
+  var keys = psLeagueKeys().slice(0, WATCH_MAX_CHART), R = state.rounds, n = R.length;
+  var W = Math.max(280, box.clientWidth), H = W < 480 ? 220 : 260, direct = keys.length <= 4 && W >= 480;
+  var m = { l: 44, r: direct ? 96 : 16, t: 16, b: 28 }, iw = W - m.l - m.r, ih = H - m.t - m.b;
+  var series = keys.map(function(k) { return R.map(function(r) { var d = state.participants[k][r]; return d ? psPlace(r, d).place : null; }); });
+  var all = [].concat.apply([], series).filter(function(v) { return v !== null; });
+  if (!all.length) { box.innerHTML = ''; box.appendChild(tip); return; }
+  var lo = Math.min.apply(null, all), hi = Math.max.apply(null, all);
+  var pad = Math.max(2, Math.ceil((hi - lo) * 0.1)); lo = Math.max(1, lo - pad); hi = hi + pad;
+  var X = function(i) { return m.l + (n === 1 ? iw / 2 : i * iw / (n - 1)); };
+  var Y = function(v) { return m.t + (v - lo) / (hi - lo) * ih; };
+  var raw = (hi - lo) / 4, step = [1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000].find(function(x) { return x >= raw; }) || 2000;
+  var ticks = lo === 1 ? [1] : [];
+  for (var v = Math.ceil(lo / step) * step; v <= hi; v += step) if (v > 1 && (v - (ticks[ticks.length - 1] || -1e9)) * ih / (hi - lo) >= 18) ticks.push(v);
+  var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" aria-label="Miejsce obserwowanych graczy po każdej rundzie">';
+  svg += '<g class="grid">' + ticks.map(function(t) { return '<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + Y(t) + '" y2="' + Y(t) + '"/>'; }).join('') + '</g>';
+  svg += ticks.map(function(t) { return '<text class="ax" x="' + (m.l - 8) + '" y="' + (Y(t) + 4) + '" text-anchor="end">P' + t + '</text>'; }).join('');
+  var every = W < 480 && n > 8 ? 2 : 1;
+  svg += R.map(function(r, i) { return (i % every && i !== n - 1) ? '' : '<text class="ax" x="' + X(i) + '" y="' + (H - 8) + '" text-anchor="middle">' + psEsc((r.match(/R\d+$/) || [r])[0]) + (psIsSprint(r) ? '⚡' : '') + '</text>'; }).join('');
+  svg += '<line class="cross" id="watch-cross" x1="0" x2="0" y1="' + m.t + '" y2="' + (H - m.b) + '" style="display:none"/>';
+  series.forEach(function(vals, si) {
+    var d = '', pen = false;
+    vals.forEach(function(v, i) { if (v === null || (i > 0 && psGap(i))) pen = false; if (v === null) return; d += (pen ? 'L' : 'M') + X(i) + ' ' + Y(v); pen = true; });
+    svg += '<path class="wl" style="stroke:var(--s' + (si + 1) + ')" d="' + d + '"/>';
+    svg += vals.map(function(v, i) { return v === null ? '' : '<circle class="wd" style="fill:var(--s' + (si + 1) + ')" cx="' + X(i) + '" cy="' + Y(v) + '" r="4"/>'; }).join('');
+  });
+  if (direct) {
+    // podpisy na końcu linii, rozsunięte, żeby się nie nakładały
+    var labs = series.map(function(vals, si) { var li = vals.length - 1; while (li >= 0 && vals[li] === null) li--; return li < 0 ? null : { si: si, y: Y(vals[li]), x: X(li) }; }).filter(Boolean).sort(function(a, b) { return a.y - b.y; });
+    for (var i = 1; i < labs.length; i++) if (labs[i].y - labs[i - 1].y < 14) labs[i].y = labs[i - 1].y + 14;
+    svg += labs.map(function(l) { var nm = psName(keys[l.si]); return '<text class="wlab" x="' + (l.x + 9) + '" y="' + (l.y + 4) + '">' + psEsc(nm.length > 12 ? nm.slice(0, 11) + '…' : nm) + '</text>'; }).join('');
+  }
+  svg += '</svg>';
+  box.innerHTML = svg; box.appendChild(tip); tip.style.display = 'none';
+  var el = box.querySelector('svg'), cross = el.querySelector('#watch-cross');
+  function show(ev) {
+    var rect = el.getBoundingClientRect(), x = (ev.clientX - rect.left) * W / rect.width;
+    var i = Math.max(0, Math.min(n - 1, Math.round((x - m.l) / (n === 1 ? 1 : iw / (n - 1)))));
+    cross.setAttribute('x1', X(i)); cross.setAttribute('x2', X(i)); cross.style.display = '';
+    var rows = keys.map(function(k, si) { var d = state.participants[k][R[i]]; return { k: k, si: si, d: d }; })
+      .sort(function(a, b) { return (a.d ? a.d.position : 1e9) - (b.d ? b.d.position : 1e9); });
+    tip.innerHTML = '<b>' + psEsc(psRoundText(R[i])) + '</b>' + rows.map(function(r) {
+      return '<br><span class="sw" style="background:var(--s' + (r.si + 1) + ')"></span>' + psEsc(psName(r.k)) + ': ' + (r.d ? 'P' + psPlace(R[i], r.d).txt + ' · ' + r.d.points + ' pkt' : (psPartial(R[i]) ? 'poza TOP ' + state.top[R[i]] : 'brak danych'));
+    }).join('');
+    tip.style.display = 'block';
+    var px = X(i) * rect.width / W, tw = tip.offsetWidth;
+    tip.style.left = Math.max(tw / 2, Math.min(rect.width - tw / 2, px)) + 'px';
+    tip.style.top = '0px';
+  }
+  el.addEventListener('pointermove', show); el.addEventListener('pointerdown', show);
+  el.addEventListener('pointerleave', function() { tip.style.display = 'none'; cross.style.display = 'none'; });
+}
+function psShareLeague() {
+  var keys = psLeagueKeys().filter(function(k) { return /^u\d+$/.test(k); });
+  if (!keys.length) return;
+  var u = new URL(location.href); u.search = ''; u.hash = '';
+  if (SEASON !== DEFAULT_SEASON) u.searchParams.set('sezon', SEASON);
+  u.searchParams.set('liga', keys.map(function(k) { return k.slice(1); }).join(','));
+  var url = u.toString();
+  if (navigator.share) { navigator.share({ title: 'Moja liga — klasyfikacja parcfer.me', url: url }).catch(function() {}); return; }
+  navigator.clipboard.writeText(url).then(function() { psToast('Skopiowano link do ligi'); }, function() { window.prompt('Skopiuj link:', url); });
 }
 
 // ---------- ranking po wybranej rundzie (?runda=R19): stan tak, jakby późniejszych rund jeszcze nie było ----------
@@ -959,6 +1122,7 @@ function psRenderAll() {
   psResolveMe();
   psRenderKpis(order);
   psRenderTitle(order);
+  psRenderWatch(order);
   psRenderForm(order);
   psRenderRecords();
   psRenderChamps();
@@ -1021,6 +1185,12 @@ psVersion();
     document.getElementById('ps-subtitle').textContent = 'Nie udało się wczytać danych.';
     return;
   }
+  // obserwowani (zapisani w przeglądarce) i filtr aktywnych; ?liga=1,2,3 pokazuje cudzą ligę bez nadpisywania własnej listy
+  try { WATCH = JSON.parse((lsGet(WATCH_KEY) || {}).value || '[]').filter(function(k) { return typeof k === 'string'; }); } catch (e) { WATCH = []; }
+  var liga = (new URLSearchParams(location.search).get('liga') || '').split(',').map(function(x) { return x.trim(); }).filter(function(x) { return /^\d+$/.test(x); });
+  if (liga.length) WATCH = liga.map(function(x) { return 'u' + x; });
+  ACTIVE_ONLY = !!(lsGet(ACTIVE_KEY) || {}).value;
+  document.getElementById('act-only').checked = ACTIVE_ONLY;
   // ?runda=R19 — ranking po wybranej rundzie
   var ri0 = psRoundIndex(new URLSearchParams(location.search).get('runda'));
   ROUND_UPTO = ri0 >= 0 && ri0 < seedRounds.length - 1 ? ri0 + 1 : null;
@@ -1054,6 +1224,9 @@ psVersion();
     document.getElementById('duel-b').value = vs;
     psRenderDuel();
     document.getElementById('duel-sec').scrollIntoView({ block: 'start' });
+  } else if (liga.length) {
+    psSetView('watch');
+    document.getElementById('watch-sec').scrollIntoView({ block: 'start' });
   } else if (shared) {
     if (ME) psSetView('near');
     document.getElementById('k-me').scrollIntoView({ block: 'center' });
