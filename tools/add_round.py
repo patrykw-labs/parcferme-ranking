@@ -242,6 +242,7 @@ def run():
     ap.add_argument("--replace", action="store_true", help="podmień istniejącą rundę o tej nazwie")
     ap.add_argument("--date", help="data rundy (dzień wyścigu) RRRR-MM-DD; domyślnie dziś, w --auto wg zamknięcia typowania")
     ap.add_argument("--contests", help="lista typowań z pliku JSON zamiast z parcfer.me (do testów)")
+    ap.add_argument("--raw-out", help="przy zapisie rundy zachowaj surowy ranking z parcfer.me w tym pliku (kopia zapasowa, bez ids2)")
     a = ap.parse_args()
     if bool(a.round) == a.auto:
         ap.error("podaj nazwę rundy albo --auto")
@@ -268,12 +269,17 @@ def run():
         else:
             print("Nowa rozliczona runda:", a.round)
 
+    raw = None
     if a.tsv:
         rows = parse_tsv(Path(a.tsv).read_text(encoding="utf-8"))
     elif a.html:
-        rows = parse_html(Path(a.html).read_text(encoding="utf-8", errors="replace"))
+        text = Path(a.html).read_text(encoding="utf-8", errors="replace")
+        rows = parse_html(text)
+        raw = next_data(text)
     else:
-        rows = parse_html(fetch(URL.format(season=season)))
+        page = fetch(URL.format(season=season))
+        rows = parse_html(page)
+        raw = next_data(page)
 
     # kontrole danych
     if len(rows) < 100:
@@ -366,6 +372,13 @@ def run():
         rnd["standings"] = standings
     d["rounds"].insert(at, rnd)
     write(path, d)
+    if a.raw_out and raw:
+        # kopia zapasowa surowych danych — tylko uId, name, suma; ids2 (skrót MD5 e-maila gracza) nigdy nie trafia do pliku
+        wyniki = [{"uId": w.get("uId"), "name": w.get("name"), "suma": w.get("suma")} for w in raw.get("wyniki", [])]
+        Path(a.raw_out).write_text(json.dumps({"source": URL.format(season=season), "season": season, "round": a.round,
+                                               "fetched_at": now().strftime("%Y-%m-%dT%H:%M:%SZ"), "wyniki": wyniki},
+                                              ensure_ascii=False) + "\n", encoding="utf-8")
+        print(f"Kopia surowego rankingu: {a.raw_out} ({len(wyniki)} wierszy)")
     build_feed.main()
     build_history.main()
     print(f"Zapisano {a.round}: {len(standings)} uczestników → {path.relative_to(ROOT)}")

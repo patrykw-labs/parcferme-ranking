@@ -46,6 +46,9 @@ await p.waitForSelector('#ps-ver:not([hidden])', { timeout: 5000 }).catch(() => 
 check(/^v\d+\.\d+\.\d+/.test((await p.textContent('#ps-ver')).trim()), 'wersja strony w górnym pasku: ' + (await p.textContent('#ps-ver')).trim());
 check((await p.$$('#k-top10 li')).length === 10, 'kafelek TOP 10');
 check((await p.$$('#rec-grid .rec')).length >= 4, 'rekordy sezonu');
+// przyrost przez przerwę w numeracji rund (np. R3 → R9) — gdy sezon ma taką przerwę
+const nums = season.rounds.map(r => +r.name.match(/R(\d+)$/)[1]);
+if (nums.some((n, i) => i > 0 && n - nums[i - 1] > 1)) check((await p.$$('#ps-table .d-gap')).length > 0, 'przyrost przez przerwę w danych („· N rund”)');
 // zwycięzcy rund (gdy sezon ma co najmniej dwie kolejne rundy) i rozkład punktów (gdy obie rundy są pełne)
 if (season.rounds.length > 1) {
   check((await p.$$('#wins-table tbody tr')).length >= 1, 'zwycięzcy rund: ' + (await p.$$('#wins-table tbody tr')).length + ' rund');

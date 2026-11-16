@@ -127,6 +127,17 @@ function psGap(ri) {
   var a = psRoundNo(state.rounds[ri - 1]), b = psRoundNo(state.rounds[ri]);
   return a !== null && b !== null && b - a > 1;
 }
+// przyrost przez przerwę w danych (np. Japonia R3 → Silverstone R9): {v: punkty, n: liczba rund}; tylko do pokazania,
+// nie do rekordów, formy ani sortowania (psRoundDelta zwraca tam null)
+function psGapDelta(name, ri) {
+  if (ri === 0 || !psGap(ri)) return null;
+  var d = state.participants[name][state.rounds[ri]], p = state.participants[name][state.rounds[ri - 1]];
+  return d && p ? { v: d.points - p.points, n: psRoundNo(state.rounds[ri]) - psRoundNo(state.rounds[ri - 1]) } : null;
+}
+function psGapTitle(ri, gd) {
+  var a = psRoundNo(state.rounds[ri - 1]) + 1, b = psRoundNo(state.rounds[ri]);
+  return 'Przyrost z ' + gd.n + ' rund (R' + a + '–R' + b + '), średnio ' + (gd.v / gd.n).toFixed(1).replace('.', ',') + ' pkt na rundę — rund R' + a + '–R' + (b - 1) + ' nie mamy, więc to nie jest przyrost w jednej rundzie';
+}
 function psRoundDelta(name, ri) {
   if (ri === 0 || psGap(ri)) return null; // przez przerwę to nie jest „przyrost w rundzie”
   var d = state.participants[name][state.rounds[ri]], p = state.participants[name][state.rounds[ri - 1]];
@@ -355,7 +366,9 @@ function psRenderTable(resetScroll) {
       var d = P[r];
       if (!d) return psPartial(r) ? '<td class="rc" title="Poza TOP ' + state.top[r] + ' — z tej rundy mamy tylko czołówkę"><span class="out">&gt;&nbsp;' + state.top[r] + '</span></td>' : '<td class="rc"><span>—</span></td>';
       var dl = psStatus(name, ri, 'points'), note;
-      if (dl === null) note = '';
+      var gd = dl === null ? psGapDelta(name, ri) : null;
+      if (gd) note = ' · <span class="d-gap" title="' + psGapTitle(ri, gd) + '">' + psSigned(gd.v) + ' · ' + gd.n + ' rund</span>';
+      else if (dl === null) note = '';
       else if (dl === 'top') note = ' · <span class="d-new">↑ TOP ' + psPrevSize(ri) + '</span>';
       else if (dl === 'new') note = ' · <span class="d-new">nowy</span>';
       else note = ' · <span class="' + (dl > 0 ? 'd-up' : 'd-zero') + '">' + psSigned(dl) + '</span>';
@@ -465,7 +478,8 @@ function psOpenHistory(key) {
     var d = P[r];
     if (!d) return '<tr><td>' + psRoundLabel(r) + '</td><td colspan="3" class="tie">' + (psPartial(r) ? 'poza TOP ' + state.top[r] + ' (z tej rundy mamy tylko czołówkę)' : '—') + '</td></tr>';
     var g = psStatus(key, i, 'points'), t = psTie(r, d.points);
-    var gt = g === null ? '—' : g === 'top' ? '↑ TOP ' + psPrevSize(i) : g === 'new' ? 'nowy' : psSigned(g);
+    var gd2 = g === null ? psGapDelta(key, i) : null;
+    var gt = gd2 ? '<span class="d-gap" title="' + psGapTitle(i, gd2) + '">' + psSigned(gd2.v) + ' <span class="tie">(' + gd2.n + ' rund)</span></span>' : g === null ? '—' : g === 'top' ? '↑ TOP ' + psPrevSize(i) : g === 'new' ? 'nowy' : psSigned(g);
     var hp = psPlace(r, d);
     return '<tr><td>' + psRoundLabel(r) + '</td><td' + (hp.title ? ' title="' + hp.title + '"' : '') + '>P' + hp.txt + '</td><td><b>' + d.points + '</b></td><td>' + gt + '</td></tr>';
   }).reverse().join('');
@@ -523,7 +537,8 @@ function psDrawChart() {
     var dt = P[R[i]], g = psStatus(HIST, i, 'points');
     cross.setAttribute('x1', X(i)); cross.setAttribute('x2', X(i)); cross.style.display = '';
     var dot = el.querySelector('.dot[data-i="' + i + '"]'); if (dot) dot.classList.add('on');
-    tip.innerHTML = '<b>' + psEsc(psRoundText(R[i])) + '</b><br>' + (dt ? 'P' + psPlace(R[i], dt).txt + ' · ' + dt.points + ' pkt' + (typeof g === 'number' ? ' (' + psSigned(g) + ')' : '') : (psPartial(R[i]) ? 'poza TOP ' + state.top[R[i]] : 'brak danych'));
+    var gd3 = psGapDelta(HIST, i);
+    tip.innerHTML = '<b>' + psEsc(psRoundText(R[i])) + '</b><br>' + (dt ? 'P' + psPlace(R[i], dt).txt + ' · ' + dt.points + ' pkt' + (typeof g === 'number' ? ' (' + psSigned(g) + ')' : gd3 ? ' (' + psSigned(gd3.v) + ' z ' + gd3.n + ' rund)' : '') : (psPartial(R[i]) ? 'poza TOP ' + state.top[R[i]] : 'brak danych'));
     tip.style.display = 'block';
     var px = X(i) * rect.width / W, tw = tip.offsetWidth;
     tip.style.left = Math.max(tw / 2, Math.min(rect.width - tw / 2, px)) + 'px';
