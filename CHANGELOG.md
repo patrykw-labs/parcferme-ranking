@@ -2,6 +2,23 @@
 
 Format: każda wersja to nagłówek `## vX.Y.Z (RRRR-MM-DD) — tytuł`. Workflow „Wydanie” (`.github/workflows/release.yml`) po wypchnięciu na `main` nowej wersji (bez tagu) sam zakłada tag i tworzy wydanie na GitHubie z treścią sekcji tej wersji.
 
+## v1.3.0 (2026-11-16) — Walka o tytuł, archiwum sezonów, mini-ligi i zwycięzcy rund
+
+### Nowe funkcje
+- **Walka o tytuł** — ilu graczy może jeszcze matematycznie wygrać sezon, ile średnio na rundę trzeba zdobywać ponad lidera, Twoja sytuacja i kiedy lider zapewni sobie tytuł; po ostatniej rundzie — mistrz sezonu.
+- **Archiwum sezonów 2022–2025** — końcowe rankingi poprzednich sezonów (`?sezon=2024`), lista **mistrzów sezonów** i **sezony gracza** w jego historii.
+- **Ranking po wybranej rundzie** — lista „Stan po rundzie” i link `?runda=R19`: cała strona tak, jak wyglądała po danej rundzie; każdy wpis RSS prowadzi do stanu po swojej rundzie.
+- **Tylko aktywni** — przełącznik przy tabeli (punkty w co najmniej jednej z 2 ostatnich rund) i miejsce wśród aktywnych w karcie „Twoja pozycja”.
+- **Obserwowani / mini-liga** — gwiazdka ☆ przy nicku, widok „⭐ Obserwowani”, wspólny wykres miejsc (do 8 graczy), link do ligi `?liga=…` i przycisk „✕ Wyczyść”.
+- **Zwycięzcy rund i rozkład punktów** — kto zdobył najwięcej w każdej rundzie oraz ile osób zdobyło 1, 2, 3… pkt w wybranej rundzie (z Twoim wynikiem).
+- **Przyrost przez przerwę R3 → R9** — w Silverstone R9 „+66 · 6 rund” ze średnią na rundę (bez wpływu na rekordy i formę).
+- **Wersja strony w górnym pasku** — `v1.3.0` albo `v1.3.0+N · commit`, gdy na main są zmiany po wydaniu.
+
+### Dane i automat
+- Maksimum punktów za typowanie w `data/seasons.json` (`max_points`: 20, w weekend ze sprintem 25) — kalkulator „ile brakuje” pisze „matematycznie poza zasięgiem”, a kontrola danych ma limit zależny od typu rundy.
+- `data/history.json` — wyniki każdego gracza we wszystkich sezonach i mistrzowie; odświeżany automatycznie po każdej rundzie.
+- Kopia zapasowa surowego rankingu z parcfer.me (bez `ids2`) jako artefakt przebiegu przy każdej zapisanej rundzie.
+
 ## v1.2.0 (2026-11-16) — Tożsamość graczy, remisy, odporny automat i dostępność
 
 ### Nowe funkcje
