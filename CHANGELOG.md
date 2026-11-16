@@ -1,6 +1,33 @@
 # Historia zmian
 
-Format: każda wersja to nagłówek `## vX.Y.Z (RRRR-MM-DD) — tytuł`. Workflow „Wydanie” (`.github/workflows/release.yml`) po wypchnięciu tagu `vX.Y.Z` tworzy wydanie na GitHubie z treścią sekcji tej wersji.
+Format: każda wersja to nagłówek `## vX.Y.Z (RRRR-MM-DD) — tytuł`. Workflow „Wydanie” (`.github/workflows/release.yml`) po wypchnięciu na `main` nowej wersji (bez tagu) sam zakłada tag i tworzy wydanie na GitHubie z treścią sekcji tej wersji.
+
+## v1.2.0 (2026-11-16) — Tożsamość graczy, remisy, odporny automat i dostępność
+
+### Nowe funkcje
+- **Linki po numerze gracza** (`?id=`, w pojedynku `&vsid=`) — zawsze otwierają tę samą osobę; stare linki `?nick=` i `?vs=` nadal działają.
+- **Wybór siebie przy powtórzonym nicku** — np. 7 × „Michał”: lista z miejscem i punktami, wybór zapamiętany. Numery „(2)”, „(3)” nie zmieniają się już po kolejnych rundach.
+- **Remisy wszędzie** — lider, skok rundy i najwięcej punktów w rundzie (na stronie i w RSS) pokazują wszystkich z tym samym wynikiem.
+- **TOP 100 z remisem na granicy** — widok obejmuje wszystkich z miejscem do 100.
+- **Wyszukiwarka bez polskich znaków** („lukasz” znajdzie „Łukasz”) i podpowiedzi nicków w polu „Twoja pozycja”.
+
+### Dane i wyliczenia
+- Średnia w historii gracza = punkty / rozegrane rundy sezonu; rekordy średniej i równości liczone na wspólnym zakresie rund (R12–R20).
+- Data rundy to dzień wyścigu (poprawione Silverstone, Zandvoort, Singapur), nowe pole `captured_at` z momentem pobrania; rundy z samą czołówką mają jawne pole `top`.
+- RSS: aktywność tylko przy dwóch pełnych rundach (bez błędnego wpisu przy Spa R10).
+
+### Automat
+- Numer rundy z kalendarza GP sezonu (`data/seasons.json` → `calendar`); typowania spoza rankingu pomijane, nieznane GP zatrzymuje automat z błędem.
+- Korekty punktów na parcfer.me po zapisie rundy są pobierane automatycznie (commit „Korekta rundy …”).
+- Alarm e-mailem, gdy typowanie jest rozliczone od 96 h, a ranking się nie zmienił.
+- Keepalive — harmonogram nie wygaśnie w przerwie zimowej.
+- `check_data.py` pilnuje, żeby w danych nie było pól spoza `{pos, name, points, id}` (w tym `ids2` z parcfer.me).
+
+### Wygoda i wygląd
+- Kontrast zgodny z WCAG AA w obu motywach, nicki jako przyciski (klawiatura, czytniki ekranu), większe cele dotykowe.
+- Font z własnego serwera zamiast Google Fonts; tabela na telefonie zawsze przewinięta do kolumny „Suma”.
+- Pole „Twoja pozycja” przelicza stronę po skończeniu pisania, a nie po każdym znaku.
+- Eksport CSV chroni przed formułami, rozwijana notka „O danych”, neutralny tytuł podglądu linku.
 
 ## v1.1.0 (2026-11-13) — Rekordy, RSS, sprinty i historia od kwietnia
 
