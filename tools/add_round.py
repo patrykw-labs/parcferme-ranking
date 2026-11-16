@@ -37,6 +37,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import build_feed  # noqa: E402  (kanał RSS odświeżany po każdej nowej rundzie)
+import check_data  # noqa: E402  (limit punktów na rundę)
 URL = "https://parcfer.me/typowanie-ranking/{season}"
 CONTESTS_URL = "https://parcfer.me/typowanie"
 CONTEST_URL = "https://parcfer.me/typowanie/{link}"
@@ -328,7 +329,7 @@ def run():
     new = keyed(standings)
     if before:
         prev = keyed(before["standings"])
-        gap = max(1, (num or 0) - (round_number(before["name"]) or 0)) if num else 1
+        limit = check_data.max_gain(config(), season, round_number(before["name"]), num)
         cut = len(before["standings"])
         if all(prev.get(k) and prev[k]["points"] == s["points"] for k, s in list(new.items())[:cut]):
             msg = "ranking identyczny jak w poprzedniej rundzie — parcfer.me jeszcze nie przeliczył punktów"
@@ -339,7 +340,7 @@ def run():
             if a.auto:
                 raise NothingToDo(msg)
             sys.exit(msg[0].upper() + msg[1:])
-        odd = [(s["name"], s["points"] - prev[k]["points"]) for k, s in new.items() if k in prev and not 0 <= s["points"] - prev[k]["points"] <= 25 * gap]
+        odd = [(s["name"], s["points"] - prev[k]["points"]) for k, s in new.items() if k in prev and not 0 <= s["points"] - prev[k]["points"] <= limit]
         if odd:
             if a.auto:
                 sys.exit(f"Nietypowe przyrosty punktów, przerywam: {odd[:20]}")
@@ -350,8 +351,8 @@ def run():
     if after:
         # wstawiana starsza runda: punkty nie mogą przewyższać punktów z następnej rundy
         nxt = keyed(after["standings"])
-        gap = max(1, (round_number(after["name"]) or 0) - (num or 0)) if num else 1
-        odd = [(s["name"], nxt[k]["points"] - s["points"]) for k, s in new.items() if k in nxt and not 0 <= nxt[k]["points"] - s["points"] <= 25 * gap]
+        limit = check_data.max_gain(config(), season, num, round_number(after["name"]))
+        odd = [(s["name"], nxt[k]["points"] - s["points"]) for k, s in new.items() if k in nxt and not 0 <= nxt[k]["points"] - s["points"] <= limit]
         if odd:
             sys.exit(f"Niespójne z następną rundą {after['name']}: {odd[:20]}")
 

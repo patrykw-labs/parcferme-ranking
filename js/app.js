@@ -755,7 +755,14 @@ function psRenderRecords() {
 }
 
 // ---------- kalkulator „ile mi brakuje” ----------
-var CALC_T = null, CALC_ME = null, PLANNED = null;
+var CALC_T = null, CALC_ME = null, PLANNED = null, MAXPTS = null;
+// najwięcej punktów do zdobycia w rundach po lastNo (seasons.json → max_points: zwykła runda / weekend ze sprintem)
+function psMaxLeft(lastNo) {
+  if (!MAXPTS || !PLANNED || !lastNo) return null;
+  var sum = 0;
+  for (var r = lastNo + 1; r <= PLANNED; r++) sum += SPRINTS.indexOf(r) !== -1 ? MAXPTS.sprint : MAXPTS.race;
+  return sum;
+}
 function psCalc() {
   var sel = document.getElementById('calc-t'), out = document.getElementById('calc-out');
   if (!sel || !out) return;
@@ -774,8 +781,13 @@ function psCalc() {
   var html = 'Do ' + label + ' brakuje <b>' + gap + ' pkt</b> (' + psEsc(psName(target)) + ', P' + psPlace(last, td).txt + ', ma ' + td.points + ' pkt). ';
   if (left === null) html += '';
   else if (left === 0) html += 'To była ostatnia runda sezonu.';
-  else html += 'Zostały <b>' + left + '</b> ' + (left === 1 ? 'runda' : left % 10 >= 2 && left % 10 <= 4 && (left % 100 < 10 || left % 100 >= 20) ? 'rundy' : 'rund') +
-    ' — trzeba zdobywać średnio <b>' + (Math.ceil(gap / left * 10) / 10).toFixed(1).replace('.', ',') + ' pkt na rundę więcej</b> niż ten gracz' + (gap / left > 20 ? ' (więcej, niż daje jedna runda — w praktyce poza zasięgiem)' : '') + '.';
+  else {
+    var maxLeft = psMaxLeft(lastNo), rundy = left === 1 ? 'runda' : left % 10 >= 2 && left % 10 <= 4 && (left % 100 < 10 || left % 100 >= 20) ? 'rundy' : 'rund';
+    html += maxLeft !== null && gap > maxLeft
+      ? 'Zostały <b>' + left + '</b> ' + rundy + ', w których można zdobyć najwyżej ' + maxLeft + ' pkt — <b>matematycznie poza zasięgiem</b>.'
+      : 'Zostały <b>' + left + '</b> ' + rundy + (maxLeft !== null ? ' (do zdobycia najwyżej ' + maxLeft + ' pkt)' : '') +
+        ' — trzeba zdobywać średnio <b>' + (Math.ceil(gap / left * 10) / 10).toFixed(1).replace('.', ',') + ' pkt na rundę więcej</b> niż ten gracz.';
+  }
   out.innerHTML = html;
 }
 
@@ -862,6 +874,7 @@ psVersion();
     SEASON = idx.seasons.indexOf(qs) !== -1 ? qs : idx['default'];
     PLANNED = idx.planned_rounds && idx.planned_rounds[SEASON] || idx.calendar && idx.calendar[SEASON] && idx.calendar[SEASON].length || null;
     SPRINTS = idx.sprints && idx.sprints[SEASON] || [];
+    MAXPTS = idx.max_points || null;
     psBuildSeasonPicker(idx.seasons);
     var json = await (await fetch('data/' + SEASON + '.json', { cache: 'no-cache' })).json();
     document.getElementById('ps-season').textContent = SEASON;

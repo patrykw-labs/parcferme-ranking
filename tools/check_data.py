@@ -8,8 +8,9 @@ Kod wyjścia 1 przy błędach. Sprawdza:
   punkty nie rosną w dół tabeli, unikalne id, liczba wierszy zgodna z polem „top”
   (runda z samą czołówką), tylko znane pola rundy i wiersza rankingu — w szczególności
   żadnego „ids2” z parcfer.me (to skrót adresu e-mail gracza, nie wolno go zapisywać),
-- dla każdego gracza (id): punkty nie maleją między rundami i nie rosną
-  o więcej niż 25 na rundę (przy przerwie w danych — 25 × liczba rund).
+- dla każdego gracza (id): punkty nie maleją między rundami i nie rosną bardziej,
+  niż da się zdobyć (seasons.json → max_points: zwykła runda / weekend ze sprintem;
+  przy przerwie w danych — suma dla wszystkich rund przerwy).
 """
 import json
 import re
@@ -17,7 +18,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-MAX_PER_ROUND = 25
+MAX_PER_ROUND = 25  # gdy seasons.json nie ma max_points
 ROUND_KEYS = {"name", "date", "top", "captured_at", "standings"}
 ROW_KEYS = {"pos", "name", "points", "id"}
 
@@ -27,7 +28,18 @@ def round_number(name):
     return int(m.group(1)) if m else None
 
 
-def check_season(path, errors, warnings):
+def max_gain(cfg, season, a, b):
+    """Najwięcej punktów do zdobycia w rundach a+1..b (bez numerów rund — jedna runda)."""
+    mp, spr = cfg.get("max_points"), set(cfg.get("sprints", {}).get(str(season), []))
+    if a is None or b is None:
+        return max(mp.values()) if mp else MAX_PER_ROUND
+    if not mp:
+        return MAX_PER_ROUND * max(1, b - a)
+    return sum(mp["sprint"] if n in spr else mp["race"] for n in range(a + 1, b + 1))
+
+
+def check_season(path, errors, warnings, cfg=None):
+    cfg = cfg or {}
     d = json.loads(path.read_text(encoding="utf-8"))
     rounds = d.get("rounds", [])
     names = [r["name"] for r in rounds]
@@ -72,8 +84,7 @@ def check_season(path, errors, warnings):
 
     for pid, h in history.items():
         for (a, ra, p, _), (b, rb, q, n) in zip(h, h[1:]):
-            gap = (b - a) if a is not None and b is not None else 1
-            if not 0 <= q - p <= MAX_PER_ROUND * max(1, gap):
+            if not 0 <= q - p <= max_gain(cfg, d.get("season"), a, b):
                 errors.append(f"{n} (id {pid}): {ra} {p} pkt → {rb} {q} pkt")
         if len({x[3] for x in h}) > 1:
             warnings.append(f"id {pid} zmieniał nick: {sorted({x[3] for x in h})}")
@@ -91,7 +102,7 @@ def main():
         if not path.exists():
             errors.append(f"brak pliku {path.relative_to(ROOT)}")
             continue
-        n_rounds, n_players = check_season(path, errors, warnings)
+        n_rounds, n_players = check_season(path, errors, warnings, seasons)
         print(f"{path.relative_to(ROOT)}: {n_rounds} rund, {n_players} graczy")
     for w in warnings:
         print("UWAGA:", w)
