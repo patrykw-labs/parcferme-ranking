@@ -46,6 +46,13 @@ button,input{font:inherit;color:inherit}
 .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:16px;color:var(--text);text-decoration:none;letter-spacing:-.01em}
 .brand-ico{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--accent),#1d4ed8);display:grid;place-items:center;color:#fff;font-size:15px;font-weight:800;box-shadow:0 4px 14px rgba(37,99,235,.35)}
 .top-sp{flex:1}
+/* wersja strony: wydanie + commity po nim */
+.ver{display:inline-flex;align-items:center;gap:4px;padding:0 9px;border-radius:999px;border:1px solid var(--border-strong);font-size:11px;font-weight:700;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.ver[hidden]{display:none}
+.ver a{color:inherit;text-decoration:none;display:inline-block;padding:4px 0}
+.ver a:hover{color:var(--text);text-decoration:underline;text-underline-offset:3px}
+.ver .ver-c{font-weight:600}
+@media (max-width:560px){.ver .ver-h{display:none}}
 .icon-btn{width:38px;height:38px;border-radius:10px;border:1px solid var(--border-strong);background:var(--card);display:grid;place-items:center;cursor:pointer}
 .icon-btn:hover{border-color:var(--accent)}
 .icon-btn svg{width:18px;height:18px}
@@ -297,3 +304,6 @@ dialog.hist::backdrop{background:rgba(5,10,20,.6);backdrop-filter:blur(2px)}
   .c-name .mv{width:38px}
   .pager .num:not(.on){display:none}
 }
+/* wąskie telefony: pasek górny z wersją strony musi się zmieścić */
+@media (max-width:400px){.top-in{gap:8px;padding:10px 12px}.brand{font-size:14px;gap:8px}.ver{padding:0 7px}.icon-btn,.coffee-btn{width:36px;height:36px}.coffee-btn{padding:0;justify-content:center}}
+@media (max-width:340px){.ver .ver-c{display:none}.brand>span:last-child{display:none}}

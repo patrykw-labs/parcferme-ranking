@@ -17,6 +17,8 @@ on:
 
 permissions:
   contents: write
+  pages: write      # ponowna publikacja strony z nowym numerem wersji
+  id-token: write
 
 concurrency:
   group: release
@@ -26,6 +28,8 @@ jobs:
   release:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    outputs:
+      created: ${{ steps.create.outputs.created }}
     steps:
       - uses: actions/checkout@v7
 
@@ -55,6 +59,7 @@ jobs:
           cat notes.md
 
       - name: Utwórz wydanie
+        id: create
         if: steps.notes.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -68,3 +73,10 @@ jobs:
             # push na main albo ręcznie: tag zakładany na commicie, z którego uruchomiono workflow
             gh release create "$TAG" --title "$TITLE" --notes-file notes.md --target "$GITHUB_SHA"
           fi
+          echo "created=true" >> "$GITHUB_OUTPUT"
+
+  # publikacja z pusha mogła ruszyć przed założeniem tagu — publikujemy jeszcze raz, żeby pasek pokazał nową wersję
+  deploy:
+    needs: release
+    if: needs.release.outputs.created == 'true'
+    uses: ./.github/workflows/deploy-pages.yml

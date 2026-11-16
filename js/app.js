@@ -837,6 +837,24 @@ function psRenderAll() {
   psRenderTable();
 }
 
+// wersja strony w górnym pasku: version.json z workflow publikacji (wydanie, commity po nim, commit)
+var REPO = 'https://github.com/patrykw-labs/parcferme-ranking';
+async function psVersion() {
+  try {
+    var r = await fetch('version.json', { cache: 'no-cache' });
+    if (!r.ok) return; // podgląd lokalny bez version.json — bez wersji
+    var v = await r.json(), el = document.getElementById('ps-ver');
+    if (!v || !v.commit) return;
+    var sha = v.commit.slice(0, 7), date = v.date ? new Date(v.date).toLocaleString('pl-PL', { dateStyle: 'medium', timeStyle: 'short' }) : '';
+    var rel = v.version ? '<a href="' + REPO + '/releases/tag/' + psEsc(v.version) + '">' + psEsc(v.version) + '</a>' : '';
+    var commit = '<a href="' + REPO + '/commit/' + psEsc(v.commit) + '">' + sha + '</a>';
+    el.innerHTML = !v.version ? commit : !v.ahead ? rel : rel + '<span class="ver-c">+' + v.ahead + '<span class="ver-h"> · ' + commit + '</span></span>';
+    el.title = (v.version ? 'Strona z wydania ' + v.version + (v.ahead ? ' + ' + v.ahead + ' ' + (v.ahead === 1 ? 'commit' : v.ahead % 10 >= 2 && v.ahead % 10 <= 4 && (v.ahead % 100 < 10 || v.ahead % 100 >= 20) ? 'commity' : 'commitów') + ' po nim' : '') : 'Strona') + ' · commit ' + sha + (date ? ' z ' + date : '');
+    el.hidden = false;
+  } catch (e) { /* brak wersji nie psuje strony */ }
+}
+psVersion();
+
 (async function psInit() {
   try {
     var idx = await (await fetch('data/seasons.json', { cache: 'no-cache' })).json();

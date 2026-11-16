@@ -42,6 +42,8 @@ console.log('Komputer, motyw ciemny');
 let p = await open('', { colorScheme: 'dark' });
 check((await p.$$('#ps-table tbody tr')).length === TOP, `tabela TOP 100 (${TOP} wierszy z remisem na granicy)`);
 check((await p.textContent('#ps-subtitle')).includes('uczestników'), 'nagłówek z liczbą uczestników');
+// version.json powstaje przy publikacji (tools/version.py) — w CI przed testem
+if (fs.existsSync('version.json')) check(/^v\d|^[0-9a-f]{7}/.test((await p.textContent('#ps-ver')).trim()), 'wersja strony w górnym pasku: ' + (await p.textContent('#ps-ver')).trim());
 check((await p.$$('#k-top10 li')).length === 10, 'kafelek TOP 10');
 check((await p.$$('#rec-grid .rec')).length >= 4, 'rekordy sezonu');
 await p.click('#seg-all');
