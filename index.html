@@ -26,7 +26,7 @@
 // motyw ustawiany przed renderem, żeby nie migał
 (function(){try{var t=localStorage.getItem('parcfer-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
 </script>
-<link rel="stylesheet" href="css/style.css?v=20261116i">
+<link rel="stylesheet" href="css/style.css?v=20261116j">
 </head>
 <body>
 
@@ -102,6 +102,20 @@
     <div class="rec-grid" id="rec-grid"></div>
     <div class="champs" id="champs" hidden></div>
     <div class="cap" id="rec-cap"></div>
+  </section>
+
+  <section class="card wins" id="wins-sec" hidden>
+    <div class="board-head"><h2>🥇 Zwycięzcy rund</h2></div>
+    <div class="wins-body">
+      <div class="tw" style="max-height:none"><table id="wins-table"></table></div>
+      <div class="dist">
+        <div class="dist-head"><label class="label" for="dist-r">Rozkład punktów w rundzie</label> <select id="dist-r" onchange="psDrawDist(+this.value)"></select></div>
+        <div class="dist-stats" id="dist-stats"></div>
+        <div class="chart" id="dist-chart"><div class="tip" id="dist-tip"></div></div>
+        <details class="dist-tab"><summary>Tabela rozkładu</summary><table id="dist-table"></table></details>
+      </div>
+    </div>
+    <div class="cap" id="wins-cap"></div>
   </section>
 
   <section class="card watch" id="watch-sec" hidden>
@@ -189,7 +203,7 @@
   </div>
 </main>
 
-<script src="js/app.js?v=20261116i"></script>
+<script src="js/app.js?v=20261116j"></script>
 <script data-goatcounter="https://parcferme.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </body>
 </html>

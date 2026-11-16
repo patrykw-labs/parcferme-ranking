@@ -46,6 +46,11 @@ await p.waitForSelector('#ps-ver:not([hidden])', { timeout: 5000 }).catch(() => 
 check(/^v\d+\.\d+\.\d+/.test((await p.textContent('#ps-ver')).trim()), 'wersja strony w górnym pasku: ' + (await p.textContent('#ps-ver')).trim());
 check((await p.$$('#k-top10 li')).length === 10, 'kafelek TOP 10');
 check((await p.$$('#rec-grid .rec')).length >= 4, 'rekordy sezonu');
+// zwycięzcy rund (gdy sezon ma co najmniej dwie kolejne rundy) i rozkład punktów (gdy obie rundy są pełne)
+if (season.rounds.length > 1) {
+  check((await p.$$('#wins-table tbody tr')).length >= 1, 'zwycięzcy rund: ' + (await p.$$('#wins-table tbody tr')).length + ' rund');
+  if (await p.isVisible('#dist-r')) check(!!(await p.$('#dist-chart svg')), 'rozkład punktów w rundzie');
+}
 // walka o tytuł: tylko gdy seasons.json ma max_points i sezon jeszcze trwa
 if (seasons.max_points && (seasons.planned_rounds || {})[seasons.default]) check(/\d/.test(await p.textContent('#title-body')), 'walka o tytuł: ' + (await p.textContent('#title-sec .title-sum .v')).trim());
 await p.click('#seg-all');

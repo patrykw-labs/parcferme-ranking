@@ -563,7 +563,7 @@ psA11y(document.body);
 document.addEventListener('keydown', function(e) {
   if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('[role="button"][data-k],[role="button"][data-jump],[role="button"][data-sort]')) { e.preventDefault(); e.target.click(); }
 });
-window.addEventListener('resize', function() { psDrawChart(); psDrawDuel(); psDrawWatch(); });
+window.addEventListener('resize', function() { psDrawChart(); psDrawDuel(); psDrawWatch(); if (DIST_RI !== null) psDrawDist(DIST_RI); });
 
 // ---------- pojedynek ----------
 var DUEL = null, duelAuto = true;
@@ -911,6 +911,91 @@ function psSetRound(text) {
   psRenderAll();
 }
 
+// ---------- zwycięzcy rund i rozkład punktów w rundzie ----------
+// zwycięzca rundy = najwięcej punktów zdobytych w rundzie (z remisami); full — obie rundy z pełnym rankingiem
+function psRoundWinners(ri) {
+  if (ri < 1 || psGap(ri)) return null;
+  var best = null, keys = [], gains = [];
+  Object.keys(state.participants).forEach(function(k) {
+    var g = psRoundDelta(k, ri);
+    if (g === null) return;
+    gains.push(g);
+    if (best === null || g > best) { best = g; keys = [k]; } else if (g === best) keys.push(k);
+  });
+  if (best === null) return null;
+  var R = state.rounds, last = R[ri];
+  keys.sort(function(a, b) { return state.participants[a][last].position - state.participants[b][last].position; });
+  return { v: best, keys: keys, gains: gains, full: !psPartial(R[ri]) && !psPartial(R[ri - 1]) };
+}
+var DIST_RI = null;
+function psRenderWins() {
+  var sec = document.getElementById('wins-sec'), R = state.rounds, n = R.length, rows = [], fullIdx = [];
+  for (var i = n - 1; i > 0; i--) {
+    var w = psRoundWinners(i);
+    if (!w) continue;
+    if (w.full) fullIdx.push(i);
+    rows.push('<tr><td>' + psRoundLabel(R[i]) + '</td><td class="w">' + psWho(w.keys, 3) + (w.full ? '' : ' <span class="tie" title="Z tej albo poprzedniej rundy mamy tylko czołówkę">(wśród zapisanej czołówki)</span>') + '</td><td><b>+' + w.v + '</b></td></tr>');
+  }
+  if (!rows.length) { sec.hidden = true; DIST_RI = null; return; }
+  sec.hidden = false;
+  document.getElementById('wins-table').innerHTML = '<thead><tr><th>Runda</th><th class="w">Najwięcej punktów</th><th>Pkt</th></tr></thead><tbody>' + rows.join('') + '</tbody>';
+  var dist = document.querySelector('#wins-sec .dist');
+  dist.hidden = !fullIdx.length;
+  if (fullIdx.length) {
+    if (fullIdx.indexOf(DIST_RI) === -1) DIST_RI = fullIdx[0];
+    document.getElementById('dist-r').innerHTML = fullIdx.map(function(i) { return '<option value="' + i + '"' + (i === DIST_RI ? ' selected' : '') + '>' + psEsc(psRoundText(R[i])) + '</option>'; }).join('');
+    psDrawDist(DIST_RI);
+  } else DIST_RI = null;
+  document.getElementById('wins-cap').textContent = 'Zwycięzca rundy — najwięcej punktów zdobytych w tej rundzie (przy remisie wszyscy). Przez przerwę w danych i dla graczy spoza zapisanej czołówki przyrostu nie liczymy. Rozkład — tylko rundy z pełnym rankingiem przed i po rundzie; Twój słupek jest żółty. Kliknij nick, żeby zobaczyć historię.';
+}
+function psDrawDist(ri) {
+  DIST_RI = ri;
+  var box = document.getElementById('dist-chart'), tip = document.getElementById('dist-tip'), w = psRoundWinners(ri);
+  if (!box || !w) return;
+  var R = state.rounds, mx = Math.max.apply(null, w.gains), cnt = [];
+  for (var v = 0; v <= mx; v++) cnt.push(0);
+  w.gains.forEach(function(g) { if (g >= 0) cnt[g]++; });
+  var total = w.gains.length, sorted = w.gains.slice().sort(function(a, b) { return a - b; });
+  var avg = w.gains.reduce(function(a, b) { return a + b; }, 0) / total, med = sorted[Math.floor(total / 2)];
+  var myG = ME ? psRoundDelta(ME, ri) : null;
+  var scorers = total - cnt[0], avgSc = scorers ? (w.gains.reduce(function(a, b) { return a + b; }, 0) / scorers) : 0;
+  document.getElementById('dist-stats').innerHTML = '<b>' + psNum(total) + '</b> graczy · bez punktów <b>' + psNum(cnt[0]) + '</b> (' + Math.round(cnt[0] / total * 100) + '%) · średnio <b>' + avg.toFixed(1).replace('.', ',') + '</b> pkt, wśród punktujących <b>' + avgSc.toFixed(1).replace('.', ',') + '</b> · mediana ' + med +
+    (myG !== null ? ' · Ty: <b>' + psSigned(myG) + '</b>' : '') + '<br><span class="tie">Wykres: gracze z co najmniej 1 pkt (' + psNum(scorers) + ').</span>';
+  document.getElementById('dist-table').innerHTML = '<thead><tr><th>Punkty w rundzie</th><th>Graczy</th></tr></thead><tbody>' + cnt.map(function(c, v) { return c ? '<tr><td>' + v + '</td><td>' + c + '</td></tr>' : ''; }).join('') + '</tbody>';
+  // wykres od 1 pkt: słupek „0 pkt” jest kilkanaście razy wyższy i spłaszczałby resztę (zera są w opisie i tabeli)
+  var bars = cnt.slice(1);
+  var W = Math.max(260, box.clientWidth), H = W < 480 ? 180 : 210, m = { l: 40, r: 8, t: 12, b: 26 }, iw = W - m.l - m.r, ih = H - m.t - m.b;
+  var top = Math.max(1, Math.max.apply(null, bars)), step = [1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000].find(function(x) { return x >= top / 4; }) || 2000, ymax = Math.ceil(top / step) * step;
+  var slot = iw / Math.max(1, bars.length), bw = Math.max(2, slot - 2); // 2 px odstępu między słupkami
+  var X = function(v) { return m.l + (v - 1) * slot + (slot - bw) / 2; }, Y = function(c) { return m.t + ih - c / ymax * ih; };
+  var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" aria-label="Rozkład punktów zdobytych w rundzie (gracze z co najmniej 1 pkt) ' + psEsc(R[ri]) + '">';
+  var ticks = []; for (var t = 0; t <= ymax; t += step) ticks.push(t);
+  svg += '<g class="grid">' + ticks.map(function(t) { return '<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + Y(t) + '" y2="' + Y(t) + '"/>'; }).join('') + '</g>';
+  svg += ticks.map(function(t) { return '<text class="ax" x="' + (m.l - 8) + '" y="' + (Y(t) + 4) + '" text-anchor="end">' + t + '</text>'; }).join('');
+  var lab = slot < 16 ? 2 : 1;
+  svg += bars.map(function(c, b) {
+    var v = b + 1, x = X(v), y = Y(c), h = m.t + ih - y, r = Math.min(4, h / 2, bw / 2), x1 = x + bw, y0 = m.t + ih;
+    // zaokrąglony tylko koniec słupka, podstawa przy osi prosta
+    var bar = c ? '<path class="hb' + (myG === v ? ' me' : '') + '" d="M' + x + ' ' + y0 + 'V' + (y + r) + 'Q' + x + ' ' + y + ' ' + (x + r) + ' ' + y + 'H' + (x1 - r) + 'Q' + x1 + ' ' + y + ' ' + x1 + ' ' + (y + r) + 'V' + y0 + 'Z"/>' : '';
+    return bar + ((v - 1) % lab && v !== bars.length ? '' : '<text class="ax" x="' + (x + bw / 2) + '" y="' + (H - 8) + '" text-anchor="middle">' + v + '</text>');
+  }).join('');
+  svg += bars.map(function(c, b) { return '<rect class="hit" data-v="' + (b + 1) + '" x="' + (m.l + b * slot) + '" y="' + m.t + '" width="' + slot + '" height="' + ih + '"/>'; }).join('');
+  svg += '</svg>';
+  box.innerHTML = svg; box.appendChild(tip); tip.style.display = 'none';
+  var el = box.querySelector('svg');
+  function show(ev) {
+    var rect = el.getBoundingClientRect(), x = (ev.clientX - rect.left) * W / rect.width;
+    var v = 1 + Math.max(0, Math.min(bars.length - 1, Math.floor((x - m.l) / slot)));
+    tip.innerHTML = '<b>' + v + ' pkt w rundzie</b><br>' + cnt[v] + ' ' + (cnt[v] === 1 ? 'gracz' : 'graczy') + ' (' + (cnt[v] / total * 100).toFixed(1).replace('.', ',') + '%)' + (myG === v ? '<br>w tym Ty' : '');
+    tip.style.display = 'block';
+    var px = (X(v) + bw / 2) * rect.width / W, tw = tip.offsetWidth;
+    tip.style.left = Math.max(tw / 2, Math.min(rect.width - tw / 2, px)) + 'px';
+    tip.style.top = Math.max(0, Y(cnt[v]) * rect.height / H - tip.offsetHeight - 8) + 'px';
+  }
+  el.addEventListener('pointermove', show); el.addEventListener('pointerdown', show);
+  el.addEventListener('pointerleave', function() { tip.style.display = 'none'; });
+}
+
 // ---------- archiwum sezonów (data/history.json): mistrzowie i „Twoje sezony” ----------
 var HISTORY = null;
 function psSeasonUrl(y, id) { return '?sezon=' + y + (id ? '&id=' + id : ''); }
@@ -995,6 +1080,10 @@ function psRenderRecords() {
     return top;
   };
   var gainList = [], climbList = [], leadList = [], top10List = [], avgList = [], steadyList = [];
+  // wygrane rundy: najwięcej punktów w rundzie (remis = wygrana każdego), tylko rundy z pełnymi danymi po obu stronach
+  var wins = {}, winRounds = 0;
+  for (var wi = 1; wi < n; wi++) { var w = psRoundWinners(wi); if (w && w.full) { winRounds++; w.keys.forEach(function(k) { wins[k] = (wins[k] || 0) + 1; }); } }
+  var winList = Object.keys(wins).map(function(k) { return { k: k, v: wins[k] }; });
   keys.forEach(function(k) {
     var P = state.participants[k], ds = [], lead = 0, t10 = 0;
     R.forEach(function(r, i) {
@@ -1030,6 +1119,7 @@ function psRenderRecords() {
     ['↗ Największy awans w rundzie', best(climbList, hi), function(t) { return '▲' + t[0].v; }, function(x) { return x.r; }],
     ['👑 Najwięcej rund na prowadzeniu', best(leadList, hi), function(t) { return t[0].v + ' ' + (t[0].v === 1 ? 'runda' : t[0].v % 10 >= 2 && t[0].v % 10 <= 4 && (t[0].v % 100 < 10 || t[0].v % 100 >= 20) ? 'rundy' : 'rund'); }, null],
     ['🔟 Najwięcej rund w TOP 10', best(top10List, hi), function(t) { return t[0].v + ' z ' + n; }, null],
+    ['🥇 Najwięcej wygranych rund', winRounds >= 3 ? best(winList, hi) : [], function(t) { return t[0].v + ' z ' + winRounds; }, null],
     ['Ø Najwyższa średnia na rundę' + (spanTxt ? ' (' + spanTxt + ')' : ''), best(avgList, hi), function(t) { return t[0].v.toFixed(1).replace('.', ',') + ' pkt'; }, null],
     ['≈ Najrówniej punktujący' + (spanTxt ? ' (' + spanTxt + ')' : ''), best(steadyList.filter(function(x) { return x.avg >= med; }), lo), function(t) { return '±' + t[0].v.toFixed(1).replace('.', ','); }, function(x) { return 'śr. ' + x.avg.toFixed(1).replace('.', ',') + ' pkt'; }]
   ];
@@ -1137,6 +1227,7 @@ function psRenderAll() {
   psRenderWatch(order);
   psRenderForm(order);
   psRenderRecords();
+  psRenderWins();
   psRenderChamps();
   if (!psFillNicks.done) { psFillNicks(order); psFillNicks.done = true; } // lista nicków nie zależy od „ja”
   psRenderDuel();
