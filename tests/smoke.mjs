@@ -136,6 +136,9 @@ await p.waitForSelector('#watch-chart svg', { timeout: 5000 }).catch(() => {});
 check(await p.isVisible('#watch-sec') && !!(await p.$('#watch-chart svg')), 'obserwowani: sekcja z wykresem');
 await p.click('#seg-watch');
 check((await p.$$('#ps-table tbody tr[data-row]')).length >= 2, 'widok „Obserwowani” w tabeli');
+p.once('dialog', d => d.accept());
+await p.click('#watch-clear');
+check(await p.evaluate(() => WATCH.length === 0 && VIEW === 'top') && await p.isHidden('#watch-sec'), 'wyczyszczenie listy obserwowanych');
 console.log('Link do ligi');
 const lg = await open(`?liga=${last.slice(0, 5).map(s => s.id).join(",")}`); // open() czeka na 5 wierszy tabeli
 await lg.waitForSelector('#watch-chart svg', { timeout: 5000 }).catch(() => {});

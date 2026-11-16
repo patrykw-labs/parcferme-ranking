@@ -26,7 +26,7 @@
 // motyw ustawiany przed renderem, żeby nie migał
 (function(){try{var t=localStorage.getItem('parcfer-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
 </script>
-<link rel="stylesheet" href="css/style.css?v=20261116h">
+<link rel="stylesheet" href="css/style.css?v=20261116i">
 </head>
 <body>
 
@@ -110,6 +110,7 @@
       <div class="sp"></div>
       <button type="button" class="btn" onclick="psSetView('watch'); document.querySelector('.board').scrollIntoView({ behavior: 'smooth' })">Tabela</button>
       <button type="button" class="btn" id="watch-share" onclick="psShareLeague()">🔗 Link do ligi</button>
+      <button type="button" class="btn" id="watch-clear" onclick="psClearWatch()" title="Usuń wszystkich z listy obserwowanych">✕ Wyczyść</button>
     </div>
     <div class="watch-body">
       <div class="label">Miejsce w rankingu po każdej rundzie</div>
@@ -188,7 +189,7 @@
   </div>
 </main>
 
-<script src="js/app.js?v=20261116h"></script>
+<script src="js/app.js?v=20261116i"></script>
 <script data-goatcounter="https://parcferme.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </body>
 </html>

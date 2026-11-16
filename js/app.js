@@ -785,6 +785,18 @@ function psToggleWatch(k) {
   psRenderWatch(psOrder(state.rounds[state.rounds.length - 1]));
   psRenderTable();
 }
+function psClearWatch() {
+  if (!WATCH.length || !confirm('Usunąć wszystkich (' + WATCH.length + ') z listy obserwowanych?')) return;
+  WATCH = []; psSaveWatch();
+  // lista z linku ?liga= też znika — inaczej wróciłaby po odświeżeniu
+  var u = new URL(location.href);
+  if (u.searchParams.has('liga')) { u.searchParams.delete('liga'); history.replaceState(null, '', u.toString()); }
+  if (VIEW === 'watch') VIEW = 'top';
+  var hb = document.getElementById('h-watch'); if (hb) { hb.setAttribute('aria-pressed', 'false'); hb.textContent = '☆ Obserwuj'; }
+  psToast('Wyczyszczono listę obserwowanych');
+  psRenderWatch();
+  psRenderTable(true);
+}
 function psLeagueKeys() {
   // na wykresie obserwowani w kolejności dodania (kolor przypisany do osoby, nie do miejsca) + Ty na końcu
   var keys = WATCH.filter(function(k) { return state.participants[k]; });
