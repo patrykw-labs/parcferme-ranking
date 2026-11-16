@@ -14,13 +14,13 @@ Nieoficjalna, fanowska klasyfikacja typerów konkursu [parcfer.me](https://parcf
 
 ## Funkcje
 
-- **Tabela runda po rundzie** — suma punktów, miejsce i przyrost w każdej rundzie, strzałki zmiany miejsca (▲/▼), oznaczenia „↑100” (wejście do TOP 100) i „NOWY”. Trzy widoki: **TOP 100**, **Moja okolica** (±15 miejsc wokół Twojego nicka) i **Wszyscy** (strony po 100 osób). Tabela przewija się we własnym oknie z przyklejonym nagłówkiem. Rundy z weekendem sprinterskim mają ⚡ (legenda przy tytule tabeli). Kliknięcie nagłówka rundy sortuje po punktach zdobytych w tej rundzie, a przycisk **⬇ CSV** pobiera całą tabelę (Excel, Arkusze Google).
-- **Wyszukiwarka** po wszystkich uczestnikach; po wpisaniu pełnego nicka przycisk „Pokaż w tabeli” przenosi do jego wiersza.
-- **Twoja pozycja** — po wpisaniu nicka: miejsce, punkty, zmiana miejsca, punkty w rundzie i strata do lidera, podświetlenie w tabeli, „📍 Pokaż mnie” w widoku Wszyscy, przycisk „🔗 Udostępnij” i **kalkulator „ile brakuje”** do P1 / TOP 3 / TOP 10 / TOP 50 / TOP 100 (ile punktów i ile średnio na rundę do końca sezonu; liczba rund sezonu w `data/seasons.json` → `planned_rounds`).
-- **Kafelki rundy** — lider i podium, największy skok w TOP 100, najwięcej punktów w rundzie, aktywność (ile osób zdobyło punkty), rozrzut punktów w TOP 100 oraz lista **TOP 10**.
+- **Tabela runda po rundzie** — suma punktów, miejsce i przyrost w każdej rundzie, strzałki zmiany miejsca (▲/▼), oznaczenia „↑100” (wejście do TOP 100) i „NOWY”. Trzy widoki: **TOP 100** (wszyscy z miejscem do 100, także przy remisie na granicy), **Moja okolica** (±15 miejsc wokół Twojego nicka) i **Wszyscy** (strony po 100 osób). Tabela przewija się we własnym oknie z przyklejonym nagłówkiem. Rundy z weekendem sprinterskim mają ⚡ (legenda przy tytule tabeli). Kliknięcie nagłówka rundy sortuje po punktach zdobytych w tej rundzie, a przycisk **⬇ CSV** pobiera całą tabelę (Excel, Arkusze Google).
+- **Wyszukiwarka** po wszystkich uczestnikach, bez wielkości liter i polskich znaków („lukasz” znajdzie „Łukasz”); po wpisaniu pełnego nicka przycisk „Pokaż w tabeli” przenosi do jego wiersza.
+- **Twoja pozycja** — pole podpowiada nicki; gdy nick ma kilka osób (np. 7 × „Michał”), strona pokazuje listę z miejscem i punktami do wybrania siebie i zapamiętuje wybór. Po wpisaniu nicka: miejsce, punkty, zmiana miejsca, punkty w rundzie i strata do lidera, podświetlenie w tabeli, „📍 Pokaż mnie” w widoku Wszyscy, przycisk „🔗 Udostępnij” i **kalkulator „ile brakuje”** do P1 / TOP 3 / TOP 10 / TOP 50 / TOP 100 (ile punktów i ile średnio na rundę do końca sezonu; liczba rund sezonu w `data/seasons.json` → `planned_rounds`).
+- **Kafelki rundy** — lider (przy remisie na P1 wszyscy liderzy) i podium, największy skok w TOP 100 i najwięcej punktów w rundzie (z remisami), aktywność (ile osób zdobyło punkty), rozrzut punktów w TOP 100 oraz lista **TOP 10**.
 - **Forma** — tabela najlepszych z ostatnich 3 rund (suma punktów, z remisami).
-- **Rekordy sezonu** — najwięcej punktów i największy awans w jednej rundzie, najwięcej rund na prowadzeniu i w TOP 10, najwyższa średnia, najrówniej punktujący gracz.
-- **Historia gracza** — kliknięcie dowolnego nicka otwiera wykres miejsca po każdej rundzie i tabelę wszystkich rund (obecne i najlepsze miejsce, średnia punktów na rundę).
+- **Rekordy sezonu** — najwięcej punktów i największy awans w jednej rundzie, najwięcej rund na prowadzeniu i w TOP 10, najwyższa średnia i najrówniej punktujący gracz (oba na wspólnym zakresie rund z pełnymi danymi, np. R12–R20, żeby wszyscy byli porównywani na tych samych rundach).
+- **Historia gracza** — kliknięcie dowolnego nicka otwiera wykres miejsca po każdej rundzie i tabelę wszystkich rund (obecne i najlepsze miejsce z liczbą rund, średnia punktów na rundę sezonu).
 - **Pojedynek** — dwa nicki obok siebie: różnica punktów po każdej rundzie na wykresie, bilans rund i tabela runda po rundzie.
 - **Ex aequo** — przy równej liczbie punktów wspólne miejsce z „=” (np. „2=”) w całej stronie; pełny zakres miejsc w dymku po najechaniu. Strzałki zmian liczone są ze wspólnych miejsc.
 - **Kanał RSS** (`feed.xml`, ikona w górnym pasku i przycisk pod tytułem) — wpis po każdej nowej rundzie: lider, TOP 10, największe awanse i aktywność.
@@ -30,8 +30,9 @@ Nieoficjalna, fanowska klasyfikacja typerów konkursu [parcfer.me](https://parcf
 
 | Adres | Co robi |
 |---|---|
-| `?nick=Pat` | podświetla gracza i otwiera „Moją okolicę” (nie nadpisuje nicka zapisanego w przeglądarce) |
-| `?nick=Pat&vs=Kapexis` | otwiera pojedynek dwóch graczy |
+| `?id=9684` | podświetla gracza (numer użytkownika z parcfer.me) i otwiera „Moją okolicę”; nie nadpisuje nicka zapisanego w przeglądarce. Takie linki tworzą przyciski „🔗 Udostępnij” |
+| `?id=9684&vsid=1650` | otwiera pojedynek dwóch graczy |
+| `?nick=Pat`, `?nick=Pat&vs=Kapexis` | starsze linki po nicku — nadal działają, ale przy powtórzonym nicku wskazują osobę wg etykiety „(2)” |
 | `?sezon=2026` | konkretny sezon (przy ≥2 sezonach w nagłówku pojawia się przełącznik) |
 
 ## Dane
@@ -43,7 +44,7 @@ Nieoficjalna, fanowska klasyfikacja typerów konkursu [parcfer.me](https://parcf
   - `top` — tylko w rundach z samą czołówką: ile osób zapisano (Spa R10 — 30, Węgry R11–Singapur R17 — 100); brak pola = pełny ranking,
   - `standings` — ranking `{ pos, name, points, id }`; `id` to numer użytkownika z parcfer.me. Innych pól nie zapisujemy — w szczególności `ids2` z danych parcfer.me (to skrót MD5 adresu e-mail gracza); pilnuje tego `tools/check_data.py`.
 - Zapisane rundy: **Japonia R3** i **Silverstone R9** — pełny ranking odtworzony z kopii strony w Web Archive (10.04 i 16.07.2026), **Spa R10** — TOP 30, **Węgry R11–Singapur R17** — TOP 100, od **USA R18** — pełny ranking wszystkich uczestników. Rund R1–R2 i R4–R8 nie ma. Osoby spoza zapisanej czołówki mają w starszych rundach „> 30” / „> 100”, a przez przerwę w danych (R3 → R9) strona nie pokazuje przyrostu ani strzałek zmiany miejsca.
-- Uczestników rozróżnia `id`, więc powtarzające się nicki („Oskar”, „Oskar (2)”) nie mieszają się między rundami. W rundach do Singapuru R17 `id` dopisano wstecz po nicku (przy powtórzeniach po kolejności, sprawdzonej z ciągłością punktów).
+- Uczestników rozróżnia `id`, więc powtarzające się nicki („Oskar”, „Oskar (2)”) nie mieszają się między rundami. Numery „(2)”, „(3)” nadawane są w kolejności pojawienia się w danych sezonu (runda pierwszego wystąpienia, w niej miejsce), więc nie zmieniają się po kolejnych rundach. W rundach do Singapuru R17 `id` dopisano wstecz po nicku (przy powtórzeniach po kolejności, sprawdzonej z ciągłością punktów).
 
 ## Aktualizacja po rundzie
 
@@ -77,9 +78,10 @@ Zamiast pobierania można podać `--html zapisana_strona.html` albo `--tsv tabel
 - `.github/workflows/update-ranking.yml` — automatyczne pobieranie rund
 - `.github/workflows/check-data.yml` — kontrola danych przy każdej zmianie w `data/` lub `tools/`
 - `.github/workflows/check-page.yml` + `tests/smoke.mjs` — test strony w przeglądarce (Playwright): widoki, historia, pojedynek, CSV, brak błędów JS
-- `.github/workflows/release.yml` — wydanie na GitHubie po wypchnięciu tagu `vX.Y.Z`, z notatkami z `CHANGELOG.md`
-- `.github/dependabot.yml` — cotygodniowe podbijanie wersji akcji GitHub Actions
+- `.github/workflows/release.yml` — wydanie na GitHubie po dopisaniu nowej wersji do `CHANGELOG.md` (albo po tagu `vX.Y.Z`)
+- `.github/dependabot.yml` — cotygodniowe podbijanie wersji akcji GitHub Actions i Playwrighta w `tests/`
 - `.github/FUNDING.yml` — przycisk Sponsor (Buy Me a Coffee) na stronie repozytorium
+- `assets/fonts/` — font Plus Jakarta Sans (licencja SIL OFL, `OFL.txt`) serwowany ze strony, bez Google Fonts
 - `assets/` — baner (`banner.jpg` oraz lżejsze `banner-800/1600/3200` w WebP i JPEG — przeglądarka wybiera rozmiar pod ekran), obrazek podglądu linku (`og.jpg`) i ikony strony
 - `site.webmanifest` — nazwa i ikona przy dodawaniu strony do ekranu głównego telefonu
 

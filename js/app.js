@@ -1,9 +1,11 @@
 function lsGet(k){try{var v=localStorage.getItem(k);return v===null?null:{key:k,value:v};}catch(e){return null;}}
 function lsSet(k,v){try{localStorage.setItem(k,v);return true;}catch(e){return false;}}
 var MYNAME_KEY = 'parcfer-public-myname';
+var MYKEY_KEY = 'parcfer-public-mykey'; // wybrana osoba (klucz 'u' + id), gdy nick ma kilka osób
 var THEME_KEY = 'parcfer-theme';
 var state = { rounds: [], participants: {} };
-var myName = '';
+var myName = '', myKey = null;
+var ME = null, ME_MULTI = []; // „ja” po rozpoznaniu nicka: klucz osoby albo lista osób z tym samym nickiem
 var SEASON = null;
 var VIEW = 'top', PAGE = 0, PAGE_SIZE = 100, NEAR = 15;
 
@@ -29,12 +31,14 @@ function psBuildSeasonPicker(list) {
 
 var seedRounds = [];
 var seedRaw = {};
+var seedTop = {};
 
 function buildSeedState() {
-  var st = { rounds: seedRounds.slice(), participants: {}, size: {}, nick: {}, label: {}, tie: {} };
+  var st = { rounds: seedRounds.slice(), participants: {}, size: {}, top: {}, nick: {}, label: {}, tie: {}, first: [] };
   seedRounds.forEach(function(rnd) {
     var seen = {};
     st.size[rnd] = seedRaw[rnd].length;
+    st.top[rnd] = seedTop[rnd] || null;
     seedRaw[rnd].forEach(function(row) {
       var pos = row[0], name = row[1], pts = row[2], id = row[3];
       seen[name] = (seen[name] || 0);
@@ -42,15 +46,16 @@ function buildSeedState() {
       var key = id != null ? 'u' + id : (seen[name] > 0 ? name + ' (' + (seen[name]+1) + ')' : name);
       seen[name]++;
       st.nick[key] = name;
-      if (!st.participants[key]) st.participants[key] = {};
+      if (!st.participants[key]) { st.participants[key] = {}; st.first.push(key); }
       st.participants[key][rnd] = { position: pos, points: pts };
     });
   });
   return st;
 }
-// etykiety: powtórzony nick dostaje „(2)”, „(3)” wg miejsca w ostatniej rundzie
-function psBuildLabels(order) {
-  var count = {}, seen = {};
+// etykiety: powtórzony nick dostaje „(2)”, „(3)” w kolejności pojawienia się w danych sezonu
+// (runda pierwszego wystąpienia, w niej miejsce) — nowi gracze dostają kolejne numery, a istniejące etykiety się nie zmieniają
+function psBuildLabels() {
+  var count = {}, seen = {}, order = state.first;
   order.forEach(function(k) { var n = state.nick[k]; count[n] = (count[n] || 0) + 1; });
   order.forEach(function(k) {
     var n = state.nick[k]; seen[n] = (seen[n] || 0) + 1;
@@ -58,24 +63,46 @@ function psBuildLabels(order) {
   });
 }
 function psName(k) { return state.label[k] || state.nick[k] || k; }
+// porównanie bez wielkości liter i polskich znaków („ł” nie rozkłada się w NFD) — tylko do wyszukiwania
+function psFold(s) { return String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ł/g, 'l'); }
 
+// kto jest „mną”: wybrana osoba (myKey) albo jednoznaczny nick; nick wspólny dla kilku osób → wybór z listy
+function psResolveMe() {
+  ME = null; ME_MULTI = [];
+  if (!myName) return;
+  if (myKey && state.participants[myKey] && psName(myKey) === myName) { ME = myKey; return; }
+  var keys = Object.keys(state.participants), q = myName.toLowerCase();
+  var same = keys.filter(function(k) { return state.nick[k].toLowerCase() === q; });
+  if (same.length > 1) { ME_MULTI = psOrder(state.rounds[state.rounds.length - 1]).filter(function(k) { return same.indexOf(k) !== -1; }); return; }
+  ME = same[0] || keys.find(function(k) { return psName(k) === myName; }) || keys.find(function(k) { return psName(k).toLowerCase() === q; }) || null;
+}
+var MYNAME_T = null;
 function psSaveMyName() {
-  myName = document.getElementById('ps-myname').value.trim();
-  lsSet(MYNAME_KEY, myName);
+  clearTimeout(MYNAME_T);
+  MYNAME_T = setTimeout(function() {
+    myName = document.getElementById('ps-myname').value.trim();
+    lsSet(MYNAME_KEY, myName);
+    if (myKey && psName(myKey) !== myName) { myKey = null; lsSet(MYKEY_KEY, ''); }
+    psRenderAll();
+  }, 200);
+}
+function psPickMe(k) {
+  myKey = k; myName = psName(k);
+  lsSet(MYKEY_KEY, k); lsSet(MYNAME_KEY, myName);
+  document.getElementById('ps-myname').value = myName;
   psRenderAll();
+}
+function psSegUpdate() {
+  ['top', 'near', 'all'].forEach(function(k) { var b = document.getElementById('seg-' + k); b.classList.toggle('on', k === VIEW); b.setAttribute('aria-pressed', k === VIEW ? 'true' : 'false'); });
 }
 function psSetView(v) {
   VIEW = v; PAGE = 0;
-  ['top', 'near', 'all'].forEach(function(k) { document.getElementById('seg-' + k).classList.toggle('on', k === v); });
+  psSegUpdate();
   psRenderTable(true);
 }
 function psSetPage(p) { PAGE = p; psRenderTable(true); }
 
-function psIsMe(n) {
-  var me = (myName || '').toLowerCase();
-  var x = psName(n).toLowerCase();
-  return !!me && (x === me || x.indexOf(me + ' (') === 0);
-}
+function psIsMe(k) { return !!ME && k === ME; }
 
 // kolejność w danej rundzie: punkty, przy remisie miejsce z parcfer.me
 function psOrder(round) {
@@ -102,8 +129,8 @@ function psRoundDelta(name, ri) {
   var d = state.participants[name][state.rounds[ri]], p = state.participants[name][state.rounds[ri - 1]];
   return d && p ? d.points - p.points : null;
 }
-// runda z samą czołówką (starsze dane: TOP 100, Spa TOP 30) — brak osoby nie znaczy, że jej nie było
-function psPartial(round) { return state.size[round] <= 100; }
+// runda z samą czołówką (pole „top” w danych: TOP 100, Spa TOP 30) — brak osoby nie znaczy, że jej nie było
+function psPartial(round) { return state.top[round] != null; }
 // stan względem poprzedniej rundy: liczba (zmiana), 'top' (wejście do TOP 100), 'new' (nowy uczestnik) albo null (brak danych)
 function psStatus(name, ri, field) {
   if (ri < 1 || psGap(ri)) return null;
@@ -111,11 +138,11 @@ function psStatus(name, ri, field) {
   if (!cur) return null;
   // zmiana miejsca liczona ze wspólnych miejsc (ex aequo), tak jak są pokazywane
   if (prev) return field === 'points' ? cur.points - prev.points : psPlace(prevR, prev).place - psPlace(state.rounds[ri], cur).place;
-  if (cur.position > state.size[prevR]) return null;
-  return psPartial(prevR) ? 'top' : 'new';
+  if (!psPartial(prevR)) return 'new';
+  return cur.position > state.top[prevR] ? null : 'top';
 }
 function psMove(name) { return psStatus(name, state.rounds.length - 1, 'position'); }
-function psPrevSize(ri) { return state.size[state.rounds[ri - 1]]; }
+function psPrevSize(ri) { return state.top[state.rounds[ri - 1]]; }
 function psMoveHtml(m) {
   if (m === null) return '';
   if (m === 'new') return '<span class="mv-new">NOWY</span>';
@@ -139,17 +166,34 @@ function psActivity(ri) {
   return { total: total, active: active, newbies: newbies };
 }
 
+// ile osób ma miejsce ≤ 100 (remis na granicy wchodzi w całości) — jedna definicja „TOP 100” w całej stronie
+function psTopCount(order, round) {
+  var n = Math.min(100, order.length);
+  while (n < order.length && state.participants[order[n]][round] && psPlace(round, state.participants[order[n]][round]).place <= 100) n++;
+  return n;
+}
+// „A, B, C i 4 innych” — klikalne nicki osób z tym samym wynikiem
+function psWho(keys, limit) {
+  limit = limit || 3;
+  var out = keys.slice(0, limit).map(function(k) { return '<span data-k="' + psEsc(k) + '">' + psEsc(psName(k)) + '</span>'; }).join(', ');
+  return out + (keys.length > limit ? ' <span class="tie">i ' + (keys.length - limit) + ' ' + (keys.length - limit === 1 ? 'inny' : 'innych') + '</span>' : '');
+}
+
 function psRenderKpis(names) {
   var n = state.rounds.length, last = state.rounds[n - 1];
   var P = state.participants;
   document.getElementById('k-round').textContent = last;
   var lead = names[0], ld = P[lead][last];
-  document.getElementById('k-leader').innerHTML = psEsc(psName(lead)) + ' <small>' + ld.points + ' pkt</small>';
-  var second = names[1] && P[names[1]][last];
+  // przy remisie na P1 liderami są wszyscy z tą samą liczbą punktów
+  var leaders = names.filter(function(k) { return P[k][last] && P[k][last].points === ld.points; });
+  var kl = document.getElementById('k-leader');
+  kl.classList.toggle('multi', leaders.length > 1);
+  kl.innerHTML = leaders.map(function(k) { return '<span data-k="' + psEsc(k) + '">' + psEsc(psName(k)) + '</span>'; }).join(', ') + ' <small>' + ld.points + ' pkt</small>';
+  var nextK = names[leaders.length], second = nextK && P[nextK][last];
   var gap = second ? ld.points - second.points : 0;
-  var rd = psRoundDelta(lead, n - 1);
-  document.getElementById('k-leader-sub').innerHTML =
-    (second ? 'Przewaga nad ' + psEsc(psName(names[1])) + ': <b>' + psSigned(gap) + ' pkt</b>' : '') +
+  var rd = leaders.length === 1 ? psRoundDelta(lead, n - 1) : null;
+  document.getElementById('k-leader-sub').innerHTML = (leaders.length > 1 ? 'Ex aequo · ' : '') +
+    (second ? 'Przewaga nad ' + psEsc(psName(nextK)) + ': <b>' + psSigned(gap) + ' pkt</b>' : '') +
     (rd !== null ? ' · w tej rundzie ' + psSigned(rd) + ' pkt' : '');
   var medals = ['#facc15', '#cbd5e1', '#e8955a'];
   document.getElementById('k-podium').innerHTML = names.slice(0, 3).map(function(x, i) {
@@ -158,21 +202,22 @@ function psRenderKpis(names) {
 
   // kafelki rundy
   var jump = null, best = null;
+  var keep = function(acc, k, v) { if (acc === null || v > acc.v) return { v: v, ks: [k] }; if (v === acc.v) acc.ks.push(k); return acc; };
   names.forEach(function(x) {
     var m = psMove(x), cur = P[x][last];
-    // skok liczony w TOP 100 — przy pełnym rankingu awanse z dołu tabeli byłyby nieporównywalne
-    if (typeof m === 'number' && cur && cur.position <= 100 && (jump === null || m > jump.v)) jump = { n: x, v: m };
+    // skok liczony w TOP 100 (miejsce ex aequo ≤ 100) — przy pełnym rankingu awanse z dołu tabeli byłyby nieporównywalne
+    if (typeof m === 'number' && m > 0 && cur && psPlace(last, cur).place <= 100) jump = keep(jump, x, m);
     var d = psRoundDelta(x, n - 1);
-    if (d !== null && (best === null || d > best.v)) best = { n: x, v: d };
+    if (d !== null) best = keep(best, x, d);
   });
   document.getElementById('k-jump').textContent = jump ? '▲' + jump.v : '—';
-  document.getElementById('k-jump-d').textContent = jump ? psName(jump.n) + ' — największy awans w TOP 100' : '';
+  document.getElementById('k-jump-d').innerHTML = jump ? psWho(jump.ks) + ' — największy awans w TOP 100' : '';
   document.getElementById('k-best').textContent = best ? psSigned(best.v) + ' pkt' : '—';
-  document.getElementById('k-best-d').textContent = best ? psName(best.n) : '';
+  document.getElementById('k-best-d').innerHTML = best ? psWho(best.ks) : '';
   document.getElementById('k-top10-r').textContent = last;
   document.getElementById('k-top10').innerHTML = names.slice(0, 10).map(function(x, i) {
     var tp = psPlace(last, P[x][last]).place;
-    return '<li data-k="' + psEsc(x) + '" class="' + (psIsMe(x) ? 'me ' : '') + (tp <= 3 ? 't' + tp : '') + '"><span class="r" title="' + psPlace(last, P[x][last]).title + '">' + psPlace(last, P[x][last]).txt + '</span><span class="n" title="' + psEsc(psName(x)) + '">' + psEsc(psName(x)) + '</span><span class="m">' + psMoveHtml(psMove(x)) + '</span><span class="g">' + (function(d) { return d === null ? '' : '<b>' + psSigned(d) + '</b> w rundzie'; })(psRoundDelta(x, n - 1)) + '</span><span class="p">' + P[x][last].points + '</span></li>';
+    return '<li data-k="' + psEsc(x) + '" class="' + (psIsMe(x) ? 'me ' : '') + (tp <= 3 ? 't' + tp : '') + '"><span class="r" title="' + psPlace(last, P[x][last]).title + '">' + psPlace(last, P[x][last]).txt + '</span><button type="button" class="lnk n" data-k="' + psEsc(x) + '" title="' + psEsc(psName(x)) + '">' + psEsc(psName(x)) + '</button><span class="m">' + psMoveHtml(psMove(x)) + '</span><span class="g">' + (function(d) { return d === null ? '' : '<b>' + psSigned(d) + '</b> w rundzie'; })(psRoundDelta(x, n - 1)) + '</span><span class="p">' + P[x][last].points + '</span></li>';
   }).join('');
   var p100 = names[Math.min(99, names.length - 1)];
   var cut = P[p100][last] ? P[p100][last].points : null;
@@ -201,7 +246,12 @@ function psRenderKpis(names) {
     meEl.innerHTML = '<div class="me-hint">Wpisz nick z parcfer.me — podświetlimy Cię w tabeli i pokażemy zmianę pozycji.</div>';
     return;
   }
-  var me = names.filter(psIsMe)[0];
+  if (ME_MULTI.length) {
+    meEl.innerHTML = '<div class="me-hint">Nick <b>' + psEsc(myName) + '</b> ma ' + ME_MULTI.length + ' ' + (ME_MULTI.length < 5 ? 'osoby' : 'osób') + ' — wybierz siebie:</div><div class="me-pick">' +
+      ME_MULTI.map(function(k) { var d = P[k][last]; return '<button type="button" class="btn" data-pick="' + psEsc(k) + '">' + psEsc(psName(k)) + ' <span class="tie">' + (d ? 'P' + psPlace(last, d).txt + ' · ' + d.points + ' pkt' : 'brak w ' + psEsc(last)) + '</span></button>'; }).join('') + '</div>';
+    return;
+  }
+  var me = ME;
   if (!me || !P[me][last]) {
     meEl.innerHTML = '<div class="me-hint">Nie ma <b>' + psEsc(myName) + '</b> w rankingu po ' + psEsc(last) + '.</div>';
     return;
@@ -221,7 +271,7 @@ function psRenderKpis(names) {
     '<span class="chip gold">' + (ld.points - md.points) + ' pkt do lidera</span></div>' +
     '<div class="me-actions"><button type="button" class="btn pri" data-k="' + psEsc(me) + '">📈 Historia</button>' +
     '<button type="button" class="btn" data-jump="' + psEsc(me) + '">Pokaż w tabeli</button>' +
-    '<button type="button" class="btn" onclick="psShare()">🔗 Udostępnij</button></div>' +
+    '<button type="button" class="btn" onclick="psShare(ME)">🔗 Udostępnij</button></div>' +
     '<div class="calc"><label for="calc-t">Ile brakuje do</label> <select id="calc-t" onchange="psCalc()">' +
     [[1, 'P1'], [3, 'TOP 3'], [10, 'TOP 10'], [50, 'TOP 50'], [100, 'TOP 100']].map(function(o) { return '<option value="' + o[0] + '">' + o[1] + '</option>'; }).join('') +
     '</select><div class="calc-out" id="calc-out"></div></div>';
@@ -240,7 +290,7 @@ function psRenderTable(resetScroll) {
   names.forEach(function(n, i) { rankOf[n] = i + 1; });
 
   var shown = names, pager = '', hint = '';
-  var meKey = names.find(psIsMe);
+  var meKey = ME && state.participants[ME][lastRound] ? ME : null;
   // „Pokaż mnie” w widoku Wszyscy: przejście na stronę z nickiem z karty „Twoja pozycja”
   var mj = document.getElementById('ps-me-jump');
   mj.style.display = VIEW === 'all' && meKey ? 'inline-flex' : 'none';
@@ -248,7 +298,7 @@ function psRenderTable(resetScroll) {
   document.getElementById('seg-near').disabled = !meKey;
   if (VIEW === 'near' && !meKey) VIEW = 'top';
   if (VIEW === 'top') {
-    shown = names.slice(0, 100);
+    shown = names.slice(0, psTopCount(names, lastRound));
     if (meKey && !shown.some(psIsMe)) shown.push(meKey);
   } else if (VIEW === 'near') {
     var mi = names.indexOf(meKey);
@@ -264,11 +314,12 @@ function psRenderTable(resetScroll) {
     btns += '<button type="button" ' + (PAGE < pages - 1 ? '' : 'disabled ') + 'onclick="psSetPage(' + (PAGE + 1) + ')" aria-label="Następna strona">›</button>';
     pager = btns + '<span class="info">' + names.length + ' uczestników</span>';
   }
-  var q = (document.getElementById('ps-filter').value || '').trim().toLowerCase();
-  var jb = document.getElementById('ps-jump'), exact = q ? names.filter(function(n) { return psName(n).toLowerCase() === q; })[0] : null;
+  // wyszukiwanie bez wielkości liter i polskich znaków („lukasz” znajdzie „Łukasz”)
+  var q = psFold((document.getElementById('ps-filter').value || '').trim());
+  var jb = document.getElementById('ps-jump'), exact = q ? names.filter(function(n) { return psFold(psName(n)) === q; })[0] : null;
   jb.style.display = exact ? 'inline-flex' : 'none';
   if (exact) { jb.textContent = 'Pokaż „' + psName(exact) + '” w tabeli'; jb.onclick = function() { psJumpTo(exact); }; }
-  if (q) { shown = names.filter(function(n) { return psName(n).toLowerCase().indexOf(q) !== -1; }); pager = ''; }
+  if (q) { shown = names.filter(function(n) { return psFold(psName(n)).indexOf(q) !== -1; }); pager = ''; }
   if (SORT_RI !== null && (VIEW !== 'all' || q)) shown = shown.slice().sort(psSortCmp(rankOf));
   var pg = document.getElementById('ps-pager');
   pg.innerHTML = pager; pg.style.display = pager ? 'flex' : 'none';
@@ -277,9 +328,9 @@ function psRenderTable(resetScroll) {
   var head = '<thead><tr><th class="c-name"><span class="rk">#</span><span class="mv"></span>Uczestnik</th>';
   state.rounds.forEach(function(r, ri) {
     var can = ri > 0 && !psGap(ri), on = SORT_RI === ri;
-    head += can ? '<th class="srt' + (on ? ' on' : '') + '" data-sort="' + ri + '" title="' + (on ? 'Wróć do kolejności rankingu' : 'Sortuj po punktach zdobytych w tej rundzie') + '">' + psRoundLabel(r) + (on ? ' ▼' : '') + '</th>' : '<th>' + psRoundLabel(r) + '</th>';
+    head += can ? '<th class="srt' + (on ? ' on' : '') + '" data-sort="' + ri + '"' + (on ? ' aria-sort="descending"' : '') + '><button type="button" class="lnk" data-sort="' + ri + '" title="' + (on ? 'Wróć do kolejności rankingu' : 'Sortuj po punktach zdobytych w tej rundzie') + '">' + psRoundLabel(r) + (on ? ' ▼' : '') + '</button></th>' : '<th>' + psRoundLabel(r) + '</th>';
   });
-  head += '<th class="srt" data-sort="-1" title="Kolejność rankingu">Suma' + (SORT_RI === null ? ' ▼' : '') + '</th></tr></thead>';
+  head += '<th class="srt" data-sort="-1"' + (SORT_RI === null ? ' aria-sort="descending"' : '') + '><button type="button" class="lnk" data-sort="-1" title="Kolejność rankingu">Suma' + (SORT_RI === null ? ' ▼' : '') + '</button></th></tr></thead>';
 
   var nR = state.rounds.length;
   var body = shown.map(function(name) {
@@ -287,7 +338,7 @@ function psRenderTable(resetScroll) {
     var lastPts = P[lastRound] ? P[lastRound].points : '—';
     var cells = state.rounds.map(function(r, ri) {
       var d = P[r];
-      if (!d) return psPartial(r) ? '<td class="rc" title="Poza TOP ' + state.size[r] + ' — z tej rundy mamy tylko czołówkę"><span class="out">&gt;&nbsp;' + state.size[r] + '</span></td>' : '<td class="rc"><span>—</span></td>';
+      if (!d) return psPartial(r) ? '<td class="rc" title="Poza TOP ' + state.top[r] + ' — z tej rundy mamy tylko czołówkę"><span class="out">&gt;&nbsp;' + state.top[r] + '</span></td>' : '<td class="rc"><span>—</span></td>';
       var dl = psStatus(name, ri, 'points'), note;
       if (dl === null) note = '';
       else if (dl === 'top') note = ' · <span class="d-new">↑ TOP ' + psPrevSize(ri) + '</span>';
@@ -298,7 +349,7 @@ function psRenderTable(resetScroll) {
     }).join('');
     var cur = P[lastRound], pl = cur ? psPlace(lastRound, cur) : { txt: String(rankOf[name]), place: rankOf[name], title: '' };
     var cls = (psIsMe(name) ? 'me ' : '') + (pl.place <= 3 ? 'm' + pl.place : '');
-    return '<tr class="' + cls + '" data-row="' + psEsc(name) + '"><td class="c-name" data-k="' + psEsc(name) + '" title="Historia: ' + psEsc(psName(name)) + (pl.title ? ' · ' + pl.title : '') + '"><span class="rk">' + pl.txt + '</span><span class="mv">' + psMoveHtml(psMove(name)) + '</span><span class="nm">' + psEsc(psName(name)) + '</span></td>' + cells + '<td class="c-tot">' + lastPts + '</td></tr>';
+    return '<tr class="' + cls + '" data-row="' + psEsc(name) + '"><td class="c-name" data-k="' + psEsc(name) + '" title="Historia: ' + psEsc(psName(name)) + (pl.title ? ' · ' + pl.title : '') + '"><span class="rk">' + pl.txt + '</span><span class="mv">' + psMoveHtml(psMove(name)) + '</span><button type="button" class="lnk nm" data-k="' + psEsc(name) + '">' + psEsc(psName(name)) + '</button></td>' + cells + '<td class="c-tot">' + lastPts + '</td></tr>';
   }).join('');
 
   tbl.innerHTML = head + '<tbody>' + (body || '<tr><td colspan="' + (nR + 2) + '" class="empty">Brak uczestników pasujących do filtra</td></tr>') + '</tbody>';
@@ -327,22 +378,23 @@ function psTie(round, pts) { return psTieGroup(round, pts).n; }
 // miejsce do wyświetlenia: przy remisie wspólne pierwsze miejsce grupy z „=”
 function psPlace(round, d) {
   var g = psTieGroup(round, d.points);
-  return g.n > 1 ? { txt: g.a + '=', place: g.a, title: 'ex aequo: miejsca ' + g.a + '–' + g.b + (psPartial(round) && g.b === state.size[round] ? '+' : '') + ' (' + d.points + ' pkt)' } : { txt: String(d.position), place: d.position, title: '' };
+  return g.n > 1 ? { txt: g.a + '=', place: g.a, title: 'ex aequo: miejsca ' + g.a + '–' + g.b + (psPartial(round) && g.b === state.top[round] ? '+' : '') + ' (' + d.points + ' pkt)' } : { txt: String(d.position), place: d.position, title: '' };
 }
 
 function psToast(msg) {
   var t = document.getElementById('toast'); t.textContent = msg; t.classList.add('on');
   clearTimeout(psToast.h); psToast.h = setTimeout(function() { t.classList.remove('on'); }, 2200);
 }
-function psShareUrl(nick) {
+// linki po id gracza (?id=…), bo etykieta „(2)” to nie tożsamość; bez id (stare dane) — po etykiecie
+function psShareUrl(key) {
   var u = new URL(location.href); u.search = ''; u.hash = '';
   if (SEASON && new URLSearchParams(location.search).get('sezon')) u.searchParams.set('sezon', SEASON);
-  u.searchParams.set('nick', nick);
+  if (/^u\d+$/.test(key)) u.searchParams.set('id', key.slice(1)); else u.searchParams.set('nick', psName(key));
   return u.toString();
 }
-async function psShare(nick) {
-  nick = nick || myName;
-  var url = psShareUrl(nick);
+async function psShare(key) {
+  if (!key) return;
+  var nick = psName(key), url = psShareUrl(key);
   if (navigator.share) { try { await navigator.share({ title: 'Klasyfikacja parcfer.me — ' + nick, url: url }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
   try { await navigator.clipboard.writeText(url); psToast('Skopiowano link: ' + url.replace(/^https?:\/\//, '')); }
   catch (e) { window.prompt('Skopiuj link:', url); }
@@ -353,10 +405,10 @@ function psJumpTo(key, stayAll) {
   var dlg = document.getElementById('hist'); if (dlg.open) dlg.close();
   document.getElementById('ps-filter').value = '';
   SORT_RI = null;
-  var order = psOrder(state.rounds[state.rounds.length - 1]), idx = order.indexOf(key);
+  var last = state.rounds[state.rounds.length - 1], order = psOrder(last), idx = order.indexOf(key);
   if (idx < 0) return;
-  VIEW = stayAll || idx >= 100 ? 'all' : 'top'; PAGE = Math.floor(idx / PAGE_SIZE);
-  ['top', 'near', 'all'].forEach(function(k) { document.getElementById('seg-' + k).classList.toggle('on', k === VIEW); });
+  VIEW = stayAll || idx >= psTopCount(order, last) ? 'all' : 'top'; PAGE = Math.floor(idx / PAGE_SIZE);
+  psSegUpdate();
   psRenderTable();
   var wrap = document.querySelector('.board .tw'), row = [].find.call(document.querySelectorAll('#ps-table tr[data-row]'), function(r) { return r.getAttribute('data-row') === key; });
   if (!row) return;
@@ -376,17 +428,24 @@ function psOpenHistory(key) {
   var have = pts.map(function(d, i) { return d ? { i: i, d: d } : null; }).filter(Boolean);
   have.forEach(function(h) { h.pl = psPlace(R[h.i], h.d); });
   var best = have.reduce(function(a, b) { return !a || b.pl.place < a.pl.place ? b : a; }, null);
-  var gains = [], cur = P[last];
-  for (var i = 1; i < n; i++) { var g = psRoundDelta(key, i); if (g !== null) gains.push(g); }
-  var avg = gains.length ? gains.reduce(function(a, b) { return a + b; }, 0) / gains.length : null;
+  var cur = P[last];
+  // najwyższe miejsce i w ilu rundach (np. „P1 — 7 rund”); „=” tylko, gdy za każdym razem było ex aequo
+  var bestHtml = '';
+  if (best) {
+    var at = have.filter(function(h) { return h.pl.place === best.pl.place; });
+    var tied = at.every(function(h) { return h.pl.txt.slice(-1) === '='; });
+    bestHtml = '<span class="chip green">Najwyżej: P' + best.pl.place + (tied ? '=' : '') + (at.length > 1 ? ' — ' + at.length + ' ' + (at.length < 5 ? 'rundy' : 'rund') : ' (' + psEsc(R[at[0].i]) + ')') + '</span>';
+  }
+  // średnia sezonu: suma punktów obejmuje wszystkie rundy, także niezapisane
+  var lastNo = psRoundNo(last), avg = cur && lastNo ? cur.points / lastNo : null;
   document.getElementById('h-chips').innerHTML =
     (cur ? '<span class="chip blue">Teraz P' + psPlace(last, cur).txt + ' · ' + cur.points + ' pkt</span>' : '<span class="chip red">Brak w ostatniej rundzie</span>') +
-    (best ? '<span class="chip green">Najwyżej: P' + best.pl.txt + ' (' + psEsc(R[best.i]) + ')</span>' : '') +
-    (avg !== null ? '<span class="chip gold">Średnio ' + avg.toFixed(1).replace('.', ',') + ' pkt na rundę</span>' : '');
+    bestHtml +
+    (avg !== null ? '<span class="chip gold">Średnio ' + avg.toFixed(1).replace('.', ',') + ' pkt na rundę sezonu</span>' : '');
   // tabela (dostępna wersja danych z wykresu)
   var rows = R.map(function(r, i) {
     var d = P[r];
-    if (!d) return '<tr><td>' + psRoundLabel(r) + '</td><td colspan="3" class="tie">' + (psPartial(r) ? 'poza TOP ' + state.size[r] + ' (z tej rundy mamy tylko czołówkę)' : '—') + '</td></tr>';
+    if (!d) return '<tr><td>' + psRoundLabel(r) + '</td><td colspan="3" class="tie">' + (psPartial(r) ? 'poza TOP ' + state.top[r] + ' (z tej rundy mamy tylko czołówkę)' : '—') + '</td></tr>';
     var g = psStatus(key, i, 'points'), t = psTie(r, d.points);
     var gt = g === null ? '—' : g === 'top' ? '↑ TOP ' + psPrevSize(i) : g === 'new' ? 'nowy' : psSigned(g);
     var hp = psPlace(r, d);
@@ -394,7 +453,7 @@ function psOpenHistory(key) {
   }).reverse().join('');
   document.getElementById('h-table').innerHTML = '<thead><tr><th>Runda</th><th>Miejsce</th><th>Punkty</th><th>W rundzie</th></tr></thead><tbody>' + rows + '</tbody>';
   document.getElementById('h-actions').innerHTML = cur
-    ? '<button type="button" class="btn" onclick="psJumpTo(HIST)">Pokaż w tabeli</button><button type="button" class="btn" onclick="psShare(psName(HIST))">🔗 Link do tego gracza</button>' : '';
+    ? '<button type="button" class="btn" onclick="psJumpTo(HIST)">Pokaż w tabeli</button><button type="button" class="btn" onclick="psShare(HIST)">🔗 Link do tego gracza</button>' : '';
   document.getElementById('h-cap').textContent = 'Przerwa w linii = brak danych: rundy R4–R8 nie są zapisane, a w rundach Spa R10 (TOP 30) i Węgry R11–Singapur R17 (TOP 100) gracz mógł być poza zapisaną czołówką.';
   var dlg = document.getElementById('hist');
   if (!dlg.open) dlg.showModal();
@@ -440,7 +499,7 @@ function psDrawChart() {
     var dt = P[R[i]], g = psStatus(HIST, i, 'points');
     cross.setAttribute('x1', X(i)); cross.setAttribute('x2', X(i)); cross.style.display = '';
     var dot = el.querySelector('.dot[data-i="' + i + '"]'); if (dot) dot.classList.add('on');
-    tip.innerHTML = '<b>' + psEsc(psRoundText(R[i])) + '</b><br>' + (dt ? 'P' + psPlace(R[i], dt).txt + ' · ' + dt.points + ' pkt' + (typeof g === 'number' ? ' (' + psSigned(g) + ')' : '') : (psPartial(R[i]) ? 'poza TOP ' + state.size[R[i]] : 'brak danych'));
+    tip.innerHTML = '<b>' + psEsc(psRoundText(R[i])) + '</b><br>' + (dt ? 'P' + psPlace(R[i], dt).txt + ' · ' + dt.points + ' pkt' + (typeof g === 'number' ? ' (' + psSigned(g) + ')' : '') : (psPartial(R[i]) ? 'poza TOP ' + state.top[R[i]] : 'brak danych'));
     tip.style.display = 'block';
     var px = X(i) * rect.width / W, tw = tip.offsetWidth;
     tip.style.left = Math.max(tw / 2, Math.min(rect.width - tw / 2, px)) + 'px';
@@ -452,7 +511,9 @@ function psDrawChart() {
 }
 
 document.addEventListener('click', function(e) {
-  var srt = e.target.closest('th[data-sort]');
+  var pk = e.target.closest('[data-pick]');
+  if (pk) { psPickMe(pk.getAttribute('data-pick')); return; }
+  var srt = e.target.closest('[data-sort]');
   if (srt) { psSortBy(+srt.getAttribute('data-sort')); return; }
   var j = e.target.closest('[data-jump]');
   if (j) { psJumpTo(j.getAttribute('data-jump')); return; }
@@ -464,8 +525,9 @@ document.getElementById('hist').addEventListener('click', function(e) { if (e.ta
 function psA11y(root) {
   var list = [].slice.call(root.querySelectorAll('[data-k],[data-jump],[data-sort]'));
   if (root.matches && root.matches('[data-k],[data-jump],[data-sort]')) list.push(root);
+  // komórki tabeli i elementy listy mają w środku własny przycisk — nie zmieniamy ich roli
   list.forEach(function(el) {
-    if (el.tagName === 'BUTTON' || el.hasAttribute('tabindex')) return;
+    if (/^(BUTTON|TD|TH|LI)$/.test(el.tagName) || el.hasAttribute('tabindex')) return;
     el.tabIndex = 0; el.setAttribute('role', 'button');
   });
 }
@@ -480,10 +542,10 @@ window.addEventListener('resize', function() { psDrawChart(); psDrawDuel(); });
 // ---------- pojedynek ----------
 var DUEL = null, duelAuto = true;
 function psFind(text) {
-  var q = (text || '').trim().toLowerCase();
+  var t = (text || '').trim(), q = t.toLowerCase();
   if (!q) return null;
   var keys = Object.keys(state.participants);
-  return keys.find(function(k) { return psName(k).toLowerCase() === q; }) || null;
+  return keys.find(function(k) { return psName(k) === t; }) || keys.find(function(k) { return psName(k).toLowerCase() === q; }) || null;
 }
 function psFillNicks(order) {
   document.getElementById('nicks').innerHTML = order.map(function(k) { return '<option value="' + psEsc(psName(k)) + '">'; }).join('');
@@ -491,7 +553,7 @@ function psFillNicks(order) {
 function psRenderDuel() {
   var ia = document.getElementById('duel-a'), ib = document.getElementById('duel-b');
   if (document.activeElement === ia) duelAuto = false;
-  if (duelAuto) ia.value = myName || ''; // dopóki A nie było edytowane, A = nick z „Twojej pozycji”
+  if (duelAuto) ia.value = ME ? psName(ME) : ME_MULTI.length ? '' : myName || ''; // dopóki A nie było edytowane, A = osoba z „Twojej pozycji”
   var a = psFind(ia.value), b = psFind(ib.value), body = document.getElementById('duel-body');
   document.getElementById('duel-share').style.display = a && b && a !== b ? '' : 'none';
   if (!a || !b || a === b) {
@@ -506,7 +568,7 @@ function psRenderDuel() {
   var rows = R.map(function(r, i) {
     var da = PA[r], db = PB[r], ga = psRoundDelta(a, i), gb = psRoundDelta(b, i), w = '';
     if (ga !== null && gb !== null) { if (ga > gb) { wa++; w = '<span class="win"><i style="background:var(--va)"></i>' + psEsc(psName(a)) + '</span>'; } else if (gb > ga) { wb++; w = '<span class="win"><i style="background:var(--vb)"></i>' + psEsc(psName(b)) + '</span>'; } else { tie++; w = 'remis'; } }
-    var cell = function(d, g) { return d ? '<b>' + d.points + '</b> <span class="tie">P' + psPlace(r, d).txt + (g !== null ? ' · ' + psSigned(g) : '') + '</span>' : '<span class="tie">' + (psPartial(r) ? '&gt; ' + state.size[r] : '—') + '</span>'; };
+    var cell = function(d, g) { return d ? '<b>' + d.points + '</b> <span class="tie">P' + psPlace(r, d).txt + (g !== null ? ' · ' + psSigned(g) : '') + '</span>' : '<span class="tie">' + (psPartial(r) ? '&gt; ' + state.top[r] : '—') + '</span>'; };
     var diff = da && db ? psSigned(da.points - db.points) : '—';
     return '<tr><td>' + psRoundLabel(r) + '</td><td>' + cell(da, ga) + '</td><td>' + cell(db, gb) + '</td><td>' + diff + '</td><td class="rd2">' + (w || '—') + '</td></tr>';
   }).reverse().join('');
@@ -577,7 +639,8 @@ function psDrawDuel() {
 }
 function psShareDuel() {
   if (!DUEL) return;
-  var u = new URL(psShareUrl(psName(DUEL.a))); u.searchParams.set('vs', psName(DUEL.b));
+  var u = new URL(psShareUrl(DUEL.a));
+  if (/^u\d+$/.test(DUEL.b)) u.searchParams.set('vsid', DUEL.b.slice(1)); else u.searchParams.set('vs', psName(DUEL.b));
   var url = u.toString();
   if (navigator.share) { navigator.share({ title: 'Pojedynek: ' + psName(DUEL.a) + ' vs ' + psName(DUEL.b), url: url }).catch(function() {}); return; }
   navigator.clipboard.writeText(url).then(function() { psToast('Skopiowano link do pojedynku'); }, function() { window.prompt('Skopiuj link:', url); });
@@ -605,7 +668,7 @@ function psRenderForm(order) {
   var place = [], prev = null;
   rows.forEach(function(r, i) { place[i] = prev !== null && rows[i - 1].sum === r.sum ? place[i - 1] : i + 1; prev = r.sum; });
   var line = function(r, i) {
-    return '<tr class="' + (psIsMe(r.k) ? 'me ' : '') + (place[i] <= 3 ? 'f' + place[i] : '') + '"><td class="fr">' + place[i] + '</td><td class="nm-c" data-k="' + psEsc(r.k) + '">' + psEsc(psName(r.k)) + '</td>' +
+    return '<tr class="' + (psIsMe(r.k) ? 'me ' : '') + (place[i] <= 3 ? 'f' + place[i] : '') + '"><td class="fr">' + place[i] + '</td><td class="nm-c" data-k="' + psEsc(r.k) + '"><button type="button" class="lnk" data-k="' + psEsc(r.k) + '">' + psEsc(psName(r.k)) + '</button></td>' +
       r.ds.map(function(d) { return '<td class="rd"><span class="' + (d > 0 ? 'd' : 'd0') + '">' + psSigned(d) + '</span></td>'; }).join('') +
       '<td class="sum">' + r.sum + '</td><td>P' + psPlace(R[n - 1], state.participants[r.k][R[n - 1]]).txt + '</td></tr>';
   };
@@ -617,14 +680,24 @@ function psRenderForm(order) {
   // rundy bazowe z samą czołówką ograniczają, kogo da się porównać
   var partial = []; for (var j = n - FORM_N - 1; j < n - 1; j++) if (psPartial(R[j])) partial.push(R[j]);
   document.getElementById('form-cap').textContent = (partial.length
-    ? 'Z rundy ' + partial.join(', ') + ' mamy tylko czołówkę (TOP ' + state.size[partial[partial.length - 1]] + '), więc na razie porównujemy tylko osoby, które w niej były (' + missing + ' os. pominięto). Pełna tabela formy — gdy wszystkie ' + FORM_N + ' rundy będą z pełnego rankingu. '
+    ? 'Z rundy ' + partial.join(', ') + ' mamy tylko czołówkę (TOP ' + state.top[partial[partial.length - 1]] + '), więc na razie porównujemy tylko osoby, które w niej były (' + missing + ' os. pominięto). Pełna tabela formy — gdy wszystkie ' + FORM_N + ' rundy będą z pełnego rankingu. '
     : (missing ? 'Pominięto ' + missing + ' os. bez danych ze wszystkich ' + FORM_N + ' rund. ' : '')) + 'Kliknij nick, żeby zobaczyć historię.';
 }
 
 // ---------- rekordy sezonu (z zapisanych rund; przerwy i rundy z samą czołówką pomijane tam, gdzie nie da się liczyć) ----------
-var REC_MIN_ROUNDS = 8; // średnia i równość tylko dla graczy z co najmniej tyloma znanymi przyrostami
+// wspólny zakres rund do średniej i równości: najdłuższy ciąg ostatnich rund bez przerwy w numeracji,
+// w którym runda i poprzednia mają co najmniej 100 wierszy — wszyscy porównywani na tych samych rundach
+var REC_MIN_SPAN = 3;
+function psCommonSpan() {
+  var R = state.rounds, idx = [];
+  for (var i = R.length - 1; i > 0; i--) {
+    if (psGap(i) || state.size[R[i]] < 100 || state.size[R[i - 1]] < 100) break;
+    idx.unshift(i);
+  }
+  return idx;
+}
 function psRenderRecords() {
-  var R = state.rounds, n = R.length, keys = Object.keys(state.participants);
+  var R = state.rounds, n = R.length, keys = Object.keys(state.participants), span = psCommonSpan();
   var best = function(list, better) { // [{k, v, extra}] → zwycięzcy (z remisami)
     var top = [];
     list.forEach(function(x) { if (!top.length || better(x.v, top[0].v)) top = [x]; else if (x.v === top[0].v) top.push(x); });
@@ -645,16 +718,18 @@ function psRenderRecords() {
     });
     if (lead) leadList.push({ k: k, v: lead });
     if (t10) top10List.push({ k: k, v: t10 });
-    if (ds.length >= REC_MIN_ROUNDS) {
-      var avg = ds.reduce(function(a, b) { return a + b; }, 0) / ds.length;
-      var sd = Math.sqrt(ds.reduce(function(a, b) { return a + (b - avg) * (b - avg); }, 0) / ds.length);
-      avgList.push({ k: k, v: Math.round(avg * 10) / 10, n: ds.length });
-      steadyList.push({ k: k, v: Math.round(sd * 10) / 10, avg: avg, n: ds.length });
+    var sp = span.length >= REC_MIN_SPAN ? span.map(function(i) { return psRoundDelta(k, i); }) : [null];
+    if (sp.every(function(g) { return g !== null; })) {
+      var avg = sp.reduce(function(a, b) { return a + b; }, 0) / sp.length;
+      var sd = Math.sqrt(sp.reduce(function(a, b) { return a + (b - avg) * (b - avg); }, 0) / sp.length);
+      avgList.push({ k: k, v: Math.round(avg * 10) / 10 });
+      steadyList.push({ k: k, v: Math.round(sd * 10) / 10, avg: avg });
     }
   });
   var who = function(top, fmt) {
-    var names = top.slice(0, 2).map(function(x) { return '<span data-k="' + psEsc(x.k) + '">' + psEsc(psName(x.k)) + '</span>' + (fmt ? ' <span class="tie">' + fmt(x) + '</span>' : ''); });
-    return names.join(', ') + (top.length > 2 ? ' <span class="tie">i ' + (top.length - 2) + ' ' + (top.length - 2 === 1 ? 'inny' : 'innych') + '</span>' : '');
+    var lim = top.length === 3 ? 3 : 2; // trzy nicki mieszczą się bez „i 1 inny”
+    var names = top.slice(0, lim).map(function(x) { return '<span data-k="' + psEsc(x.k) + '">' + psEsc(psName(x.k)) + '</span>' + (fmt ? ' <span class="tie">' + fmt(x) + '</span>' : ''); });
+    return names.join(', ') + (top.length > lim ? ' <span class="tie">i ' + (top.length - lim) + ' ' + (top.length - lim === 1 ? 'inny' : 'innych') + '</span>' : '');
   };
   var hi = function(a, b) { return a > b; }, lo = function(a, b) { return a < b; };
   // równość: wśród graczy ze średnią w górnej połowie (inaczej wygrywa ktoś, kto stale ma mało punktów)
@@ -664,15 +739,19 @@ function psRenderRecords() {
     ['↗ Największy awans w rundzie', best(climbList, hi), function(t) { return '▲' + t[0].v; }, function(x) { return x.r; }],
     ['👑 Najwięcej rund na prowadzeniu', best(leadList, hi), function(t) { return t[0].v + ' ' + (t[0].v === 1 ? 'runda' : t[0].v % 10 >= 2 && t[0].v % 10 <= 4 && (t[0].v % 100 < 10 || t[0].v % 100 >= 20) ? 'rundy' : 'rund'); }, null],
     ['🔟 Najwięcej rund w TOP 10', best(top10List, hi), function(t) { return t[0].v + ' z ' + n; }, null],
-    ['Ø Najwyższa średnia na rundę', best(avgList, hi), function(t) { return t[0].v.toFixed(1).replace('.', ',') + ' pkt'; }, function(x) { return x.n + ' rund'; }],
-    ['≈ Najrówniej punktujący', best(steadyList.filter(function(x) { return x.avg >= med; }), lo), function(t) { return '±' + t[0].v.toFixed(1).replace('.', ','); }, function(x) { return 'śr. ' + x.avg.toFixed(1).replace('.', ',') + ' pkt'; }]
+    ['Ø Najwyższa średnia na rundę' + (spanTxt ? ' (' + spanTxt + ')' : ''), best(avgList, hi), function(t) { return t[0].v.toFixed(1).replace('.', ',') + ' pkt'; }, null],
+    ['≈ Najrówniej punktujący' + (spanTxt ? ' (' + spanTxt + ')' : ''), best(steadyList.filter(function(x) { return x.avg >= med; }), lo), function(t) { return '±' + t[0].v.toFixed(1).replace('.', ','); }, function(x) { return 'śr. ' + x.avg.toFixed(1).replace('.', ',') + ' pkt'; }]
   ];
   document.getElementById('rec-grid').innerHTML = cards.map(function(c) {
     var top = c[1];
     if (!top.length) return '';
     return '<div class="rec"><div class="label">' + c[0] + '</div><div class="v">' + c[2](top) + '</div><div class="who">' + who(top, c[3]) + '</div></div>';
   }).join('');
-  document.getElementById('rec-cap').textContent = 'Liczone z zapisanych rund (' + R[0].replace(/ R\d+$/, '') + ' – ' + R[n - 1].replace(/ R\d+$/, '') + '). Przyrostów i awansów nie liczymy przez przerwę w danych (R4–R8) ani dla graczy spoza zapisanej czołówki w rundach Spa–Singapur. Średnia i równość: gracze z co najmniej ' + REC_MIN_ROUNDS + ' znanymi rundami; równość (najmniejsze odchylenie punktów od średniej) wśród graczy ze średnią w górnej połowie. Kliknij nick, żeby zobaczyć historię.';
+  var short = function(r) { return (r.match(/R\d+$/) || [r])[0]; };
+  var spanTxt = span.length >= REC_MIN_SPAN ? short(R[span[0]]) + '–' + short(R[n - 1]) : '';
+  document.getElementById('rec-cap').textContent = 'Liczone z zapisanych rund (' + R[0].replace(/ R\d+$/, '') + ' – ' + R[n - 1].replace(/ R\d+$/, '') + '). Przyrostów i awansów nie liczymy przez przerwę w danych ani dla graczy spoza zapisanej czołówki w rundach z samą czołówką. ' +
+    (spanTxt ? 'Średnia i równość: wspólny zakres rund ' + spanTxt + ' (' + span.length + ' rund z pełnymi danymi), ' + avgList.length + ' graczy z kompletem punktów z tych rund; równość (najmniejsze odchylenie punktów od średniej) wśród graczy ze średnią w górnej połowie. ' : '') +
+    'Kliknij nick, żeby zobaczyć historię.';
 }
 
 // ---------- kalkulator „ile mi brakuje” ----------
@@ -682,7 +761,7 @@ function psCalc() {
   if (!sel || !out) return;
   CALC_T = +sel.value;
   var n = state.rounds.length, last = state.rounds[n - 1], order = psOrder(last);
-  var me = order.find(psIsMe); if (!me) return;
+  var me = ME && state.participants[ME][last] ? ME : null; if (!me) return;
   var md = state.participants[me][last], target = order[Math.min(CALC_T, order.length) - 1], td = state.participants[target][last];
   var gap = td.points - md.points, label = CALC_T === 1 ? 'P1' : 'TOP ' + CALC_T;
   var lastNo = psRoundNo(last), left = PLANNED && lastNo ? Math.max(0, PLANNED - lastNo) : null;
@@ -718,11 +797,13 @@ function psSortBy(ri) {
 }
 function psCsv() {
   var R = state.rounds, last = R[R.length - 1], order = psOrder(last);
-  var q = function(v) { v = String(v); return /[";\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+  var q = function(v) { v = String(v); return /[";\r\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+  // nick zaczynający się od =, +, - lub @ Excel uznałby za formułę
+  var safe = function(v) { return /^[=+\-@]/.test(v) ? "'" + v : v; };
   var rows = [['Miejsce', 'Nick', 'Id parcfer.me'].concat([].concat.apply([], R.map(function(r) { r = psRoundText(r); return [r + ' pkt', r + ' miejsce', r + ' w rundzie']; }))).concat(['Suma'])];
   order.forEach(function(k) {
     var P = state.participants[k], cur = P[last];
-    var row = [cur ? psPlace(last, cur).txt : '', psName(k), /^u\d+$/.test(k) ? k.slice(1) : ''];
+    var row = [cur ? psPlace(last, cur).txt : '', safe(psName(k)), /^u\d+$/.test(k) ? k.slice(1) : ''];
     R.forEach(function(r, i) { var d = P[r], g = psRoundDelta(k, i); row.push(d ? d.points : '', d ? psPlace(r, d).txt : '', g === null ? '' : g); });
     row.push(cur ? cur.points : '');
     rows.push(row);
@@ -744,13 +825,14 @@ function psRenderAll() {
   }
   var n = state.rounds.length, last = state.rounds[n - 1];
   document.getElementById('ps-asof').textContent = 'Stan po rundzie: ' + last + '.';
-  document.getElementById('ps-subtitle').textContent = 'Nieoficjalny ranking typerów parcfer.me runda po rundzie · ' + n + ' ' + (n === 1 ? 'runda' : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 'rundy' : 'rund')) + ' · ' + Object.keys(state.participants).length + ' uczestników · stan po ' + last;
+  var played = psRoundNo(last);
+  document.getElementById('ps-subtitle').textContent = 'Nieoficjalny ranking typerów parcfer.me runda po rundzie · ' + (played && played !== n ? n + ' z ' + played + ' rund zapisanych' : n + ' ' + (n === 1 ? 'runda' : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 'rundy' : 'rund'))) + ' · ' + Object.keys(state.participants).length + ' uczestników · stan po ' + last;
   var order = psOrder(last);
-  psBuildLabels(order);
+  psResolveMe();
   psRenderKpis(order);
   psRenderForm(order);
   psRenderRecords();
-  psFillNicks(order);
+  if (!psFillNicks.done) { psFillNicks(order); psFillNicks.done = true; } // lista nicków nie zależy od „ja”
   psRenderDuel();
   psRenderTable();
 }
@@ -760,7 +842,7 @@ function psRenderAll() {
     var idx = await (await fetch('data/seasons.json', { cache: 'no-cache' })).json();
     var qs = parseInt(new URLSearchParams(location.search).get('sezon'), 10);
     SEASON = idx.seasons.indexOf(qs) !== -1 ? qs : idx['default'];
-    PLANNED = idx.planned_rounds && idx.planned_rounds[SEASON] || null;
+    PLANNED = idx.planned_rounds && idx.planned_rounds[SEASON] || idx.calendar && idx.calendar[SEASON] && idx.calendar[SEASON].length || null;
     SPRINTS = idx.sprints && idx.sprints[SEASON] || [];
     psBuildSeasonPicker(idx.seasons);
     var json = await (await fetch('data/' + SEASON + '.json', { cache: 'no-cache' })).json();
@@ -769,26 +851,37 @@ function psRenderAll() {
     json.rounds.forEach(function(r) {
       seedRounds.push(r.name);
       seedRaw[r.name] = r.standings.map(function(x) { return [x.pos, x.name, x.points, x.id]; });
+      if (r.top) seedTop[r.name] = r.top;
     });
   } catch (e) {
     document.getElementById('ps-subtitle').textContent = 'Nie udało się wczytać danych.';
     return;
   }
   state = buildSeedState();
-  // ?nick=… z udostępnionego linku pokazuje tę osobę, ale nie nadpisuje zapisanego nicka
-  var shared = (new URLSearchParams(location.search).get('nick') || '').trim();
-  var saved = lsGet(MYNAME_KEY);
-  myName = shared || (saved && saved.value ? saved.value : '');
+  psBuildLabels();
+  // ?id=… (albo starsze ?nick=…) z udostępnionego linku pokazuje tę osobę, ale nie nadpisuje zapisanej
+  var qs2 = new URLSearchParams(location.search);
+  var sid = 'u' + (qs2.get('id') || '').trim(), sharedKey = state.participants[sid] ? sid : null;
+  var shared = sharedKey ? psName(sharedKey) : (qs2.get('nick') || '').trim();
+  var saved = lsGet(MYNAME_KEY), savedKey = lsGet(MYKEY_KEY);
+  if (shared) { myName = shared; myKey = sharedKey; }
+  else {
+    myKey = savedKey && state.participants[savedKey.value] ? savedKey.value : null;
+    // zapisana osoba wygrywa z zapisaną etykietą (numer „(2)” mógł się zmienić)
+    myName = myKey ? psName(myKey) : (saved && saved.value ? saved.value : '');
+  }
   document.getElementById('ps-myname').value = myName;
   psRenderAll();
-  var vs = (new URLSearchParams(location.search).get('vs') || '').trim();
+  var vid = 'u' + (qs2.get('vsid') || '').trim();
+  var vs = state.participants[vid] ? psName(vid) : (qs2.get('vs') || '').trim();
   if (vs) {
     document.getElementById('duel-b').value = vs;
     psRenderDuel();
     document.getElementById('duel-sec').scrollIntoView({ block: 'start' });
   } else if (shared) {
-    var order = psOrder(state.rounds[state.rounds.length - 1]);
-    if (order.some(psIsMe)) psSetView('near');
+    if (ME) psSetView('near');
     document.getElementById('k-me').scrollIntoView({ block: 'center' });
   }
+  // font doczytany po renderze poszerza kolumny — przewiń tabelę jeszcze raz do kolumny „Suma”
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function() { var w = document.querySelector('.board .tw'); if (w) w.scrollLeft = w.scrollWidth; });
 })();

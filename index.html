@@ -13,7 +13,7 @@
 <meta name="description" content="Nieoficjalna, fanowska klasyfikacja typerów parcfer.me (F1), runda po rundzie.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="parcferme.ranking">
-<meta property="og:title" content="Klasyfikacja typerów parcfer.me — F1 2026">
+<meta property="og:title" content="Klasyfikacja typerów parcfer.me — F1">
 <meta property="og:description" content="Nieoficjalny ranking typerów parcfer.me runda po rundzie: tabela, TOP 10, Twoja pozycja i historia każdego gracza.">
 <meta property="og:url" content="https://patrykw-labs.github.io/parcferme-ranking/">
 <meta property="og:image" content="https://patrykw-labs.github.io/parcferme-ranking/assets/og.jpg">
@@ -21,14 +21,12 @@
 <meta property="og:image:height" content="630">
 <meta property="og:locale" content="pl_PL">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="preload" href="assets/fonts/plus-jakarta-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <script>
 // motyw ustawiany przed renderem, żeby nie migał
 (function(){try{var t=localStorage.getItem('parcfer-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
 </script>
-<link rel="stylesheet" href="css/style.css?v=20261113e">
+<link rel="stylesheet" href="css/style.css?v=20261116a">
 </head>
 <body>
 
@@ -68,7 +66,7 @@
     </div>
     <div class="card hero-me">
       <div class="label">Twoja pozycja</div>
-      <div class="me-row"><input class="field" type="text" id="ps-myname" placeholder="Wpisz swój nick, np. igordzie" oninput="psSaveMyName()" autocomplete="off"></div>
+      <div class="me-row"><input class="field" type="text" id="ps-myname" list="nicks" placeholder="Wpisz swój nick, np. igordzie" oninput="psSaveMyName()" autocomplete="off" aria-label="Twój nick z parcfer.me"></div>
       <div id="k-me"><div class="me-hint">Wpisz nick z parcfer.me — podświetlimy Cię w tabeli i pokażemy zmianę pozycji.</div></div>
     </div>
   </section>
@@ -112,12 +110,12 @@
     <div class="board-head">
       <h2>Tabela runda po rundzie <span class="chip gold" id="spr-legend" title="Rundy z weekendem sprinterskim">⚡ weekend ze sprintem</span></h2>
       <div class="sp"></div>
-      <div class="seg" role="tablist">
-        <button type="button" id="seg-top" class="on" onclick="psSetView('top')">TOP 100</button>
-        <button type="button" id="seg-near" onclick="psSetView('near')" title="±15 miejsc wokół Twojego nicka">Moja okolica</button>
-        <button type="button" id="seg-all" onclick="psSetView('all')">Wszyscy</button>
+      <div class="seg" role="group" aria-label="Widok tabeli">
+        <button type="button" id="seg-top" class="on" aria-pressed="true" onclick="psSetView('top')" title="Miejsca 1–100 (z remisem na 100. miejscu)">TOP 100</button>
+        <button type="button" id="seg-near" aria-pressed="false" onclick="psSetView('near')" title="±15 miejsc wokół Twojego nicka">Moja okolica</button>
+        <button type="button" id="seg-all" aria-pressed="false" onclick="psSetView('all')">Wszyscy</button>
       </div>
-      <input class="search" type="text" id="ps-filter" placeholder="Szukaj nicku…" oninput="psRenderTable()">
+      <input class="search" type="text" id="ps-filter" placeholder="Szukaj nicku…" oninput="psRenderTable()" aria-label="Szukaj nicku w tabeli">
       <button type="button" class="btn jump" id="ps-jump"></button>
       <button type="button" class="btn pri jump" id="ps-me-jump">📍 Pokaż mnie</button>
       <button type="button" class="btn" id="ps-csv" onclick="psCsv()" title="Pobierz całą tabelę jako CSV (Excel, Arkusze Google)">⬇ CSV</button>
@@ -143,10 +141,23 @@
   </dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <div class="note"><b>Nieoficjalne zestawienie fanowskie.</b> Źródło danych: publiczny ranking <a href="https://parcfer.me" target="_blank" rel="noopener">parcfer.me</a>. <span id="ps-asof"></span> Kliknij nick, żeby zobaczyć historię gracza na wykresie. W komórce: punkty łącznie, a pod spodem miejsce w danej rundzie i przyrost punktów. Strzałka obok pozycji to zmiana miejsca względem poprzedniej rundy; „↑100” oznacza wejście do TOP 100, „NOWY” — nowego uczestnika. Zapisane rundy: Japonia R3 i Silverstone R9 — pełny ranking (z kopii w Web Archive), Spa R10 — TOP 30, Węgry R11–Singapur R17 — TOP 100, od USA R18 — pełny ranking. Rund R1–R2 i R4–R8 nie mamy, więc przy Silverstone R9 nie ma przyrostu ani strzałek (to zmiana z kilku rund), a osoby spoza zapisanej czołówki mają „&gt; 30” lub „&gt; 100”. ⚡ przy nazwie rundy oznacza weekend ze sprintem. „=” przy miejscu oznacza ex aequo — osoby z tą samą liczbą punktów mają wspólne miejsce (pełny zakres miejsc widać po najechaniu). Kolejność wewnątrz remisu jest jak na parcfer.me. Gdy nick się powtarza, kolejne osoby oznaczono „(2)” według miejsca w rankingu. Nowe rundy możesz śledzić przez <a href="feed.xml">kanał RSS</a>. Strona zbiera anonimowe statystyki odwiedzin (<a href="https://www.goatcounter.com" target="_blank" rel="noopener">GoatCounter</a>, bez cookies).</div>
+  <div class="note">
+    <p style="margin:0"><b>Nieoficjalne zestawienie fanowskie.</b> Źródło danych: publiczny ranking <a href="https://parcfer.me" target="_blank" rel="noopener">parcfer.me</a>. <span id="ps-asof"></span> Nowe rundy możesz śledzić przez <a href="feed.xml">kanał RSS</a>. Strona zbiera anonimowe statystyki odwiedzin (<a href="https://www.goatcounter.com" target="_blank" rel="noopener">GoatCounter</a>, bez cookies).</p>
+    <details>
+      <summary>O danych i oznaczeniach</summary>
+      <ul>
+        <li>Kliknij nick, żeby zobaczyć historię gracza na wykresie. W komórce: punkty łącznie, a pod spodem miejsce w danej rundzie i przyrost punktów.</li>
+        <li>Strzałka obok pozycji to zmiana miejsca względem poprzedniej rundy; „↑100” oznacza wejście do TOP 100, „NOWY” — nowego uczestnika. ⚡ przy nazwie rundy oznacza weekend ze sprintem.</li>
+        <li>Zapisane rundy: Japonia R3 i Silverstone R9 — pełny ranking (z kopii w Web Archive), Spa R10 — TOP 30, Węgry R11–Singapur R17 — TOP 100, od USA R18 — pełny ranking. Rund R1–R2 i R4–R8 nie mamy, więc przy Silverstone R9 nie ma przyrostu ani strzałek (to zmiana z kilku rund), a osoby spoza zapisanej czołówki mają „&gt; 30” lub „&gt; 100”.</li>
+        <li>„=” przy miejscu oznacza ex aequo — osoby z tą samą liczbą punktów mają wspólne miejsce (pełny zakres miejsc widać po najechaniu). Kolejność wewnątrz remisu jest jak na parcfer.me. Widok TOP 100 obejmuje wszystkich z miejscem do 100, także przy remisie na granicy.</li>
+        <li>Gdy nick się powtarza, kolejne osoby oznaczono „(2)”, „(3)” w kolejności pojawienia się w rankingu sezonu — numer się nie zmienia. Linki „Udostępnij” wskazują gracza po numerze z parcfer.me, więc zawsze otwierają tę samą osobę.</li>
+        <li>Średnia w historii gracza to punkty podzielone przez liczbę rozegranych rund sezonu; rekordy średniej i równości liczymy na wspólnym zakresie rund z pełnymi danymi.</li>
+      </ul>
+    </details>
+  </div>
 </main>
 
-<script src="js/app.js?v=20261113e"></script>
+<script src="js/app.js?v=20261116a"></script>
 <script data-goatcounter="https://parcferme.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </body>
 </html>

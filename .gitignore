@@ -18,5 +18,5 @@ __pycache__/
 *.pyc
 
 # Testy
-tests/node_modules/
+tests/node_modules
 tests/package-lock.json
