@@ -126,6 +126,21 @@ h1 em{font-style:normal;background:linear-gradient(90deg,var(--accent-2),var(--a
 .top10 li.me{background:var(--me);margin:0 -8px;padding:5px 8px;border-radius:8px}
 /* forma z ostatnich rund */
 .form{margin-top:16px;overflow:hidden}
+/* walka o tytuł */
+.title{margin-top:16px;overflow:hidden}
+.title-body{padding:16px 20px 4px;display:grid;grid-template-columns:minmax(220px,1fr) 2fr;gap:16px;align-items:start}
+.title-sum .v{font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.title-sum .v small{font-size:14px;font-weight:600;color:var(--text-2);margin-left:6px;letter-spacing:0}
+.title-sum p{margin:8px 0 0;color:var(--text-2);font-size:13px}
+.title-sum p b{color:var(--text)}
+.title table{font-size:13px}
+.title th{position:static}
+.title td.nm-c,.title th.nm-c{text-align:left;font-weight:700}
+.title .tie{font-size:11px;color:var(--muted)}
+.title tr.out td{color:var(--muted)}
+.title .cap{padding:10px 20px 16px;font-size:12px;color:var(--muted)}
+@media (max-width:760px){.title-body{grid-template-columns:1fr}}
+@media (max-width:560px){.title-body{padding:14px}.title .opt{display:none}}
 .recs{margin-top:16px;overflow:hidden}
 .rec-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;padding:16px 20px 4px}
 .rec{border:1px solid var(--border);border-radius:14px;padding:14px 16px;background:var(--card-2)}

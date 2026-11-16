@@ -46,6 +46,8 @@ await p.waitForSelector('#ps-ver:not([hidden])', { timeout: 5000 }).catch(() => 
 check(/^v\d+\.\d+\.\d+/.test((await p.textContent('#ps-ver')).trim()), 'wersja strony w górnym pasku: ' + (await p.textContent('#ps-ver')).trim());
 check((await p.$$('#k-top10 li')).length === 10, 'kafelek TOP 10');
 check((await p.$$('#rec-grid .rec')).length >= 4, 'rekordy sezonu');
+// walka o tytuł: tylko gdy seasons.json ma max_points i sezon jeszcze trwa
+if (seasons.max_points && (seasons.planned_rounds || {})[seasons.default]) check(/\d/.test(await p.textContent('#title-body')), 'walka o tytuł: ' + (await p.textContent('#title-sec .title-sum .v')).trim());
 await p.click('#seg-all');
 check(await p.isVisible('#ps-pager'), 'widok Wszyscy ze stronami');
 await p.click('#ps-pager button[aria-label="Następna strona"]');

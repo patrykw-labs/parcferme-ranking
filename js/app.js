@@ -646,6 +646,59 @@ function psShareDuel() {
   navigator.clipboard.writeText(url).then(function() { psToast('Skopiowano link do pojedynku'); }, function() { window.prompt('Skopiuj link:', url); });
 }
 
+// ---------- walka o tytuł: kto jeszcze może matematycznie wygrać sezon ----------
+// szansa = punkty + najwięcej, ile da się zdobyć do końca sezonu (max_points, sprinty) ≥ punkty lidera;
+// równa liczba punktów na koniec to wspólne P1 (parcfer.me nie rozstrzyga remisów)
+var TITLE_TOP = 10;
+function psRenderTitle(order) {
+  var sec = document.getElementById('title-sec'), R = state.rounds, last = R[R.length - 1], lastNo = psRoundNo(last);
+  var maxLeft = psMaxLeft(lastNo);
+  if (maxLeft === null) { sec.style.display = 'none'; return; }
+  sec.style.display = '';
+  var P = state.participants, left = PLANNED - lastNo;
+  var inLast = order.filter(function(k) { return P[k][last]; }), top = P[inLast[0]][last].points;
+  var plRund = function(k) { return k === 1 ? 'runda' : k % 10 >= 2 && k % 10 <= 4 && (k % 100 < 10 || k % 100 >= 20) ? 'rundy' : 'rund'; };
+  var plGr = function(k) { return k === 1 ? 'gracz' : k % 10 >= 2 && k % 10 <= 4 && (k % 100 < 10 || k % 100 >= 20) ? 'graczy' : 'graczy'; };
+  var leaders = inLast.filter(function(k) { return P[k][last].points === top; });
+  var body = document.getElementById('title-body');
+  if (left <= 0) {
+    document.getElementById('title-r').textContent = 'sezon zakończony';
+    body.innerHTML = '<div class="title-sum"><div class="label">' + (leaders.length > 1 ? 'Mistrzowie ex aequo' : 'Mistrz sezonu') + '</div><div class="v">' + psWho(leaders, 5) + ' <small>' + top + ' pkt</small></div></div>';
+    document.getElementById('title-cap').textContent = '';
+    return;
+  }
+  var contenders = inLast.filter(function(k) { return P[k][last].points + maxLeft >= top; });
+  var short = function(n) { return 'R' + n; };
+  document.getElementById('title-r').textContent = left + ' ' + plRund(left) + ' do końca (' + short(lastNo + 1) + (left > 1 ? '–' + short(PLANNED) : '') + ')';
+  var nextK = inLast[leaders.length], lead = nextK ? top - P[nextK][last].points : null;
+  var sprintsLeft = SPRINTS.filter(function(r) { return r > lastNo && r <= PLANNED; }).length;
+  // lider zapewnia sobie tytuł, gdy przewaga nad drugim jest większa niż punkty możliwe do zdobycia (remis = wspólne P1)
+  var clinch = leaders.length === 1 && lead !== null
+    ? (lead > maxLeft ? '<b>' + psEsc(psName(leaders[0])) + '</b> ma już zapewniony tytuł.' : '<b>' + psEsc(psName(leaders[0])) + '</b> zapewni sobie tytuł, gdy przewaga przekroczy punkty możliwe do zdobycia — dziś ' + lead + ' pkt, a w pozostałych rundach można zdobyć najwyżej ' + maxLeft + '.')
+    : 'Na prowadzeniu ex aequo: ' + psWho(leaders, 5) + '.';
+  var meLine = '';
+  if (ME && P[ME][last]) {
+    var md = P[ME][last].points, need = top - md;
+    meLine = '<p>' + (ME && leaders.indexOf(ME) !== -1 ? 'Prowadzisz' + (leaders.length > 1 ? ' ex aequo' : '') + '.' :
+      md + maxLeft >= top ? 'Masz jeszcze szansę: tracisz ' + need + ' pkt, trzeba zdobywać średnio <b>' + (Math.ceil(need / left * 10) / 10).toFixed(1).replace('.', ',') + ' pkt na rundę więcej</b> niż lider.' :
+      'Nie możesz już wygrać — tracisz ' + need + ' pkt, a do zdobycia zostało najwyżej ' + maxLeft + '.') + '</p>';
+  }
+  var place = function(k) { return psPlace(last, P[k][last]).txt; };
+  var row = function(k) {
+    var pts = P[k][last].points, need = top - pts, can = pts + maxLeft >= top;
+    return '<tr class="' + (psIsMe(k) ? 'me ' : '') + (can ? '' : 'out') + '"><td>P' + place(k) + '</td><td class="nm-c" data-k="' + psEsc(k) + '"><button type="button" class="lnk" data-k="' + psEsc(k) + '">' + psEsc(psName(k)) + '</button></td><td><b>' + pts + '</b></td><td>' + (need ? '−' + need : '—') + '</td>' +
+      '<td class="opt">' + (need ? (Math.ceil(need / left * 10) / 10).toFixed(1).replace('.', ',') + ' / rundę' : 'prowadzi') + '</td></tr>';
+  };
+  var shown = contenders.slice(0, TITLE_TOP), rows = shown.map(row).join('');
+  if (contenders.length > TITLE_TOP) rows += '<tr class="gap"><td colspan="5" class="tie">⋯ i ' + (contenders.length - TITLE_TOP) + ' innych z szansą</td></tr>';
+  if (ME && P[ME][last] && shown.indexOf(ME) === -1) rows += row(ME);
+  body.innerHTML = '<div class="title-sum"><div class="label">Szansę na tytuł ma jeszcze</div><div class="v">' + contenders.length + ' <small>' + plGr(contenders.length) + '</small></div>' +
+    '<p>Do zdobycia zostało najwyżej <b>' + maxLeft + ' pkt</b> (' + left + ' ' + plRund(left) + (sprintsLeft ? ', w tym ' + sprintsLeft + ' ze sprintem' : '') + '), więc szansę ma każdy, kto traci do lidera najwyżej tyle punktów.</p>' +
+    '<p>' + clinch + '</p>' + meLine + '</div>' +
+    '<div class="tw" style="max-height:none"><table><thead><tr><th>#</th><th class="nm-c">Gracz</th><th>Pkt</th><th>Strata</th><th class="opt">Trzeba więcej niż lider</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+  document.getElementById('title-cap').textContent = 'Maksimum za typowanie: ' + MAXPTS.race + ' pkt, w weekend ze sprintem ' + MAXPTS.sprint + ' pkt (data/seasons.json; zwykłe typowanie ma 20 pytań, liczba pytań sprinterskich to założenie). Równa liczba punktów na koniec sezonu to wspólne P1. „Trzeba więcej niż lider” — ile średnio na rundę trzeba zdobywać ponad punkty lidera. Kliknij nick, żeby zobaczyć historię.';
+}
+
 // forma: suma punktów z ostatnich FORM_N rund (tylko osoby z danymi ze wszystkich tych rund)
 var FORM_N = 3, FORM_TOP = 10;
 function psRenderForm(order) {
@@ -842,6 +895,7 @@ function psRenderAll() {
   var order = psOrder(last);
   psResolveMe();
   psRenderKpis(order);
+  psRenderTitle(order);
   psRenderForm(order);
   psRenderRecords();
   if (!psFillNicks.done) { psFillNicks(order); psFillNicks.done = true; } // lista nicków nie zależy od „ja”

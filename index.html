@@ -26,7 +26,7 @@
 // motyw ustawiany przed renderem, żeby nie migał
 (function(){try{var t=localStorage.getItem('parcfer-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
 </script>
-<link rel="stylesheet" href="css/style.css?v=20261116d">
+<link rel="stylesheet" href="css/style.css?v=20261116e">
 </head>
 <body>
 
@@ -78,6 +78,12 @@
     <div class="card tile" id="t-top10"><div class="label">🏁 TOP 10 <span class="chip blue" id="k-top10-r">—</span></div><ol class="top10" id="k-top10"></ol></div>
     <div class="card tile" id="t-act"><div class="label">◉ Aktywność w rundzie</div><div class="val" id="k-act">—</div><div class="desc" id="k-act-d"></div><div class="act-bar" id="k-act-bar" style="display:none"><i></i></div><div class="desc" id="k-act-p"></div></div>
     <div class="card tile" id="t-gap"><div class="label">◎ Rozrzut TOP 100</div><div class="val" id="k-gap">—</div><div class="desc" id="k-gap-d"></div></div>
+  </section>
+
+  <section class="card title" id="title-sec" style="display:none">
+    <div class="board-head"><h2>🏆 Walka o tytuł <span class="chip blue" id="title-r">—</span></h2></div>
+    <div class="title-body" id="title-body"></div>
+    <div class="cap" id="title-cap"></div>
   </section>
 
   <section class="card form" id="form-sec">
@@ -158,7 +164,7 @@
   </div>
 </main>
 
-<script src="js/app.js?v=20261116d"></script>
+<script src="js/app.js?v=20261116e"></script>
 <script data-goatcounter="https://parcferme.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </body>
 </html>
