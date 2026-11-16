@@ -57,7 +57,7 @@ def published(rnd):
     return datetime.datetime(d.year, d.month, d.day, 12, tzinfo=datetime.timezone.utc)
 
 
-def item_html(rnd, prev):
+def item_html(rnd, prev, link=SITE):
     st = rnd["standings"]
     consecutive = prev is not None and round_number(rnd["name"]) - round_number(prev["name"]) == 1
     before = {s["id"]: s for s in prev["standings"]} if consecutive else {}
@@ -94,7 +94,7 @@ def item_html(rnd, prev):
         if full_both:
             active = sum(1 for g, _ in gains if g > 0) + sum(1 for s in st if s["id"] not in before and s["points"] > 0)
             parts.append(f"<p><b>Aktywność:</b> punkty zdobyło {active} z {len(st)} uczestników.</p>")
-    parts.append(f'<p><a href="{SITE}">Pełna tabela, historia graczy i pojedynki →</a></p>')
+    parts.append(f'<p><a href="{html.escape(link)}">Pełna tabela po tej rundzie, historia graczy i pojedynki →</a></p>')
     return "".join(parts)
 
 
@@ -114,13 +114,16 @@ def main():
         who = f"lider {ld[0]['name']}" if len(ld) == 1 else "liderzy ex aequo " + ", ".join(s["name"] for s in ld)
         title = f"{r['name']}{sprint} — {who} ({ld[0]['points']} pkt)"
         guid = f"{SITE}#{season}-{r['name'].replace(' ', '-')}"
+        # link do stanu rankingu po tej rundzie (?runda=R19); sezon jawnie, bo domyślny kiedyś się zmieni
+        num = round_number(r["name"])
+        link = f"{SITE}?sezon={season}" + (f"&runda=R{num}" if num and i < len(rounds) - 1 else "")
         items.append(
             "    <item>\n"
             f"      <title>{html.escape(title)}</title>\n"
-            f"      <link>{SITE}</link>\n"
+            f"      <link>{html.escape(link)}</link>\n"
             f'      <guid isPermaLink="false">{html.escape(guid)}</guid>\n'
             f"      <pubDate>{pub}</pubDate>\n"
-            f"      <description><![CDATA[{item_html(r, prev)}]]></description>\n"
+            f"      <description><![CDATA[{item_html(r, prev, link)}]]></description>\n"
             "    </item>")
     build = email.utils.format_datetime(max(published(r) for r in rounds) if rounds else datetime.datetime.now(datetime.timezone.utc))
     xml = (

@@ -111,6 +111,17 @@ if (pastSeason) {
   check(pa.errs.length === 0, 'brak błędów: ' + (pa.errs.join(' | ') || 'OK'));
 }
 
+// ranking po wybranej rundzie (?runda=R…): przedostatnia zapisana runda
+if (season.rounds.length > 1) {
+  const prevName = season.rounds[season.rounds.length - 2].name, prevNo = prevName.match(/R(\d+)$/)[1];
+  console.log(`Ranking po rundzie ${prevName}`);
+  const pr = await open(`?runda=R${prevNo}`);
+  check((await pr.textContent('#ps-subtitle')).includes('stan po ' + prevName) && await pr.isVisible('#ps-past'), `?runda=R${prevNo} pokazuje stan po ${prevName}`);
+  await pr.selectOption('#ps-round', '');
+  check((await pr.textContent('#ps-subtitle')).includes('stan po ' + season.rounds[season.rounds.length - 1].name) && !(await pr.isVisible('#ps-past')), 'powrót do bieżącego stanu');
+  check(pr.errs.length === 0, 'brak błędów: ' + (pr.errs.join(' | ') || 'OK'));
+}
+
 console.log('Link do gracza po id');
 p = await open(`?id=${last[2].id}`);
 check(await p.evaluate(id => ME === 'u' + id, last[2].id), 'link ?id= pokazuje właściwego gracza');

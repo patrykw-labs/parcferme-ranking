@@ -33,9 +33,11 @@ var seedRounds = [];
 var seedRaw = {};
 var seedTop = {};
 
-function buildSeedState() {
-  var st = { rounds: seedRounds.slice(), participants: {}, size: {}, top: {}, nick: {}, label: {}, tie: {}, first: [] };
-  seedRounds.forEach(function(rnd) {
+// upto: ile pierwszych rund wziąć (ranking „po wybranej rundzie”, ?runda=R19); domyślnie wszystkie
+function buildSeedState(upto) {
+  var rounds = seedRounds.slice(0, upto || seedRounds.length);
+  var st = { rounds: rounds, participants: {}, size: {}, top: {}, nick: {}, label: {}, tie: {}, first: [] };
+  rounds.forEach(function(rnd) {
     var seen = {};
     st.size[rnd] = seedRaw[rnd].length;
     st.top[rnd] = seedTop[rnd] || null;
@@ -388,7 +390,8 @@ function psToast(msg) {
 // linki po id gracza (?id=…), bo etykieta „(2)” to nie tożsamość; bez id (stare dane) — po etykiecie
 function psShareUrl(key) {
   var u = new URL(location.href); u.search = ''; u.hash = '';
-  if (SEASON && new URLSearchParams(location.search).get('sezon')) u.searchParams.set('sezon', SEASON);
+  if (SEASON && (new URLSearchParams(location.search).get('sezon') || ROUND_UPTO)) u.searchParams.set('sezon', SEASON);
+  if (ROUND_UPTO) u.searchParams.set('runda', (state.rounds[state.rounds.length - 1].match(/R\d+$/) || [''])[0]);
   if (/^u\d+$/.test(key)) u.searchParams.set('id', key.slice(1)); else u.searchParams.set('nick', psName(key));
   return u.toString();
 }
@@ -704,6 +707,35 @@ function psRenderTitle(order) {
   document.getElementById('title-cap').textContent = 'Maksimum za typowanie: ' + MAXPTS.race + ' pkt, w weekend ze sprintem ' + MAXPTS.sprint + ' pkt (data/seasons.json; zwykłe typowanie ma 20 pytań, liczba pytań sprinterskich to założenie). Równa liczba punktów na koniec sezonu to wspólne P1. „Trzeba więcej niż lider” — ile średnio na rundę trzeba zdobywać ponad punkty lidera. Kliknij nick, żeby zobaczyć historię.';
 }
 
+// ---------- ranking po wybranej rundzie (?runda=R19): stan tak, jakby późniejszych rund jeszcze nie było ----------
+var ROUND_UPTO = null; // liczba rund do pokazania; null = wszystkie (bieżący stan)
+function psRoundIndex(text) {
+  var no = parseInt(String(text || '').replace(/^R/i, ''), 10);
+  if (!no) return -1;
+  for (var i = 0; i < seedRounds.length; i++) if (psRoundNo(seedRounds[i]) === no) return i;
+  return -1;
+}
+function psBuildRoundPicker() {
+  var box = document.getElementById('ps-round-pick'), sel = document.getElementById('ps-round');
+  if (seedRounds.length < 2) { box.hidden = true; return; }
+  sel.innerHTML = seedRounds.map(function(r, i) { return '<option value="' + (i === seedRounds.length - 1 ? '' : psEsc((r.match(/R\d+$/) || [r])[0])) + '"' + (i === state.rounds.length - 1 ? ' selected' : '') + '>' + psEsc(psRoundText(r)) + (i === seedRounds.length - 1 ? ' — bieżący' : '') + '</option>'; }).reverse().join('');
+  document.getElementById('ps-past').hidden = !ROUND_UPTO;
+  box.hidden = false;
+}
+function psSetRound(text) {
+  var i = psRoundIndex(text);
+  ROUND_UPTO = i >= 0 && i < seedRounds.length - 1 ? i + 1 : null;
+  state = buildSeedState(ROUND_UPTO);
+  psBuildLabels();
+  psFillNicks.done = false; HIST = null; DUEL = null; SORT_RI = null; PAGE = 0;
+  var dlg = document.getElementById('hist'); if (dlg.open) dlg.close();
+  var u = new URL(location.href);
+  if (ROUND_UPTO) u.searchParams.set('runda', (state.rounds[state.rounds.length - 1].match(/R\d+$/) || [''])[0]); else u.searchParams.delete('runda');
+  history.replaceState(null, '', u.toString());
+  psBuildRoundPicker();
+  psRenderAll();
+}
+
 // ---------- archiwum sezonów (data/history.json): mistrzowie i „Twoje sezony” ----------
 var HISTORY = null;
 function psSeasonUrl(y, id) { return '?sezon=' + y + (id ? '&id=' + id : ''); }
@@ -989,8 +1021,12 @@ psVersion();
     document.getElementById('ps-subtitle').textContent = 'Nie udało się wczytać danych.';
     return;
   }
-  state = buildSeedState();
+  // ?runda=R19 — ranking po wybranej rundzie
+  var ri0 = psRoundIndex(new URLSearchParams(location.search).get('runda'));
+  ROUND_UPTO = ri0 >= 0 && ri0 < seedRounds.length - 1 ? ri0 + 1 : null;
+  state = buildSeedState(ROUND_UPTO);
   psBuildLabels();
+  psBuildRoundPicker();
   // opis zapisanych rund w notce dotyczy bieżącego sezonu; archiwalne sezony mają tylko stan końcowy
   if (SEASON !== DEFAULT_SEASON && state.rounds.length === 1) document.getElementById('note-rounds').textContent = 'Sezon ' + SEASON + ': z parcfer.me mamy tylko końcowy ranking (stan po ' + state.rounds[0] + '), więc nie ma przyrostów, strzałek ani historii runda po rundzie.';
   // archiwum sezonów wczytywane w tle — nie opóźnia pierwszego widoku

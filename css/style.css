@@ -75,6 +75,12 @@ h1 em{font-style:normal;background:linear-gradient(90deg,var(--accent-2),var(--a
 .seasons a,.seasons b{padding:4px 12px;border-radius:999px;border:1px solid var(--border-strong);font-size:12px;font-weight:700;text-decoration:none;color:var(--text-2)}
 .seasons b{background:var(--accent-strong);border-color:var(--accent-strong);color:#fff}
 
+.round-pick{margin-top:12px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:13px;color:var(--text-2)}
+.round-pick[hidden]{display:none}
+.round-pick label{font-weight:700}
+.round-pick select{height:34px;border-radius:10px;border:1px solid var(--border-strong);background:var(--card-2);color:var(--text);font:inherit;font-weight:700;padding:0 10px}
+.round-pick .past{color:var(--gold-text);font-weight:600}
+.round-pick .past .lnk{text-decoration:underline;text-underline-offset:3px;font-weight:700;padding:3px 0}
 .banner{display:block;margin:22px 0 0;border-radius:16px;overflow:hidden;line-height:0;border:1px solid var(--border);box-shadow:var(--shadow)}
 .banner picture{display:block}
 .banner img{display:block;width:100%;height:auto;aspect-ratio:4/1}
