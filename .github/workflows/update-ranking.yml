@@ -40,11 +40,31 @@ jobs:
             echo "Brak nowej rundy."
             exit 0
           fi
-          round=$(python3 -c "import json; d=json.load(open('data/seasons.json')); r=json.load(open(f\"data/{d['default']}.json\"))['rounds']; print(r[-1]['name'])")
+          season=$(python3 -c "import json; print(json.load(open('data/seasons.json'))['default'])")
+          round=$(python3 -c "import json; print(json.load(open('data/$season.json'))['rounds'][-1]['name'])")
+          # runda już była w danych → to korekta punktów z parcfer.me
+          if git show "HEAD:data/$season.json" 2>/dev/null | grep -qF "\"name\": \"$round\""; then msg="Korekta rundy $round"; else msg="Runda $round"; fi
           git config user.name "Patryk"
           git config user.email "169813447+patrykw-labs@users.noreply.github.com"
           git add data/ feed.xml
-          git commit -m "Runda $round"
+          git commit -m "$msg"
           git push
           # push z tokenu Actions nie zawsze uruchamia budowanie Pages — zlecamy je wprost
           gh api -X POST "repos/${{ github.repository }}/pages/builds" || echo "Nie udało się zlecić budowania Pages"
+
+      # GitHub wyłącza harmonogram w publicznym repo po 60 dniach bez commitów (przerwa zimowa),
+      # a pominiętej rundy nie da się potem odtworzyć — pusty commit co ok. 50 dni bez aktywności
+      - name: Keepalive harmonogramu
+        env:
+          KEEPALIVE_DAYS: ${{ vars.KEEPALIVE_DAYS || '50' }}
+        run: |
+          git pull --ff-only -q
+          last=$(git log -1 --format=%ct)
+          if [ $(( $(date +%s) - last )) -gt $(( KEEPALIVE_DAYS * 86400 )) ]; then
+            git config user.name "Patryk"
+            git config user.email "169813447+patrykw-labs@users.noreply.github.com"
+            git commit --allow-empty -m "Keepalive harmonogramu aktualizacji"
+            git push
+          else
+            echo "Ostatni commit $(( ($(date +%s) - last) / 86400 )) dni temu — keepalive niepotrzebny."
+          fi

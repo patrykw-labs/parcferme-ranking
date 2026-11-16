@@ -9,9 +9,15 @@ Użycie:
   python3 tools/add_round.py --auto                        # sam ustala, czy jest nowa rozliczona runda
 
 Tryb --auto (używany przez GitHub Actions): z listy typowań parcfer.me bierze ostatnie
-GP sezonu z wynikami. Numer rundy to jego kolejność w sezonie, nazwa — z data/round_names.json
-(albo z nazwy na parcfer.me). Jeśli ta runda już jest albo ranking nie został jeszcze
-przeliczony, kończy się bez zmian (kod 0). Nietypowe dane przerywają z błędem (kod 1).
+rozliczone typowanie rankingowe sezonu. Numer rundy to miejsce GP w kalendarzu sezonu
+(data/seasons.json → calendar), nazwa — z data/round_names.json (albo z nazwy na parcfer.me).
+- runda już jest: dopóki następne typowanie się nie zamknęło, porównuje ją z parcfer.me
+  i przy korekcie punktów podmienia (data zostaje); inaczej kończy się bez zmian (kod 0),
+- ranking jeszcze nie przeliczony: bez zmian (kod 0), ale po 96 h od zamknięcia typowania
+  to już błąd (kod 1) — GitHub wyśle wtedy e-mail o nieudanym workflow,
+- nietypowe dane albo GP spoza kalendarza przerywają z błędem (kod 1).
+Data nowej rundy to dzień wyścigu (zamknięcie typowania + 1 dzień, w weekend ze sprintem + 2),
+a captured_at — moment pobrania rankingu (UTC).
 
 Ranking na parcfer.me pokazuje tylko stan bieżący, więc rundę trzeba pobrać
 po jej przeliczeniu, a przed kolejnym GP.
@@ -25,6 +31,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
+import zoneinfo
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -32,6 +39,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import build_feed  # noqa: E402  (kanał RSS odświeżany po każdej nowej rundzie)
 URL = "https://parcfer.me/typowanie-ranking/{season}"
 CONTESTS_URL = "https://parcfer.me/typowanie"
+CONTEST_URL = "https://parcfer.me/typowanie/{link}"
+WARSAW = zoneinfo.ZoneInfo("Europe/Warsaw")  # closeAt na parcfer.me jest w czasie polskim
+STALE_AFTER = datetime.timedelta(hours=96)  # po tym czasie od zamknięcia typowania brak przeliczenia to błąd
 
 
 class NothingToDo(Exception):
@@ -61,11 +71,42 @@ def next_data(text):
     return json.loads(m.group(1))["props"]["pageProps"] if m else None
 
 
+CONTESTS = None  # lista typowań z pliku (--contests, do testów) zamiast z parcfer.me
+
+
 def contests_of(season, contests=None):
-    contests = contests if contests is not None else next_data(fetch(CONTESTS_URL))["typowania"]
+    contests = contests if contests is not None else CONTESTS if CONTESTS is not None else next_data(fetch(CONTESTS_URL))["typowania"]
     out = [c for c in contests if str(c["sezon"]) == str(season)]
     out.sort(key=lambda c: c["closeAt"])
     return out
+
+
+def is_done(c):
+    return str(c["wyniki"]).lower() == "true"
+
+
+def is_ranked(c):
+    """Czy typowanie liczy się do rankingu (pole „rankingowa” ze strony typowania)."""
+    if "rankingowa" not in c:
+        c["rankingowa"] = next_data(fetch(CONTEST_URL.format(link=c["link"])))["typowania"]["typo"].get("rankingowa")
+    return str(c["rankingowa"]).lower() == "true"
+
+
+def closed_at(c):
+    return datetime.datetime.fromisoformat(c["closeAt"][:19]).replace(tzinfo=WARSAW)
+
+
+def now():
+    return datetime.datetime.now(datetime.timezone.utc)
+
+
+def gp_of(c, season):
+    """„Typowanie GP Sao Paulo 2026” → „Sao Paulo”."""
+    return re.sub(rf"^Typowanie\s+(GP\s+|Grand\s+Prix\s+)?|\s+{season}$", "", c["name"].strip())
+
+
+def config():
+    return json.loads((ROOT / "data/seasons.json").read_text(encoding="utf-8"))
 
 
 def maybe_start_next_season(season):
@@ -88,17 +129,39 @@ def maybe_start_next_season(season):
     return nxt
 
 
-def auto_round_name(season):
-    """Nazwa ostatniej rozliczonej rundy sezonu, np. „Brazylia R20”."""
+def auto_round(season):
+    """Ostatnie rozliczone typowanie rankingowe sezonu → (nazwa rundy, np. „Brazylia R20”, typowanie, następne typowanie albo None).
+
+    Numer rundy to miejsce GP w kalendarzu (seasons.json → calendar), więc dodatkowe typowanie
+    na liście parcfer.me nie przesuwa numerów. Bez kalendarza — kolejność typowania w sezonie.
+    """
     contests = contests_of(season)
-    done = [i for i, c in enumerate(contests) if str(c["wyniki"]).lower() == "true"]
-    if not done:
-        raise NothingToDo("Brak rozliczonych typowań w sezonie")
-    i = done[-1]
-    gp = re.sub(rf"^Typowanie\s+GP\s+|\s+{season}$", "", contests[i]["name"].strip())
-    names_path = ROOT / "data/round_names.json"
-    names = json.loads(names_path.read_text(encoding="utf-8")) if names_path.exists() else {}
-    return f"{names.get(gp, gp)} R{i + 1}"
+    cal = config().get("calendar", {}).get(str(season))
+    if cal:
+        known = [cal.index(gp_of(c, season)) for c in contests if gp_of(c, season) in cal]
+        if len(set(known)) != len(known) or known != sorted(known):
+            sys.exit("Kolejność typowań na parcfer.me nie zgadza się z kalendarzem w data/seasons.json: "
+                     + str([gp_of(c, season) for c in contests]))
+    else:
+        print(f"UWAGA: brak kalendarza {season} w data/seasons.json (calendar) — numer rundy wg kolejności typowań")
+    for i in reversed([i for i, c in enumerate(contests) if is_done(c)]):
+        c, gp = contests[i], gp_of(contests[i], season)
+        if not is_ranked(c):
+            print(f"Pomijam typowanie spoza rankingu: {c['name']}")
+            continue
+        if cal and gp not in cal:
+            sys.exit(f"GP „{gp}” ({c['name']}) nie ma w kalendarzu {season} — dopisz je do data/seasons.json (calendar)")
+        num = cal.index(gp) + 1 if cal else i + 1
+        names_path = ROOT / "data/round_names.json"
+        names = json.loads(names_path.read_text(encoding="utf-8")) if names_path.exists() else {}
+        return f"{names.get(gp, gp)} R{num}", c, (contests[i + 1] if i + 1 < len(contests) else None)
+    raise NothingToDo("Brak rozliczonych typowań w sezonie")
+
+
+def race_day(contest, num, season):
+    """Dzień wyścigu: typowanie zamyka się przed kwalifikacjami — dzień później, a w weekend ze sprintem (piątek) dwa dni później."""
+    sprint = num in config().get("sprints", {}).get(str(season), [])
+    return (closed_at(contest).date() + datetime.timedelta(days=2 if sprint else 1)).isoformat()
 
 
 def parse_html(text):
@@ -144,11 +207,14 @@ def keyed(standings):
     return out
 
 
+ROUND_FIELDS = ("date", "top", "captured_at")  # pola rundy obok name i standings (check_data.py zna tę samą listę)
+
+
 def write(path, d):
     out = ["{", f'  "source": {json.dumps(d["source"], ensure_ascii=False)},', f'  "season": {d["season"]},', '  "rounds": [']
     for i, rnd in enumerate(d["rounds"]):
-        date = f', "date": {json.dumps(rnd["date"])}' if rnd.get("date") else ""
-        out.append(f'    {{"name": {json.dumps(rnd["name"], ensure_ascii=False)}{date}, "standings": [')
+        extra = "".join(f', "{f}": {json.dumps(rnd[f])}' for f in ROUND_FIELDS if rnd.get(f) is not None)
+        out.append(f'    {{"name": {json.dumps(rnd["name"], ensure_ascii=False)}{extra}, "standings": [')
         n = len(rnd["standings"])
         out += ["      " + json.dumps(s, ensure_ascii=False) + ("," if j < n - 1 else "") for j, s in enumerate(rnd["standings"])]
         out.append("    ]}" + ("," if i < len(d["rounds"]) - 1 else ""))
@@ -172,10 +238,14 @@ def run():
     src.add_argument("--html")
     src.add_argument("--tsv")
     ap.add_argument("--replace", action="store_true", help="podmień istniejącą rundę o tej nazwie")
-    ap.add_argument("--date", help="data rozliczenia rundy RRRR-MM-DD (domyślnie dziś)")
+    ap.add_argument("--date", help="data rundy (dzień wyścigu) RRRR-MM-DD; domyślnie dziś, w --auto wg zamknięcia typowania")
+    ap.add_argument("--contests", help="lista typowań z pliku JSON zamiast z parcfer.me (do testów)")
     a = ap.parse_args()
     if bool(a.round) == a.auto:
         ap.error("podaj nazwę rundy albo --auto")
+    if a.contests:
+        global CONTESTS
+        CONTESTS = json.loads(Path(a.contests).read_text(encoding="utf-8"))
 
     season = a.season or json.loads((ROOT / "data/seasons.json").read_text(encoding="utf-8"))["default"]
     if a.auto and not a.season:
@@ -183,11 +253,18 @@ def run():
     path = ROOT / f"data/{season}.json"
     d = json.loads(path.read_text(encoding="utf-8"))
 
+    contest = refresh = None
     if a.auto:
-        a.round = auto_round_name(season)
-        if a.round in [r["name"] for r in d["rounds"]]:
-            raise NothingToDo(f"runda {a.round} już jest w danych")
-        print("Nowa rozliczona runda:", a.round)
+        a.round, contest, following = auto_round(season)
+        have = [r["name"] for r in d["rounds"]]
+        if a.round in have:
+            # korekty na parcfer.me (np. kara po wyścigu) — sprawdzamy ostatnią rundę, dopóki trwa przerwa przed kolejnym GP
+            if have[-1] != a.round or (following and closed_at(following) <= now()):
+                raise NothingToDo(f"runda {a.round} już jest w danych")
+            refresh = d["rounds"][-1]
+            print("Sprawdzam, czy parcfer.me nie poprawił rundy", a.round)
+        else:
+            print("Nowa rozliczona runda:", a.round)
 
     if a.tsv:
         rows = parse_tsv(Path(a.tsv).read_text(encoding="utf-8"))
@@ -219,6 +296,19 @@ def run():
             rows[i] = (p, n, pts, ids[k] if k < len(ids) else None)
     standings = [{"pos": p, "name": n, "points": pts, **({"id": i} if i is not None else {})} for p, n, pts, i in rows]
 
+    if refresh:
+        old = keyed(refresh["standings"])
+        new_k = keyed(standings)
+        changed = [(s["name"], old[k]["points"] if k in old else None, s["points"]) for k, s in new_k.items()
+                   if k not in old or old[k]["points"] != s["points"] or old[k]["name"] != s["name"] or old[k]["pos"] != s["pos"]]
+        gone = [old[k]["name"] for k in old if k not in new_k]
+        if not changed and not gone:
+            raise NothingToDo(f"runda {a.round} już jest w danych i zgadza się z parcfer.me")
+        pts = [x for x in changed if x[1] is not None and x[1] != x[2]]
+        print(f"parcfer.me poprawił rundę {a.round}: zmiana punktów u {len(pts)} graczy {pts[:10]}, "
+              f"innych zmian (miejsce, nick, nowi) {len(changed) - len(pts)}, zniknęło {len(gone)} {gone[:10]}")
+        a.replace = True
+
     names = [r["name"] for r in d["rounds"]]
     if a.round in names:
         if not (a.replace and names[-1] == a.round):
@@ -242,6 +332,10 @@ def run():
         cut = len(before["standings"])
         if all(prev.get(k) and prev[k]["points"] == s["points"] for k, s in list(new.items())[:cut]):
             msg = "ranking identyczny jak w poprzedniej rundzie — parcfer.me jeszcze nie przeliczył punktów"
+            if a.auto and contest and now() - closed_at(contest) > STALE_AFTER:
+                h = int((now() - closed_at(contest)).total_seconds() // 3600)
+                sys.exit(f"{contest['name']}: rozliczone od {h} h, a {msg}. Sprawdź parcfer.me "
+                         "i w razie potrzeby dodaj rundę ręcznie (--html / --tsv).")
             if a.auto:
                 raise NothingToDo(msg)
             sys.exit(msg[0].upper() + msg[1:])
@@ -261,7 +355,14 @@ def run():
         if odd:
             sys.exit(f"Niespójne z następną rundą {after['name']}: {odd[:20]}")
 
-    d["rounds"].insert(at, {"name": a.round, "date": a.date or datetime.date.today().isoformat(), "standings": standings})
+    if refresh:
+        rnd = dict(refresh, standings=standings)  # data i moment pierwszego pobrania zostają
+    else:
+        rnd = {"name": a.round, "date": a.date or (race_day(contest, num, season) if contest and num else datetime.date.today().isoformat())}
+        if not (a.html or a.tsv):
+            rnd["captured_at"] = now().strftime("%Y-%m-%dT%H:%M:%SZ")
+        rnd["standings"] = standings
+    d["rounds"].insert(at, rnd)
     write(path, d)
     build_feed.main()
     print(f"Zapisano {a.round}: {len(standings)} uczestników → {path.relative_to(ROOT)}")

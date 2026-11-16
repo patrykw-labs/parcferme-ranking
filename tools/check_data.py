@@ -4,8 +4,10 @@
 Kod wyjścia 1 przy błędach. Sprawdza:
 - data/seasons.json: sezon domyślny jest na liście, każdy sezon ma plik,
 - data/round_names.json: poprawny JSON (nazwa → krótka nazwa),
-- w każdej rundzie: unikalna nazwa, rosnące numery rund, pozycje 1..n po kolei,
-  punkty nie rosną w dół tabeli, unikalne id,
+- w każdej rundzie: unikalna nazwa, rosnące numery rund i daty, pozycje 1..n po kolei,
+  punkty nie rosną w dół tabeli, unikalne id, liczba wierszy zgodna z polem „top”
+  (runda z samą czołówką), tylko znane pola rundy i wiersza rankingu — w szczególności
+  żadnego „ids2” z parcfer.me (to skrót adresu e-mail gracza, nie wolno go zapisywać),
 - dla każdego gracza (id): punkty nie maleją między rundami i nie rosną
   o więcej niż 25 na rundę (przy przerwie w danych — 25 × liczba rund).
 """
@@ -16,6 +18,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 MAX_PER_ROUND = 25
+ROUND_KEYS = {"name", "date", "top", "captured_at", "standings"}
+ROW_KEYS = {"pos", "name", "points", "id"}
 
 
 def round_number(name):
@@ -36,9 +40,22 @@ def check_season(path, errors, warnings):
     if known != sorted(set(known)):
         errors.append(f"{path.name}: numery rund nie rosną: {known}")
 
+    dates = [(round_number(r["name"]), r["name"], r.get("date")) for r in rounds if r.get("date")]
+    for (a, ra, da), (b, rb, db) in zip(dates, dates[1:]):
+        if db <= da:
+            errors.append(f"{path.name}: data {rb} ({db}) nie jest późniejsza niż {ra} ({da})")
+
     history = {}
     for r in rounds:
         st, rn = r["standings"], r["name"]
+        extra = set(r) - ROUND_KEYS
+        if extra:
+            errors.append(f"{rn}: nieznane pola rundy {sorted(extra)} (dopisz je w add_round.write i tutaj)")
+        bad = sorted({k for s in st for k in s} - ROW_KEYS)
+        if bad:
+            errors.append(f"{rn}: niedozwolone pola w rankingu {bad} — zapisujemy tylko {sorted(ROW_KEYS)}")
+        if "top" in r and (not isinstance(r["top"], int) or len(st) != r["top"]):
+            errors.append(f"{rn}: „top” = {r['top']!r}, a wierszy jest {len(st)}")
         if [s["pos"] for s in st] != list(range(1, len(st) + 1)):
             errors.append(f"{rn}: pozycje nie idą po kolei od 1")
         if any(st[i]["points"] < st[i + 1]["points"] for i in range(len(st) - 1)):

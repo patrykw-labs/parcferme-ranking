@@ -36,13 +36,26 @@ Nieoficjalna, fanowska klasyfikacja typerów konkursu [parcfer.me](https://parcf
 
 ## Dane
 
-- `data/<rok>.json` — lista rund (`name`, `date` — dzień rozliczenia, `standings`), w każdej ranking `{ pos, name, points, id }`; `id` to numer użytkownika z parcfer.me. Daty rund dodanych przed 13.11.2026 odtworzono jako dzień po zamknięciu typowania; nowe rundy dostają datę pobrania.
+- `data/<rok>.json` — lista rund, w każdej:
+  - `name` — nazwa z numerem rundy, np. „Brazylia R20”,
+  - `date` — dzień wyścigu (zamknięcie typowania + 1 dzień, w weekend ze sprintem + 2 dni, bo typowanie zamyka się w piątek przed kwalifikacjami do sprintu),
+  - `captured_at` — moment pobrania rankingu z parcfer.me (UTC; od rund pobieranych automatycznie, wcześniejsze go nie mają) — z niego RSS bierze datę wpisu,
+  - `top` — tylko w rundach z samą czołówką: ile osób zapisano (Spa R10 — 30, Węgry R11–Singapur R17 — 100); brak pola = pełny ranking,
+  - `standings` — ranking `{ pos, name, points, id }`; `id` to numer użytkownika z parcfer.me. Innych pól nie zapisujemy — w szczególności `ids2` z danych parcfer.me (to skrót MD5 adresu e-mail gracza); pilnuje tego `tools/check_data.py`.
 - Zapisane rundy: **Japonia R3** i **Silverstone R9** — pełny ranking odtworzony z kopii strony w Web Archive (10.04 i 16.07.2026), **Spa R10** — TOP 30, **Węgry R11–Singapur R17** — TOP 100, od **USA R18** — pełny ranking wszystkich uczestników. Rund R1–R2 i R4–R8 nie ma. Osoby spoza zapisanej czołówki mają w starszych rundach „> 30” / „> 100”, a przez przerwę w danych (R3 → R9) strona nie pokazuje przyrostu ani strzałek zmiany miejsca.
 - Uczestników rozróżnia `id`, więc powtarzające się nicki („Oskar”, „Oskar (2)”) nie mieszają się między rundami. W rundach do Singapuru R17 `id` dopisano wstecz po nicku (przy powtórzeniach po kolejności, sprawdzonej z ciągłością punktów).
 
 ## Aktualizacja po rundzie
 
-**Automatycznie:** workflow `.github/workflows/update-ranking.yml` co 3 godziny uruchamia `python3 tools/add_round.py --auto`. Skrypt sprawdza na parcfer.me ostatnie rozliczone typowanie sezonu (numer rundy = kolejność typowania w sezonie, nazwa z `data/round_names.json`), a gdy ranking jest już przeliczony — dopisuje rundę, robi commit i zleca publikację na Pages. Nietypowe dane (spadek punktów, przyrost ponad 25 na rundę) przerywają z błędem. Rundę starszą niż ostatnia skrypt wstawia na właściwe miejsce wg numeru (R3 przed R9) i sprawdza z rundami po obu stronach. Przed zapisem automat uruchamia też `tools/check_data.py`. Ręcznie: zakładka Actions → „Aktualizacja rankingu” → Run workflow.
+**Automatycznie:** workflow `.github/workflows/update-ranking.yml` co 3 godziny uruchamia `python3 tools/add_round.py --auto`. Skrypt sprawdza na parcfer.me ostatnie rozliczone typowanie rankingowe sezonu, a gdy ranking jest już przeliczony — dopisuje rundę, robi commit i zleca publikację na Pages.
+
+- **Numer rundy** to miejsce GP w kalendarzu sezonu (`data/seasons.json` → `calendar`, nazwy GP jak na parcfer.me), więc dodatkowe typowanie na liście nie przesuwa numerów. Typowania z `rankingowa` ≠ `true` są pomijane, a rozliczone GP spoza kalendarza przerywa z błędem („dopisz GP do data/seasons.json”). Nazwa rundy pochodzi z `data/round_names.json`.
+- **Korekty po zapisie** (np. kara po wyścigu): dopóki następne typowanie się nie zamknęło, automat porównuje ostatnią rundę z parcfer.me i przy różnicy podmienia ją (commit „Korekta rundy …”, data zostaje).
+- **Alarm:** gdy typowanie jest rozliczone od ponad 96 godzin, a ranking na parcfer.me wciąż się nie zmienił, workflow kończy się błędem — GitHub wysyła wtedy e-mail, a rundę można dodać ręcznie, zanim przepadnie.
+- **Przerwa zimowa:** GitHub wyłącza harmonogram po 60 dniach bez commitów, więc po ok. 50 dniach ciszy workflow robi pusty commit „Keepalive harmonogramu aktualizacji” (próg w zmiennej repozytorium `KEEPALIVE_DAYS`).
+- Nietypowe dane (spadek punktów, przyrost ponad 25 na rundę) przerywają z błędem. Rundę starszą niż ostatnia skrypt wstawia na właściwe miejsce wg numeru (R3 przed R9) i sprawdza z rundami po obu stronach. Przed zapisem automat uruchamia też `tools/check_data.py`.
+
+Ręczne uruchomienie: zakładka Actions → „Aktualizacja rankingu” → Run workflow. Do testów `--auto` przyjmuje `--contests lista.json` (lista typowań z pliku) i `--html` (zapisany ranking).
 
 **Ręcznie:** po przeliczeniu punktów na parcfer.me, a przed kolejnym GP (strona pokazuje tylko stan bieżący):
 
@@ -50,12 +63,12 @@ Nieoficjalna, fanowska klasyfikacja typerów konkursu [parcfer.me](https://parcf
 python3 tools/add_round.py "Meksyk R19"
 ```
 
-Zamiast pobierania można podać `--html zapisana_strona.html` albo `--tsv tabela.tsv` (kolumny: pozycja, nick, punkty); `--replace` podmienia ostatnią rundę, a `--date RRRR-MM-DD` ustawia datę rozliczenia.
+Zamiast pobierania można podać `--html zapisana_strona.html` albo `--tsv tabela.tsv` (kolumny: pozycja, nick, punkty); `--replace` podmienia ostatnią rundę, a `--date RRRR-MM-DD` ustawia datę rundy (dzień wyścigu).
 
 ## Struktura
 
 - `index.html` — struktura strony; `css/style.css` — wygląd; `js/app.js` — cała logika (czysty HTML + CSS + JS, bez zależności i bez kroku budowania)
-- `data/seasons.json` — lista sezonów, sezon domyślny, liczba rund (`planned_rounds`) i rundy ze sprintem (`sprints`)
+- `data/seasons.json` — lista sezonów, sezon domyślny, liczba rund (`planned_rounds`), rundy ze sprintem (`sprints`) i kalendarz GP (`calendar`)
 - `data/<rok>.json` — dane sezonu
 - `data/round_names.json` — krótkie nazwy rund (np. „Sao Paulo” → „Brazylia”)
 - `tools/add_round.py` — dopisuje rundę z rankingu parcfer.me (z ponawianiem przy chwilowej awarii strony)
@@ -74,7 +87,7 @@ Zamiast pobierania można podać `--html zapisana_strona.html` albo `--tsv tabel
 
 **Automatycznie:** gdy na parcfer.me pojawią się rozliczone typowania kolejnego sezonu, `add_round.py --auto` sam zakłada `data/<rok>.json`, dopisuje rok do `data/seasons.json`, ustawia go jako domyślny i pobiera pierwszą rundę. Poprzedni sezon zostaje dostępny pod `?sezon=<rok>`.
 
-**Konfiguracja sezonów** w `data/seasons.json`: `planned_rounds` — liczba rund (dla kalkulatora „ile brakuje”), `sprints` — numery rund z weekendem sprinterskim (oznaczenie ⚡). Na podstawie kalendarzy parcfer.me: 2026 — 23 rundy, sprinty R2, R4, R5, R9, R12, R17; 2027 — 24 rundy, sprinty R1, R3, R4, R7, R8, R10, R14, R21, R23, R24. Przy zmianach w kalendarzu (np. odwołane GP) popraw te liczby; nowe tory dopisz w `data/round_names.json`.
+**Konfiguracja sezonów** w `data/seasons.json`: `planned_rounds` — liczba rund (dla kalkulatora „ile brakuje”), `sprints` — numery rund z weekendem sprinterskim (oznaczenie ⚡), `calendar` — kolejne GP sezonu w formie z parcfer.me („Typowanie GP **Sao Paulo** 2026”), z których automat bierze numer rundy. Bez kalendarza danego sezonu numer rundy to kolejność typowania (z ostrzeżeniem w logu) — **przed startem nowego sezonu dopisz jego kalendarz**. Na podstawie kalendarzy parcfer.me: 2026 — 23 rundy, sprinty R2, R4, R5, R9, R12, R17; 2027 — 24 rundy, sprinty R1, R3, R4, R7, R8, R10, R14, R21, R23, R24. Przy zmianach w kalendarzu (np. odwołane GP) popraw te liczby; nowe tory dopisz w `data/round_names.json`.
 
 ## Wydania
 
