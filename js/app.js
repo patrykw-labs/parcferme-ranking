@@ -1274,14 +1274,15 @@ function psRenderAll(meOnly) {
 }
 
 // wersja strony w górnym pasku (bez kroku budowania): wydanie z CHANGELOG.md (pierwsza sekcja „## vX.Y.Z”),
-// a liczba commitów na main po wydaniu i skrót ostatniego commita z API GitHuba (pamięć 15 min w localStorage).
+// a liczba commitów na main po wydaniu i skrót ostatniego commita z API GitHuba. Bez własnej pamięci: GitHub odpowiada
+// z max-age=60 i ETag, więc przeglądarka trzyma wynik minutę, a potem pyta warunkowo (304 nie zużywa limitu zapytań).
 // Bez odpowiedzi API — samo wydanie.
-var REPO = 'patrykw-labs/parcferme-ranking', VER_KEY = 'parcfer-wersja';
+var REPO = 'patrykw-labs/parcferme-ranking';
 async function psVersion() {
   var el = document.getElementById('ps-ver'), rel = null, gh = null;
   try { var m = /^## (v\d+\.\d+\.\d+)/m.exec(await (await fetch('CHANGELOG.md', { cache: 'no-cache' })).text()); if (m) rel = m[1]; } catch (e) {}
   if (!rel) return;
-  try { var c = JSON.parse((lsGet(VER_KEY) || {}).value || 'null'); if (c && c.rel === rel && Date.now() - c.t < 15 * 60e3) gh = c; } catch (e) {}
+  try { localStorage.removeItem('parcfer-wersja'); } catch (e) {} // dawna 15-minutowa pamięć wyniku
   if (!gh) {
     try {
       // lekkie zapytania (ok. 6 KB): tag → data jego commita → commity na main po tej dacie (per_page=1; liczba z nagłówka Link)
@@ -1295,7 +1296,6 @@ async function psVersion() {
       var lastPage = /[?&]page=(\d+)>; rel="last"/.exec(lr.headers.get('Link') || '');
       var ahead = lastPage ? +lastPage[1] : list.length;
       gh = { rel: rel, t: Date.now(), ahead: ahead, sha: String(ahead ? list[0].sha : obj.sha).slice(0, 7) };
-      lsSet(VER_KEY, JSON.stringify(gh));
     } catch (e) { gh = null; }
   }
   var base = 'https://github.com/' + REPO;

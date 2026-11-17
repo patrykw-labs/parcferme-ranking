@@ -126,7 +126,7 @@ Po zmianie `css/style.css` lub `js/app.js` podbij parametr `?v=…` w ich adresa
 
 GitHub Pages: Settings → Pages → Deploy from a branch → `main` / `(root)`. Plik `.nojekyll` wyłącza przetwarzanie przez Jekyll — pliki są serwowane bez zmian.
 
-**Wersja w górnym pasku** (bez kroku budowania): wydanie z pierwszej sekcji `## vX.Y.Z` w `CHANGELOG.md`, a liczba commitów na `main` po nim i skrót ostatniego commita z API GitHuba (wynik pamiętany 15 minut w przeglądarce):
+**Wersja w górnym pasku** (bez kroku budowania): wydanie z pierwszej sekcji `## vX.Y.Z` w `CHANGELOG.md`, a liczba commitów na `main` po nim i skrót ostatniego commita z API GitHuba (trzy lekkie zapytania, ok. 2 KB; przeglądarka trzyma odpowiedzi minutę, potem pyta warunkowo):
 
 - `v1.2.0` — strona odpowiada wydaniu,
 - `v1.2.0+3 · abc1234` — 3 commity po wydaniu (np. nowe rundy); skrót prowadzi do porównania zmian. Na telefonie sam numer i liczba commitów.
