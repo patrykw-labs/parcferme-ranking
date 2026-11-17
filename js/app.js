@@ -1274,29 +1274,48 @@ function psRenderAll(meOnly) {
 }
 
 // wersja strony w górnym pasku (bez kroku budowania): wydanie z CHANGELOG.md (pierwsza sekcja „## vX.Y.Z”),
-// a liczba commitów na main po wydaniu i skrót ostatniego commita z API GitHuba. Bez własnej pamięci: GitHub odpowiada
-// z max-age=60 i ETag, więc przeglądarka trzyma wynik minutę, a potem pyta warunkowo (304 nie zużywa limitu zapytań).
-// Bez odpowiedzi API — samo wydanie.
-var REPO = 'patrykw-labs/parcferme-ranking';
+// a liczba commitów na main po wydaniu i skrót ostatniego commita z API GitHuba.
+// API bez logowania ma limit 60 zapytań na godzinę z jednego adresu IP (wspólny dla wszystkich stron), więc:
+// - data i commit wydania nie zmieniają się — pamiętane na stałe w przeglądarce (pierwsze wejście: 3 zapytania, potem 1),
+// - odpowiedzi GitHuba mają max-age=60 i ETag: przeglądarka trzyma je minutę, potem pyta warunkowo (304 nie zużywa limitu),
+// - gdy sprawdzenie się nie uda, znacznik pokazuje „+?” z przyczyną w dymku, a nie udaje „brak zmian”.
+var REPO = 'patrykw-labs/parcferme-ranking', REL_KEY = 'parcfer-wydanie';
 async function psVersion() {
-  var el = document.getElementById('ps-ver'), rel = null, gh = null;
+  var el = document.getElementById('ps-ver'), rel = null, gh = null, why = '';
   try { var m = /^## (v\d+\.\d+\.\d+)/m.exec(await (await fetch('CHANGELOG.md', { cache: 'no-cache' })).text()); if (m) rel = m[1]; } catch (e) {}
   if (!rel) return;
   try { localStorage.removeItem('parcfer-wersja'); } catch (e) {} // dawna 15-minutowa pamięć wyniku
-  if (!gh) {
-    try {
-      // lekkie zapytania (ok. 6 KB): tag → data jego commita → commity na main po tej dacie (per_page=1; liczba z nagłówka Link)
-      var api = 'https://api.github.com/repos/' + REPO;
-      var get = function(u) { return fetch(u).then(function(r) { return r.ok ? r : Promise.reject(new Error(r.status)); }); };
+  var api = 'https://api.github.com/repos/' + REPO;
+  var get = function(u) {
+    return fetch(u).then(function(r) {
+      if (r.ok) return r;
+      var err = new Error(String(r.status)); err.status = r.status;
+      err.reset = +r.headers.get('X-RateLimit-Reset') || 0; err.left = r.headers.get('X-RateLimit-Remaining');
+      throw err;
+    });
+  };
+  try {
+    var tag = null;
+    try { tag = JSON.parse((lsGet(REL_KEY) || {}).value || 'null'); } catch (e) {}
+    if (!tag || tag.rel !== rel) {
       var ref = await (await get(api + '/git/ref/tags/' + rel)).json(), obj = ref.object;
       if (obj.type === 'tag') obj = (await (await get(api + '/git/tags/' + obj.sha)).json()).object; // tag z opisem
       var tc = await (await get(api + '/git/commits/' + obj.sha)).json();
-      var since = new Date(new Date(tc.committer.date).getTime() + 1000).toISOString();
-      var lr = await get(api + '/commits?sha=main&per_page=1&since=' + encodeURIComponent(since)), list = await lr.json();
-      var lastPage = /[?&]page=(\d+)>; rel="last"/.exec(lr.headers.get('Link') || '');
-      var ahead = lastPage ? +lastPage[1] : list.length;
-      gh = { rel: rel, t: Date.now(), ahead: ahead, sha: String(ahead ? list[0].sha : obj.sha).slice(0, 7) };
-    } catch (e) { gh = null; }
+      tag = { rel: rel, sha: obj.sha, date: tc.committer.date };
+      lsSet(REL_KEY, JSON.stringify(tag));
+    }
+    var since = new Date(new Date(tag.date).getTime() + 1000).toISOString();
+    var lr = await get(api + '/commits?sha=main&per_page=1&since=' + encodeURIComponent(since)), list = await lr.json();
+    var lastPage = /[?&]page=(\d+)>; rel="last"/.exec(lr.headers.get('Link') || '');
+    var ahead = lastPage ? +lastPage[1] : list.length;
+    gh = { ahead: ahead, sha: String(ahead ? list[0].sha : tag.sha).slice(0, 7) };
+  } catch (e) {
+    why = e.status === 403 || e.status === 429
+      ? 'wyczerpany limit zapytań do GitHuba z Twojego adresu IP (60 na godzinę, wspólny dla wszystkich stron)' + (e.reset ? ' — odnowi się o ' + new Date(e.reset * 1000).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' }) : '')
+      : e.status === 404 ? 'wydanie ' + rel + ' nie ma jeszcze tagu na GitHubie (powstaje minutę po publikacji)'
+      : e.status ? 'GitHub odpowiedział błędem ' + e.status
+      : 'brak połączenia z api.github.com (blokada w przeglądarce lub sieci?)';
+    if (window.console) console.warn('Wersja strony: nie udało się sprawdzić commitów po wydaniu —', why, e);
   }
   var base = 'https://github.com/' + REPO;
   var relA = '<a href="' + base + '/releases/tag/' + rel + '">' + rel + '</a>';
@@ -1304,9 +1323,12 @@ async function psVersion() {
     var k = gh.ahead, word = k === 1 ? 'commit' : k % 10 >= 2 && k % 10 <= 4 && (k % 100 < 10 || k % 100 >= 20) ? 'commity' : 'commitów';
     el.innerHTML = relA + '<span class="ver-c">+' + k + '<span class="ver-h"> · <a href="' + base + '/compare/' + rel + '...' + gh.sha + '">' + gh.sha + '</a></span></span>';
     el.title = 'Strona z gałęzi main: ' + k + ' ' + word + ' po wydaniu ' + rel + ' (ostatni: ' + gh.sha + ') — kliknij skrót, aby zobaczyć zmiany';
-  } else {
+  } else if (gh) {
     el.innerHTML = relA;
-    el.title = gh ? 'Strona odpowiada wydaniu ' + rel + ' (commit ' + gh.sha + ')' : 'Wydanie ' + rel;
+    el.title = 'Strona odpowiada wydaniu ' + rel + ' (commit ' + gh.sha + ')';
+  } else {
+    el.innerHTML = relA + '<span class="ver-c" title="' + psEsc(why) + '">+?</span>';
+    el.title = 'Wydanie ' + rel + ' — nie udało się sprawdzić zmian po wydaniu: ' + why;
   }
   el.setAttribute('aria-label', 'Wersja strony: ' + el.title);
   el.hidden = false;
