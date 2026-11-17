@@ -2,6 +2,18 @@
 
 Format: każda wersja to nagłówek `## vX.Y.Z (RRRR-MM-DD) — tytuł`. Workflow „Wydanie” (`.github/workflows/release.yml`) po wypchnięciu na `main` nowej wersji (bez tagu) sam zakłada tag i tworzy wydanie na GitHubie z treścią sekcji tej wersji.
 
+## v1.3.1 (2026-11-17) — Poprawki po przeglądzie
+
+### Poprawki
+- **Link do ligi nie nadpisuje już Twojej listy obserwowanych** — liga z `?liga=` jest tylko w pamięci strony; gwiazdka dopisuje do własnej listy, a „✕ Zamknij ligę” wraca do niej bez kasowania.
+- Karty rekordów średniej i równości pokazują zakres rund (np. „R12–R20”).
+- Sezony archiwalne (jedna runda) nie pokazują pustych kafelków rundy ani kart rekordów — tylko listę mistrzów.
+
+### Wydajność
+- Wyszukiwarka przelicza tabelę po krótkiej przerwie w pisaniu i pokazuje najwyżej 150 wierszy (np. „a”: ok. 55 ms zamiast 0,5 s).
+- Wpisanie nicka w „Twojej pozycji” nie przelicza już rekordów ani zwycięzców rund.
+- Wersja w górnym pasku pobiera z API GitHuba ok. 2 KB zamiast kilkuset KB.
+
 ## v1.3.0 (2026-11-16) — Walka o tytuł, archiwum sezonów, mini-ligi i zwycięzcy rund
 
 ### Nowe funkcje
