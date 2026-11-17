@@ -2,6 +2,13 @@
 
 Format: każda wersja to nagłówek `## vX.Y.Z (RRRR-MM-DD) — tytuł`. Workflow „Wydanie” (`.github/workflows/release.yml`) po wypchnięciu na `main` nowej wersji (bez tagu) sam zakłada tag i tworzy wydanie na GitHubie z treścią sekcji tej wersji.
 
+## v1.3.2 (2026-11-17) — Wersja w pasku i drobne poprawki
+
+### Poprawki
+- **Wersja w górnym pasku** pokazuje „+N” od razu po nowym commicie (bez 15-minutowej pamięci wyniku). Gdy sprawdzenie się nie uda — np. po wyczerpaniu limitu 60 zapytań na godzinę do API GitHuba z jednego adresu IP — znacznik pokazuje „+?”, a przyczyna jest w dymku. Data wydania jest pamiętana w przeglądarce, więc kolejne wejścia to jedno lekkie zapytanie zamiast trzech.
+- Wyszukiwanie przy sortowaniu po rundzie: najpierw sortowanie, potem limit 150 wierszy — widać najlepszych w tej rundzie spośród pasujących.
+- Sezony archiwalne: sekcja nazywa się „Mistrzowie sezonów” zamiast „Rekordy sezonu”.
+
 ## v1.3.1 (2026-11-17) — Poprawki po przeglądzie
 
 ### Poprawki
