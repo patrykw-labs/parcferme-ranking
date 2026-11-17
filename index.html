@@ -26,7 +26,7 @@
 // motyw ustawiany przed renderem, żeby nie migał
 (function(){try{var t=localStorage.getItem('parcfer-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
 </script>
-<link rel="stylesheet" href="css/style.css?v=20261116k">
+<link rel="stylesheet" href="css/style.css?v=20261117a">
 </head>
 <body>
 
@@ -78,8 +78,8 @@
   </section>
 
   <section class="tiles">
-    <div class="card tile"><div class="label">↗ Skok rundy</div><div class="val up" id="k-jump">—</div><div class="desc" id="k-jump-d"></div></div>
-    <div class="card tile"><div class="label">★ Najwięcej pkt w rundzie</div><div class="val" id="k-best">—</div><div class="desc" id="k-best-d"></div></div>
+    <div class="card tile" id="t-jump"><div class="label">↗ Skok rundy</div><div class="val up" id="k-jump">—</div><div class="desc" id="k-jump-d"></div></div>
+    <div class="card tile" id="t-best"><div class="label">★ Najwięcej pkt w rundzie</div><div class="val" id="k-best">—</div><div class="desc" id="k-best-d"></div></div>
     <div class="card tile" id="t-top10"><div class="label">🏁 TOP 10 <span class="chip blue" id="k-top10-r">—</span></div><ol class="top10" id="k-top10"></ol></div>
     <div class="card tile" id="t-act"><div class="label">◉ Aktywność w rundzie</div><div class="val" id="k-act">—</div><div class="desc" id="k-act-d"></div><div class="act-bar" id="k-act-bar" style="display:none"><i></i></div><div class="desc" id="k-act-p"></div></div>
     <div class="card tile" id="t-gap"><div class="label">◎ Rozrzut TOP 100</div><div class="val" id="k-gap">—</div><div class="desc" id="k-gap-d"></div></div>
@@ -160,7 +160,7 @@
         <button type="button" id="seg-watch" aria-pressed="false" onclick="psSetView('watch')" title="Gracze oznaczeni gwiazdką ☆ (i Ty)">⭐ Obserwowani</button>
       </div>
       <label class="act-only" id="act-only-l" hidden title="Tylko gracze, którzy zdobyli punkty w co najmniej jednej z ostatnich rund (numer przy nicku to nadal miejsce ogólne)"><input type="checkbox" id="act-only" onchange="psSetActiveOnly(this.checked)"> tylko aktywni</label>
-      <input class="search" type="text" id="ps-filter" placeholder="Szukaj nicku…" oninput="psRenderTable()" aria-label="Szukaj nicku w tabeli">
+      <input class="search" type="text" id="ps-filter" placeholder="Szukaj nicku…" oninput="psSearch()" aria-label="Szukaj nicku w tabeli">
       <button type="button" class="btn jump" id="ps-jump"></button>
       <button type="button" class="btn pri jump" id="ps-me-jump">📍 Pokaż mnie</button>
       <button type="button" class="btn" id="ps-csv" onclick="psCsv()" title="Pobierz całą tabelę jako CSV (Excel, Arkusze Google)">⬇ CSV</button>
@@ -203,7 +203,7 @@
   </div>
 </main>
 
-<script src="js/app.js?v=20261116k"></script>
+<script src="js/app.js?v=20261117a"></script>
 <script data-goatcounter="https://parcferme.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </body>
 </html>

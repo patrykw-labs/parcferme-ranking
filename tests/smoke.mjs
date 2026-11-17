@@ -22,6 +22,8 @@ const cnt = {}; for (const r of season.rounds) for (const s of r.standings) (cnt
 const DUP = Object.keys(cnt).find(n => cnt[n].size > 1 && last.some(s => s.name === n));
 
 const browser = await chromium.launch(EXE ? { executablePath: EXE } : {});
+// wyszukiwarka przelicza tabelę z opóźnieniem (debounce) — wpisz i poczekaj na przeliczenie
+const search = async (pg, q) => { await pg.fill('#ps-filter', q); await pg.waitForTimeout(400); };
 
 async function open(url, opts = {}) {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, acceptDownloads: true, ...opts });
@@ -61,7 +63,7 @@ check(await p.isVisible('#ps-pager'), 'widok Wszyscy ze stronami');
 await p.click('#ps-pager button[aria-label="Następna strona"]');
 check(await p.evaluate(() => PAGE) === 1, 'przejście na kolejną stronę');
 await p.click('#seg-top');
-await p.fill('#ps-filter', FAR);
+await search(p, FAR);
 check(await p.isVisible('#ps-jump'), 'wyszukiwarka: przycisk „Pokaż w tabeli” dla pełnego nicka');
 await p.click('#ps-jump');
 check(await p.evaluate(() => VIEW) === 'all' && !!(await p.$('tr.flash')), 'skok do wiersza gracza spoza TOP 100');
@@ -98,11 +100,11 @@ if (DUP) {
   await p.click('#k-me [data-pick]');
   check(await p.evaluate(() => !!ME && psName(ME) === document.getElementById('ps-myname').value), 'wybór osoby z listy');
 }
-await p.fill('#ps-filter', 'ł');
+await search(p, 'ł');
 const folded = await p.$$eval('#ps-table tbody tr[data-row]', rows => rows.length);
-await p.fill('#ps-filter', 'l');
+await search(p, 'l');
 check((await p.$$eval('#ps-table tbody tr[data-row]', rows => rows.length)) >= folded, 'wyszukiwarka bez polskich znaków');
-await p.fill('#ps-filter', '');
+await search(p, '');
 check(p.errs.length === 0, 'brak błędów: ' + (p.errs.join(' | ') || 'OK'));
 
 // archiwum sezonów: mistrzowie z data/history.json i strona zakończonego sezonu
@@ -152,6 +154,20 @@ const lg = await open(`?liga=${last.slice(0, 5).map(s => s.id).join(",")}`); // 
 await lg.waitForSelector('#watch-chart svg', { timeout: 5000 }).catch(() => {});
 check(await lg.evaluate(() => VIEW === 'watch') && !!(await lg.$('#watch-chart svg')), 'liga z linku ?liga=');
 check(lg.errs.length === 0, 'brak błędów: ' + (lg.errs.join(' | ') || 'OK'));
+// własna lista + liga z linku: gwiazdka dopisuje do własnej listy, „Zamknij ligę” nie kasuje własnej
+const own = [`u${last[10].id}`, `u${last[11].id}`];
+const lgCtx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+await lgCtx.addInitScript(v => { try { if (!sessionStorage.getItem('init')) { localStorage.setItem('parcfer-watch', v); sessionStorage.setItem('init', '1'); } } catch (e) {} }, JSON.stringify(own));
+const lp = await lgCtx.newPage();
+await lp.route(/fonts\.(googleapis|gstatic)\.com|gc\.zgo\.at|goatcounter|img\.buymeacoffee|api\.github\.com/, r => r.abort());
+await lp.goto(BASE + `?liga=${last.slice(0, 5).map(s => s.id).join(',')}`);
+await lp.waitForSelector('#watch-chart svg', { timeout: 5000 }).catch(() => {});
+await lp.click('#ps-table tbody tr:nth-child(1) .star');
+const saved = await lp.evaluate(() => JSON.parse(localStorage.getItem('parcfer-watch')));
+check(saved.length === 3 && saved[0] === own[0] && saved[1] === own[1] && await lp.evaluate(() => LEAGUE.length === 5), 'gwiazdka w lidze z linku dopisuje do własnej listy, liga nietknięta');
+await lp.click('#watch-clear');
+check(await lp.evaluate(() => LEAGUE === null && WATCH.length === 3 && !/liga=/.test(location.search)), '„Zamknij ligę” wraca do własnej listy');
+await lgCtx.close();
 
 console.log('Link do gracza po id');
 p = await open(`?id=${last[2].id}`);

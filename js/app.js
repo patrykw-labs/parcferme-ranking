@@ -86,14 +86,14 @@ function psSaveMyName() {
     myName = document.getElementById('ps-myname').value.trim();
     lsSet(MYNAME_KEY, myName);
     if (myKey && psName(myKey) !== myName) { myKey = null; lsSet(MYKEY_KEY, ''); }
-    psRenderAll();
+    psRenderAll(true);
   }, 200);
 }
 function psPickMe(k) {
   myKey = k; myName = psName(k);
   lsSet(MYKEY_KEY, k); lsSet(MYNAME_KEY, myName);
   document.getElementById('ps-myname').value = myName;
-  psRenderAll();
+  psRenderAll(true);
 }
 function psSegUpdate() {
   ['top', 'near', 'all', 'watch'].forEach(function(k) { var b = document.getElementById('seg-' + k); b.classList.toggle('on', k === VIEW); b.setAttribute('aria-pressed', k === VIEW ? 'true' : 'false'); });
@@ -224,6 +224,8 @@ function psRenderKpis(names) {
     var d = psRoundDelta(x, n - 1);
     if (d !== null) best = keep(best, x, d);
   });
+  // sezon z jedną rundą (archiwum): skok, najwięcej punktów i aktywność nie mają sensu
+  ['t-jump', 't-best', 't-act'].forEach(function(id) { document.getElementById(id).hidden = n < 2; });
   document.getElementById('k-jump').textContent = jump ? '▲' + jump.v : '—';
   document.getElementById('k-jump-d').innerHTML = jump ? psWho(jump.ks) + ' — największy awans w TOP 100' : '';
   document.getElementById('k-best').textContent = best ? psSigned(best.v) + ' pkt' : '—';
@@ -296,6 +298,8 @@ function psRenderKpis(names) {
   psCalc();
 }
 
+var SEARCH_MAX = 150, SEARCH_T = null;
+function psSearch() { clearTimeout(SEARCH_T); SEARCH_T = setTimeout(function() { psRenderTable(true); }, 150); }
 function psRenderTable(resetScroll) {
   var tbl = document.getElementById('ps-table');
   var lastRound = state.rounds[state.rounds.length - 1];
@@ -309,11 +313,11 @@ function psRenderTable(resetScroll) {
 
   var shown = names, pager = '', hint = '';
   var meKey = ME && state.participants[ME][lastRound] && names.indexOf(ME) !== -1 ? ME : null;
-  var watched = names.filter(function(k) { return psWatched(k) || k === meKey; });
+  var list = psListKeys(), watched = names.filter(function(k) { return list.indexOf(k) !== -1 || k === meKey; });
   var sw = document.getElementById('seg-watch');
-  sw.disabled = !WATCH.length;
-  sw.textContent = '⭐ Obserwowani' + (WATCH.length ? ' (' + WATCH.length + ')' : '');
-  if (VIEW === 'watch' && !WATCH.length) VIEW = 'top';
+  sw.disabled = !list.length;
+  sw.textContent = (LEAGUE ? '⭐ Liga' : '⭐ Obserwowani') + (list.length ? ' (' + list.length + ')' : '');
+  if (VIEW === 'watch' && !list.length) VIEW = 'top';
   psSegUpdate();
   // „Pokaż mnie” w widoku Wszyscy: przejście na stronę z nickiem z karty „Twoja pozycja”
   var mj = document.getElementById('ps-me-jump');
@@ -345,7 +349,12 @@ function psRenderTable(resetScroll) {
   var jb = document.getElementById('ps-jump'), exact = q ? names.filter(function(n) { return psFold(psName(n)) === q; })[0] : null;
   jb.style.display = exact ? 'inline-flex' : 'none';
   if (exact) { jb.textContent = 'Pokaż „' + psName(exact) + '” w tabeli'; jb.onclick = function() { psJumpTo(exact); }; }
-  if (q) { shown = names.filter(function(n) { return psFold(psName(n)).indexOf(q) !== -1; }); pager = ''; }
+  var more = 0;
+  if (q) {
+    shown = names.filter(function(n) { return psFold(psName(n)).indexOf(q) !== -1; }); pager = '';
+    // limit wierszy: duża tabela to głównie koszt układu strony; dokładniejszy tekst zawęża wynik
+    if (shown.length > SEARCH_MAX) { more = shown.length - SEARCH_MAX; shown = shown.slice(0, SEARCH_MAX); }
+  }
   if (SORT_RI !== null && (VIEW !== 'all' || q)) shown = shown.slice().sort(psSortCmp(rankOf));
   var pg = document.getElementById('ps-pager');
   pg.innerHTML = pager; pg.style.display = pager ? 'flex' : 'none';
@@ -380,6 +389,7 @@ function psRenderTable(resetScroll) {
     return '<tr class="' + cls + '" data-row="' + psEsc(name) + '"><td class="c-name" data-k="' + psEsc(name) + '" title="Historia: ' + psEsc(psName(name)) + (pl.title ? ' · ' + pl.title : '') + '"><span class="rk">' + pl.txt + '</span><span class="mv">' + psMoveHtml(psMove(name)) + '</span>' + psStarHtml(name) + '<button type="button" class="lnk nm" data-k="' + psEsc(name) + '">' + psEsc(psName(name)) + '</button></td>' + cells + '<td class="c-tot">' + lastPts + '</td></tr>';
   }).join('');
 
+  if (more) body += '<tr><td colspan="' + (nR + 2) + '" class="empty">… i ' + more + ' innych pasujących — wpisz więcej liter nicku</td></tr>';
   tbl.innerHTML = head + '<tbody>' + (body || '<tr><td colspan="' + (nR + 2) + '" class="empty">Brak uczestników pasujących do filtra</td></tr>') + '</tbody>';
   var wrap = tbl.parentNode; wrap.scrollLeft = wrap.scrollWidth;
   if (resetScroll) wrap.scrollTop = 0;
@@ -786,7 +796,8 @@ function psSetActiveOnly(on, quiet) {
 }
 
 // ---------- obserwowani gracze / mini-liga (gwiazdka, widok w tabeli, wspólny wykres, link ?liga=) ----------
-var WATCH = [], WATCH_MAX_CHART = 8;
+var WATCH = [], LEAGUE = null, WATCH_MAX_CHART = 8; // LEAGUE — lista z linku ?liga= (tylko w pamięci, nie nadpisuje WATCH)
+function psListKeys() { return LEAGUE || WATCH; }
 function psWatched(k) { return WATCH.indexOf(k) !== -1; }
 function psStarHtml(k) { var on = psWatched(k); return '<button type="button" class="star" data-star="' + psEsc(k) + '" aria-pressed="' + on + '" aria-label="' + (on ? 'Przestań obserwować ' : 'Obserwuj ') + psEsc(psName(k)) + '" title="' + (on ? 'Przestań obserwować' : 'Obserwuj — lista „⭐ Obserwowani”') + '">' + (on ? '★' : '☆') + '</button>'; }
 function psSaveWatch() { lsSet(WATCH_KEY, JSON.stringify(WATCH)); }
@@ -794,27 +805,32 @@ function psToggleWatch(k) {
   var i = WATCH.indexOf(k);
   if (i === -1) WATCH.push(k); else WATCH.splice(i, 1);
   psSaveWatch();
-  psToast(i === -1 ? 'Obserwujesz: ' + psName(k) : 'Nie obserwujesz: ' + psName(k));
+  psToast((i === -1 ? 'Obserwujesz: ' + psName(k) : 'Nie obserwujesz: ' + psName(k)) + (LEAGUE ? ' (Twoja lista; teraz oglądasz ligę z linku)' : ''));
   var hb = document.getElementById('h-watch');
   if (hb && hb.getAttribute('data-star') === k) { hb.setAttribute('aria-pressed', String(i === -1)); hb.textContent = i === -1 ? '★ Obserwujesz' : '☆ Obserwuj'; }
   psRenderWatch(psOrder(state.rounds[state.rounds.length - 1]));
   psRenderTable();
 }
 function psClearWatch() {
-  if (!WATCH.length || !confirm('Usunąć wszystkich (' + WATCH.length + ') z listy obserwowanych?')) return;
-  WATCH = []; psSaveWatch();
-  // lista z linku ?liga= też znika — inaczej wróciłaby po odświeżeniu
-  var u = new URL(location.href);
-  if (u.searchParams.has('liga')) { u.searchParams.delete('liga'); history.replaceState(null, '', u.toString()); }
-  if (VIEW === 'watch') VIEW = 'top';
-  var hb = document.getElementById('h-watch'); if (hb) { hb.setAttribute('aria-pressed', 'false'); hb.textContent = '☆ Obserwuj'; }
-  psToast('Wyczyszczono listę obserwowanych');
+  if (LEAGUE) {
+    // tryb ligi z linku: tylko wyjście z ligi — własna lista zostaje
+    LEAGUE = null;
+    var u = new URL(location.href); u.searchParams.delete('liga'); history.replaceState(null, '', u.toString());
+    if (VIEW === 'watch' && !WATCH.length) VIEW = 'top';
+    psToast(WATCH.length ? 'Zamknięto ligę z linku — wracasz do swoich obserwowanych' : 'Zamknięto ligę z linku');
+  } else {
+    if (!WATCH.length || !confirm('Usunąć wszystkich (' + WATCH.length + ') z listy obserwowanych?')) return;
+    WATCH = []; psSaveWatch();
+    if (VIEW === 'watch') VIEW = 'top';
+    var hb = document.getElementById('h-watch'); if (hb) { hb.setAttribute('aria-pressed', 'false'); hb.textContent = '☆ Obserwuj'; }
+    psToast('Wyczyszczono listę obserwowanych');
+  }
   psRenderWatch();
   psRenderTable(true);
 }
 function psLeagueKeys() {
   // na wykresie obserwowani w kolejności dodania (kolor przypisany do osoby, nie do miejsca) + Ty na końcu
-  var keys = WATCH.filter(function(k) { return state.participants[k]; });
+  var keys = psListKeys().filter(function(k) { return state.participants[k]; });
   if (ME && keys.indexOf(ME) === -1 && keys.length) keys.push(ME);
   return keys;
 }
@@ -823,12 +839,16 @@ function psRenderWatch() {
   if (!keys.length) { sec.hidden = true; return; }
   sec.hidden = false;
   var last = state.rounds[state.rounds.length - 1], shown = keys.slice(0, WATCH_MAX_CHART);
-  document.getElementById('watch-n').textContent = keys.length + (keys.length === 1 ? ' gracz' : ' graczy');
+  document.getElementById('watch-n').textContent = (LEAGUE ? 'liga z linku · ' : '') + keys.length + (keys.length === 1 ? ' gracz' : ' graczy');
+  var cl = document.getElementById('watch-clear');
+  cl.textContent = LEAGUE ? '✕ Zamknij ligę' : '✕ Wyczyść';
+  cl.title = LEAGUE ? 'Wróć do swojej listy obserwowanych (ta liga nie jest zapisana)' : 'Usuń wszystkich z listy obserwowanych';
   document.getElementById('watch-legend').innerHTML = shown.map(function(k, i) {
     var d = state.participants[k][last];
     return '<span><i style="background:var(--s' + (i + 1) + ')"></i><span data-k="' + psEsc(k) + '">' + psEsc(psName(k)) + '</span>' + (k === ME ? ' (Ty)' : '') + (d ? ' · P' + psPlace(last, d).txt : '') + '</span>';
   }).join('');
   document.getElementById('watch-cap').textContent = (keys.length > WATCH_MAX_CHART ? 'Na wykresie pierwszych ' + WATCH_MAX_CHART + ' z ' + keys.length + ' obserwowanych (wszyscy są w tabeli). ' : '') +
+    (LEAGUE ? 'Oglądasz ligę z linku — nie jest zapisana; gwiazdka ☆ dopisuje do Twojej własnej listy. ' : '') +
     'Gwiazdka ☆ przy nicku w tabeli albo w historii gracza dodaje do listy. Lista jest zapisana w tej przeglądarce; „Link do ligi” pozwala ją komuś pokazać.';
   psDrawWatch();
 }
@@ -1089,6 +1109,7 @@ function psCommonSpan() {
 }
 function psRenderRecords() {
   var R = state.rounds, n = R.length, keys = Object.keys(state.participants), span = psCommonSpan();
+  if (n < 2) { document.getElementById('rec-grid').innerHTML = ''; document.getElementById('rec-cap').textContent = ''; return; }
   var best = function(list, better) { // [{k, v, extra}] → zwycięzcy (z remisami)
     var top = [];
     list.forEach(function(x) { if (!top.length || better(x.v, top[0].v)) top = [x]; else if (x.v === top[0].v) top.push(x); });
@@ -1129,6 +1150,8 @@ function psRenderRecords() {
   var hi = function(a, b) { return a > b; }, lo = function(a, b) { return a < b; };
   // równość: wśród graczy ze średnią w górnej połowie (inaczej wygrywa ktoś, kto stale ma mało punktów)
   var med = avgList.map(function(x) { return x.v; }).sort(function(a, b) { return a - b; })[Math.floor(avgList.length / 2)] || 0;
+  var short = function(r) { return (r.match(/R\d+$/) || [r])[0]; };
+  var spanTxt = span.length >= REC_MIN_SPAN ? short(R[span[0]]) + '–' + short(R[n - 1]) : '';
   var cards = [
     ['★ Najwięcej punktów w rundzie', best(gainList, hi), function(t) { return '+' + t[0].v + ' pkt'; }, function(x) { return x.r; }],
     ['↗ Największy awans w rundzie', best(climbList, hi), function(t) { return '▲' + t[0].v; }, function(x) { return x.r; }],
@@ -1143,8 +1166,6 @@ function psRenderRecords() {
     if (!top.length) return '';
     return '<div class="rec"><div class="label">' + c[0] + '</div><div class="v">' + c[2](top) + '</div><div class="who">' + who(top, c[3]) + '</div></div>';
   }).join('');
-  var short = function(r) { return (r.match(/R\d+$/) || [r])[0]; };
-  var spanTxt = span.length >= REC_MIN_SPAN ? short(R[span[0]]) + '–' + short(R[n - 1]) : '';
   document.getElementById('rec-cap').textContent = 'Liczone z zapisanych rund (' + R[0].replace(/ R\d+$/, '') + ' – ' + R[n - 1].replace(/ R\d+$/, '') + '). Przyrostów i awansów nie liczymy przez przerwę w danych ani dla graczy spoza zapisanej czołówki w rundach z samą czołówką. ' +
     (spanTxt ? 'Średnia i równość: wspólny zakres rund ' + spanTxt + ' (' + span.length + ' rund z pełnymi danymi), ' + avgList.length + ' graczy z kompletem punktów z tych rund; równość (najmniejsze odchylenie punktów od średniej) wśród graczy ze średnią w górnej połowie. ' : '') +
     'Kliknij nick, żeby zobaczyć historię.';
@@ -1225,7 +1246,8 @@ function psCsv() {
   psToast('Pobrano tabelę CSV (' + order.length + ' uczestników)');
 }
 
-function psRenderAll() {
+// meOnly: zmiana „ja” (nick w Twojej pozycji) — rekordy, zwycięzcy rund i mistrzowie od niej nie zależą
+function psRenderAll(meOnly) {
   if (!state.rounds.length) {
     document.getElementById('ps-empty').style.display = 'block';
     document.getElementById('ps-subtitle').textContent = 'Brak danych';
@@ -1241,9 +1263,8 @@ function psRenderAll() {
   psRenderTitle(order);
   psRenderWatch(order);
   psRenderForm(order);
-  psRenderRecords();
-  psRenderWins();
-  psRenderChamps();
+  if (!meOnly) { psRenderRecords(); psRenderWins(); psRenderChamps(); }
+  else if (DIST_RI !== null) psDrawDist(DIST_RI); // Twój słupek w rozkładzie
   if (!psFillNicks.done) { psFillNicks(order); psFillNicks.done = true; } // lista nicków nie zależy od „ja”
   psRenderDuel();
   psRenderTable();
@@ -1260,9 +1281,17 @@ async function psVersion() {
   try { var c = JSON.parse((lsGet(VER_KEY) || {}).value || 'null'); if (c && c.rel === rel && Date.now() - c.t < 15 * 60e3) gh = c; } catch (e) {}
   if (!gh) {
     try {
-      var j = function(u) { return fetch(u).then(function(r) { return r.ok ? r.json() : Promise.reject(new Error(r.status)); }); };
-      var res = await Promise.all([j('https://api.github.com/repos/' + REPO + '/compare/' + rel + '...main?per_page=1'), j('https://api.github.com/repos/' + REPO + '/git/ref/heads/main')]);
-      gh = { rel: rel, t: Date.now(), ahead: +res[0].ahead_by || 0, sha: String(res[1].object.sha).slice(0, 7) };
+      // lekkie zapytania (ok. 6 KB): tag → data jego commita → commity na main po tej dacie (per_page=1; liczba z nagłówka Link)
+      var api = 'https://api.github.com/repos/' + REPO;
+      var get = function(u) { return fetch(u).then(function(r) { return r.ok ? r : Promise.reject(new Error(r.status)); }); };
+      var ref = await (await get(api + '/git/ref/tags/' + rel)).json(), obj = ref.object;
+      if (obj.type === 'tag') obj = (await (await get(api + '/git/tags/' + obj.sha)).json()).object; // tag z opisem
+      var tc = await (await get(api + '/git/commits/' + obj.sha)).json();
+      var since = new Date(new Date(tc.committer.date).getTime() + 1000).toISOString();
+      var lr = await get(api + '/commits?sha=main&per_page=1&since=' + encodeURIComponent(since)), list = await lr.json();
+      var lastPage = /[?&]page=(\d+)>; rel="last"/.exec(lr.headers.get('Link') || '');
+      var ahead = lastPage ? +lastPage[1] : list.length;
+      gh = { rel: rel, t: Date.now(), ahead: ahead, sha: String(ahead ? list[0].sha : obj.sha).slice(0, 7) };
       lsSet(VER_KEY, JSON.stringify(gh));
     } catch (e) { gh = null; }
   }
@@ -1306,7 +1335,7 @@ psVersion();
   // obserwowani (zapisani w przeglądarce) i filtr aktywnych; ?liga=1,2,3 pokazuje cudzą ligę bez nadpisywania własnej listy
   try { WATCH = JSON.parse((lsGet(WATCH_KEY) || {}).value || '[]').filter(function(k) { return typeof k === 'string'; }); } catch (e) { WATCH = []; }
   var liga = (new URLSearchParams(location.search).get('liga') || '').split(',').map(function(x) { return x.trim(); }).filter(function(x) { return /^\d+$/.test(x); });
-  if (liga.length) WATCH = liga.map(function(x) { return 'u' + x; });
+  if (liga.length) LEAGUE = liga.map(function(x) { return 'u' + x; });
   ACTIVE_ONLY = !!(lsGet(ACTIVE_KEY) || {}).value;
   document.getElementById('act-only').checked = ACTIVE_ONLY;
   // ?runda=R19 — ranking po wybranej rundzie
