@@ -353,9 +353,10 @@ function psRenderTable(resetScroll) {
   if (q) {
     shown = names.filter(function(n) { return psFold(psName(n)).indexOf(q) !== -1; }); pager = '';
     // limit wierszy: duża tabela to głównie koszt układu strony; dokładniejszy tekst zawęża wynik
-    if (shown.length > SEARCH_MAX) { more = shown.length - SEARCH_MAX; shown = shown.slice(0, SEARCH_MAX); }
   }
   if (SORT_RI !== null && (VIEW !== 'all' || q)) shown = shown.slice().sort(psSortCmp(rankOf));
+  // limit po sortowaniu: przy sortowaniu po rundzie — najlepsi w tej rundzie spośród pasujących
+  if (q && shown.length > SEARCH_MAX) { more = shown.length - SEARCH_MAX; shown = shown.slice(0, SEARCH_MAX); }
   var pg = document.getElementById('ps-pager');
   pg.innerHTML = pager; pg.style.display = pager ? 'flex' : 'none';
 
@@ -1109,6 +1110,8 @@ function psCommonSpan() {
 }
 function psRenderRecords() {
   var R = state.rounds, n = R.length, keys = Object.keys(state.participants), span = psCommonSpan();
+  document.getElementById('rec-h').textContent = n < 2 ? '🏅 Mistrzowie sezonów' : '🏆 Rekordy sezonu';
+  document.getElementById('champs').classList.toggle('only', n < 2);
   if (n < 2) { document.getElementById('rec-grid').innerHTML = ''; document.getElementById('rec-cap').textContent = ''; return; }
   var best = function(list, better) { // [{k, v, extra}] → zwycięzcy (z remisami)
     var top = [];
