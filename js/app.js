@@ -1297,7 +1297,8 @@ function psRenderAll(meOnly) {
 // API bez logowania ma limit 60 zapytań na godzinę z jednego adresu IP (wspólny dla wszystkich stron), więc:
 // - data i commit wydania nie zmieniają się — pamiętane na stałe w przeglądarce (pierwsze wejście: 3 zapytania, potem 1),
 // - odpowiedzi GitHuba mają max-age=60 i ETag: przeglądarka trzyma je minutę, potem pyta warunkowo (304 nie zużywa limitu),
-// - gdy sprawdzenie się nie uda, znacznik pokazuje „+?” z przyczyną w dymku, a nie udaje „brak zmian”.
+// - gdy sprawdzenie się nie uda (częste w sieciach, gdzie wiele osób ma jeden adres IP), znacznik pokazuje samo wydanie,
+//   a dymek mówi, że zmian po wydaniu nie sprawdzono, i podaje przyczynę — nie udaje „brak zmian”.
 var REPO = 'patrykw-labs/parcferme-ranking', REL_KEY = 'parcfer-wydanie';
 async function psVersion() {
   var el = document.getElementById('ps-ver'), rel = null, gh = null, why = '';
@@ -1346,7 +1347,7 @@ async function psVersion() {
     el.innerHTML = relA;
     el.title = 'Strona odpowiada wydaniu ' + rel + ' (commit ' + gh.sha + ')';
   } else {
-    el.innerHTML = relA + '<span class="ver-c" title="' + psEsc(why) + '">+?</span>';
+    el.innerHTML = relA;
     el.title = 'Wydanie ' + rel + ' — nie udało się sprawdzić zmian po wydaniu: ' + why;
   }
   el.setAttribute('aria-label', 'Wersja strony: ' + el.title);

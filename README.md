@@ -131,7 +131,7 @@ GitHub Pages: Settings → Pages → Deploy from a branch → `main` / `(root)`.
 - `v1.2.0` — strona odpowiada wydaniu,
 - `v1.2.0+3 · abc1234` — 3 commity po wydaniu (np. nowe rundy); skrót prowadzi do porównania zmian. Na telefonie sam numer i liczba commitów.
 
-API GitHuba bez logowania ma limit 60 zapytań na godzinę z jednego adresu IP: data wydania jest pamiętana w przeglądarce na stałe, więc kolejne wejścia to jedno lekkie zapytanie. Gdy sprawdzenie się nie uda (limit, blokada), pasek pokazuje `v1.2.0+?`, a przyczyna jest w dymku.
+API GitHuba bez logowania ma limit 60 zapytań na godzinę z jednego adresu IP: data wydania jest pamiętana w przeglądarce na stałe, więc kolejne wejścia to jedno lekkie zapytanie. Gdy sprawdzenie się nie uda (limit, blokada), pasek pokazuje samo wydanie (`v1.2.0`), a dymek mówi, że zmian po wydaniu nie udało się sprawdzić, i podaje przyczynę.
 
 ## Statystyki
 
