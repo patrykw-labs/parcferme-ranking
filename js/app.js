@@ -920,6 +920,25 @@ function psShareLeague() {
 
 // ---------- ranking po wybranej rundzie (?runda=R19): stan tak, jakby późniejszych rund jeszcze nie było ----------
 var ROUND_UPTO = null; // liczba rund do pokazania; null = wszystkie (bieżący stan)
+// notka „Zapisane rundy”: w index.html opis ręczny dla jednego sezonu (data-season), dla innych — z danych
+function psRoundsNote() {
+  var li = document.getElementById('note-rounds');
+  if (String(SEASON) === li.getAttribute('data-season')) return;
+  if (seedRounds.length === 1) { li.textContent = 'Sezon ' + SEASON + ': z parcfer.me mamy tylko końcowy ranking (stan po ' + seedRounds[0] + '), więc nie ma przyrostów, strzałek ani historii runda po rundzie.'; return; }
+  var have = {}, last = 0;
+  seedRounds.forEach(function(r) { var n = psRoundNo(r); if (n) { have[n] = 1; last = Math.max(last, n); } });
+  var miss = [], a = null;
+  for (var n = 1; n <= last + 1; n++) {
+    if (!have[n] && n <= last) { if (a === null) a = n; }
+    else if (a !== null) { miss.push(a === n - 1 ? 'R' + a : 'R' + a + '–R' + (n - 1)); a = null; }
+  }
+  var cut = seedRounds.filter(function(r) { return seedTop[r]; });
+  var part = cut.map(function(r) { return r + ' — TOP ' + seedTop[r]; });
+  var t = 'Zapisane rundy sezonu ' + SEASON + ': ' + seedRounds.length + (part.length ? ', w tym z samą czołówką: ' + part.join(', ') + ' (kto był niżej, ma w tabeli np. „> ' + seedTop[cut[0]] + '”)' : ', wszystkie z pełnym rankingiem') + '.';
+  if (miss.length) t += ' Rund ' + miss.join(', ').replace(/, ([^,]*)$/, ' i $1') + ' nie mamy, więc przyrost po przerwie jest z kilku rund naraz i nie liczy się do rekordów, formy ani sortowania.';
+  li.textContent = t;
+}
+
 function psRoundIndex(text) {
   var no = parseInt(String(text || '').replace(/^R/i, ''), 10);
   if (!no) return -1;
@@ -1370,7 +1389,7 @@ psVersion();
   psBuildLabels();
   psBuildRoundPicker();
   // opis zapisanych rund w notce dotyczy bieżącego sezonu; archiwalne sezony mają tylko stan końcowy
-  if (SEASON !== DEFAULT_SEASON && state.rounds.length === 1) document.getElementById('note-rounds').textContent = 'Sezon ' + SEASON + ': z parcfer.me mamy tylko końcowy ranking (stan po ' + state.rounds[0] + '), więc nie ma przyrostów, strzałek ani historii runda po rundzie.';
+  psRoundsNote();
   // archiwum sezonów wczytywane w tle — nie opóźnia pierwszego widoku
   fetch('data/history.json', { cache: 'no-cache' }).then(function(r) { return r.ok ? r.json() : null; }).then(function(h) {
     if (!h) return;
