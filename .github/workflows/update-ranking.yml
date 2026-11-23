@@ -31,7 +31,7 @@ jobs:
 
       # kopia zapasowa surowego rankingu (bez ids2) przy każdej zapisanej rundzie lub korekcie — Actions → przebieg → Artifacts
       - name: Kopia surowego rankingu
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ranking-${{ github.run_id }}
           path: ${{ runner.temp }}/raw-ranking.json
