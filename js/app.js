@@ -1010,11 +1010,13 @@ function psDrawDist(ri) {
   var R = state.rounds, mx = Math.max.apply(null, w.gains), cnt = [];
   for (var v = 0; v <= mx; v++) cnt.push(0);
   w.gains.forEach(function(g) { if (g >= 0) cnt[g]++; });
-  var total = w.gains.length, sorted = w.gains.slice().sort(function(a, b) { return a - b; });
-  var avg = w.gains.reduce(function(a, b) { return a + b; }, 0) / total, med = sorted[Math.floor(total / 2)];
+  var total = w.gains.length, avg = w.gains.reduce(function(a, b) { return a + b; }, 0) / total;
+  // mediana wśród punktujących — wśród wszystkich zwykle wychodzi 0, bo większość nie zdobywa punktów
+  var pos = w.gains.filter(function(g) { return g > 0; }).sort(function(a, b) { return a - b; }), h = pos.length >> 1;
+  var med = !pos.length ? 0 : pos.length % 2 ? pos[h] : (pos[h - 1] + pos[h]) / 2;
   var myG = ME ? psRoundDelta(ME, ri) : null;
   var scorers = total - cnt[0], avgSc = scorers ? (w.gains.reduce(function(a, b) { return a + b; }, 0) / scorers) : 0;
-  document.getElementById('dist-stats').innerHTML = '<b>' + psNum(total) + '</b> graczy · bez punktów <b>' + psNum(cnt[0]) + '</b> (' + Math.round(cnt[0] / total * 100) + '%) · średnio <b>' + avg.toFixed(1).replace('.', ',') + '</b> pkt, wśród punktujących <b>' + avgSc.toFixed(1).replace('.', ',') + '</b> · mediana ' + med +
+  document.getElementById('dist-stats').innerHTML = '<b>' + psNum(total) + '</b> graczy · bez punktów <b>' + psNum(cnt[0]) + '</b> (' + Math.round(cnt[0] / total * 100) + '%) · średnio <b>' + avg.toFixed(1).replace('.', ',') + '</b> pkt · wśród punktujących: średnio <b>' + avgSc.toFixed(1).replace('.', ',') + '</b>, mediana <b>' + String(med).replace('.', ',') + '</b>' +
     (myG !== null ? ' · Ty: <b>' + psSigned(myG) + '</b>' : '') + '<br><span class="tie">Wykres: gracze z co najmniej 1 pkt (' + psNum(scorers) + ').</span>';
   document.getElementById('dist-table').innerHTML = '<thead><tr><th>Punkty w rundzie</th><th>Graczy</th></tr></thead><tbody>' + cnt.map(function(c, v) { return c ? '<tr><td>' + v + '</td><td>' + c + '</td></tr>' : ''; }).join('') + '</tbody>';
   // wykres od 1 pkt: słupek „0 pkt” jest kilkanaście razy wyższy i spłaszczałby resztę (zera są w opisie i tabeli)
