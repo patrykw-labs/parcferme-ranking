@@ -26,7 +26,7 @@
 // motyw ustawiany przed renderem, żeby nie migał
 (function(){try{var t=localStorage.getItem('parcfer-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
 </script>
-<link rel="stylesheet" href="css/style.css?v=mock1">
+<link rel="stylesheet" href="css/style.css?v=20261126a">
 </head>
 <body>
 
@@ -54,7 +54,7 @@
       <span>Zmień</span>
     </button>
   </div>
-  <div class="ctrl" id="ps-ctrl">
+  <div class="ctrl-wrap" id="ps-ctrl-wrap"><div class="ctrl" id="ps-ctrl">
   <div class="seasons" id="ps-seasons"></div>
   <div class="round-pick" id="ps-round-pick" hidden>
     <label for="ps-round">Stan po rundzie</label>
@@ -66,12 +66,8 @@
     <span><b>Subskrybuj RSS</b> — powiadomienie o każdej nowej rundzie</span>
   </a>
 
-  </div>
+  </div></div>
 
-  <a class="banner" data-goatcounter-click="buymeacoffee-banner" data-goatcounter-title="Klik: baner Buy me a coffee" href="https://www.buymeacoffee.com/patrykw" target="_blank" rel="noopener"><picture>
-    <source type="image/webp" srcset="assets/banner-800.webp?v=2 800w, assets/banner-1600.webp?v=2 1600w, assets/banner-3200.webp?v=2 3200w" sizes="(max-width: 1100px) calc(100vw - 32px), 1068px">
-    <img src="assets/banner.jpg?v=2" srcset="assets/banner-800.jpg?v=2 800w, assets/banner-1600.jpg?v=2 1600w, assets/banner.jpg?v=2 3200w" sizes="(max-width: 1100px) calc(100vw - 32px), 1068px" width="3200" height="800" alt="Klasyfikacja parcfer.me — postaw mi kawę" fetchpriority="high">
-  </picture></a>
 
   <section class="hero">
     <div class="card hero-main">
@@ -121,6 +117,11 @@
     <div class="pager" id="ps-pager" style="display:none"></div>
     <div class="empty" id="ps-empty" style="display:none">Brak danych dla tego sezonu.</div>
   </section>
+
+  <a class="banner" data-goatcounter-click="buymeacoffee-banner" data-goatcounter-title="Klik: baner Buy me a coffee" href="https://www.buymeacoffee.com/patrykw" target="_blank" rel="noopener"><picture>
+    <source type="image/webp" srcset="assets/banner-800.webp?v=2 800w, assets/banner-1600.webp?v=2 1600w, assets/banner-3200.webp?v=2 3200w" sizes="(max-width: 1100px) calc(100vw - 32px), 1068px">
+    <img src="assets/banner.jpg?v=2" srcset="assets/banner-800.jpg?v=2 800w, assets/banner-1600.jpg?v=2 1600w, assets/banner.jpg?v=2 3200w" sizes="(max-width: 1100px) calc(100vw - 32px), 1068px" width="3200" height="800" alt="Klasyfikacja parcfer.me — postaw mi kawę" fetchpriority="high">
+  </picture></a>
 
   <h2 class="acc-h">Statystyki sezonu</h2>
   <details class="card acc form" id="form-sec">
@@ -215,7 +216,7 @@
   </div>
 </main>
 
-<script src="js/app.js?v=mock1"></script>
+<script src="js/app.js?v=20261126a"></script>
 <script data-goatcounter="https://parcferme.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </body>
 </html>

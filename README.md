@@ -14,6 +14,7 @@ Nieoficjalna, fanowska klasyfikacja typerów konkursu [parcfer.me](https://parcf
 
 ## Funkcje
 
+- **Układ na telefonie** — po przewinięciu u góry przykleja się pasek „sezon · runda · Twoje miejsce” z przyciskiem „Zmień” (sezon, runda, RSS); kafelki rundy to pasek przewijany w bok; tabela jest zaraz po walce o tytuł, a forma, rekordy, zwycięzcy rund, rozkład punktów, pojedynek i obserwowani to rozwijane wiersze „Statystyki sezonu” z podglądem najważniejszej liczby (na telefonie zwinięte, na komputerze rozwinięte; przeglądarka pamięta wybór).
 - **Ranking po wybranej rundzie** — lista „Stan po rundzie” pod tytułem pokazuje całą stronę (lider, kafelki, tabela, forma, rekordy, walka o tytuł, Twoja pozycja) tak, jak wyglądała po dowolnej zapisanej rundzie; link `?runda=R19`. Każdy wpis RSS prowadzi do stanu po swojej rundzie.
 - **Tabela runda po rundzie** — suma punktów, miejsce i przyrost w każdej rundzie, strzałki zmiany miejsca (▲/▼), oznaczenia „↑100” (wejście do TOP 100) i „NOWY”. Trzy widoki: **TOP 100** (wszyscy z miejscem do 100, także przy remisie na granicy), **Moja okolica** (±15 miejsc wokół Twojego nicka) i **Wszyscy** (strony po 100 osób). Tabela przewija się we własnym oknie z przyklejonym nagłówkiem. Rundy z weekendem sprinterskim mają ⚡ (legenda przy tytule tabeli). Kliknięcie nagłówka rundy sortuje po punktach zdobytych w tej rundzie, a przycisk **⬇ CSV** pobiera całą tabelę (Excel, Arkusze Google).
 - **Tylko aktywni** — przełącznik przy tabeli pokazuje graczy, którzy zdobyli punkty w co najmniej jednej z 2 ostatnich rund (np. 237 z 865 po Brazylii R20); w karcie „Twoja pozycja” — miejsce wśród aktywnych. Działa, gdy ostatnie rundy mają pełny ranking.
@@ -42,6 +43,7 @@ Nieoficjalna, fanowska klasyfikacja typerów konkursu [parcfer.me](https://parcf
 | `?liga=8192,5869` | mini-liga: widok „Obserwowani” i wspólny wykres podanych graczy (nie zmienia listy zapisanej w przeglądarce, dopóki nie klikniesz gwiazdki) |
 | `?runda=R19` | stan rankingu po wybranej rundzie (bez parametru — bieżący); łączy się z `?id=`, `?sezon=` |
 | `?sezon=2026` | konkretny sezon (przy ≥2 sezonach w nagłówku pojawia się przełącznik) |
+| `#forma`, `#rekordy`, `#zwyciezcy`, `#rozklad`, `#pojedynek`, `#obserwowani` | otwiera i pokazuje wybraną sekcję „Statystyk sezonu” |
 
 ## Dane
 

@@ -1316,9 +1316,24 @@ function psAccPreview() {
 }
 function psToggleCtrl(force) {
   var open = typeof force === 'boolean' ? force : !document.body.classList.contains('ctrl-open');
+  var wrap = document.getElementById('ps-ctrl-wrap');
+  // panel wysuwa się spod paska; opakowanie trzyma jego miejsce, żeby strona nie podskoczyła
+  wrap.style.height = open ? wrap.offsetHeight + 'px' : '';
   document.body.classList.toggle('ctrl-open', open);
   document.getElementById('ctx-btn').setAttribute('aria-expanded', String(open));
 }
+// pasek kontekstu (telefon): pokazuje się dopiero, gdy wybór sezonu i rundy zniknie u góry ekranu
+function psCtxInit() {
+  var wrap = document.getElementById('ps-ctrl-wrap');
+  if (!wrap || !window.IntersectionObserver) return;
+  new IntersectionObserver(function(en) {
+    var gone = !en[0].isIntersecting && en[0].boundingClientRect.top < 0;
+    document.body.classList.toggle('ctx-on', gone);
+    if (!gone && document.body.classList.contains('ctrl-open')) psToggleCtrl(false);
+  }, { rootMargin: '-60px 0px 0px 0px' }).observe(wrap);
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape' && document.body.classList.contains('ctrl-open')) psToggleCtrl(false); });
+}
+psCtxInit();
 function psMore(btn) {
   var box = btn.closest('details, section'), all = box.classList.toggle('all');
   if (!btn.dataset.t) btn.dataset.t = btn.textContent;
@@ -1339,8 +1354,11 @@ function psAccInit() {
   });
   // link #forma, #rekordy… otwiera sekcję
   var map = { forma: 'form-sec', rekordy: 'rec-sec', zwyciezcy: 'wins-sec', rozklad: 'dist-sec', pojedynek: 'duel-sec', obserwowani: 'watch-sec' };
-  var t = map[location.hash.slice(1)];
-  if (t) { var el = document.getElementById(t); el.open = true; setTimeout(function() { el.scrollIntoView({ block: 'start' }); }, 300); }
+  var go = function() {
+    var t = map[location.hash.slice(1)];
+    if (t) { var el = document.getElementById(t); el.open = true; setTimeout(function() { el.scrollIntoView({ block: 'start' }); }, 300); }
+  };
+  go(); window.addEventListener('hashchange', go);
 }
 psAccInit();
 
