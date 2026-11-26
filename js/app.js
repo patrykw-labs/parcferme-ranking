@@ -989,13 +989,12 @@ function psRenderWins() {
     var w = psRoundWinners(i);
     if (!w) continue;
     if (w.full) fullIdx.push(i);
-    rows.push('<tr><td>' + psRoundLabel(R[i]) + '</td><td class="w">' + psWho(w.keys, 3) + (w.full ? '' : ' <span class="tie" title="Z tej albo poprzedniej rundy mamy tylko czołówkę">(wśród zapisanej czołówki)</span>') + '</td><td><b>+' + w.v + '</b></td></tr>');
+    rows.push('<tr><td>' + psRoundLabel(R[i]) + '</td><td class="w">' + psWho(w.keys, 3) + (w.full ? '' : ' <span class="part" title="Z tej albo poprzedniej rundy mamy tylko czołówkę — zwycięzca wśród zapisanych">czołówka</span>') + '</td><td><b>+' + w.v + '</b></td></tr>');
   }
-  if (!rows.length) { sec.hidden = true; DIST_RI = null; return; }
+  if (!rows.length) { sec.hidden = true; document.getElementById('dist-sec').hidden = true; DIST_RI = null; return; }
   sec.hidden = false;
   document.getElementById('wins-table').innerHTML = '<thead><tr><th>Runda</th><th class="w">Najwięcej punktów</th><th>Pkt</th></tr></thead><tbody>' + rows.join('') + '</tbody>';
-  var dist = document.querySelector('#wins-sec .dist');
-  dist.hidden = !fullIdx.length;
+  document.getElementById('dist-sec').hidden = !fullIdx.length;
   if (fullIdx.length) {
     if (fullIdx.indexOf(DIST_RI) === -1) DIST_RI = fullIdx[0];
     document.getElementById('dist-r').innerHTML = fullIdx.map(function(i) { return '<option value="' + i + '"' + (i === DIST_RI ? ' selected' : '') + '>' + psEsc(psRoundText(R[i])) + '</option>'; }).join('');
@@ -1131,7 +1130,7 @@ function psCommonSpan() {
 }
 function psRenderRecords() {
   var R = state.rounds, n = R.length, keys = Object.keys(state.participants), span = psCommonSpan();
-  document.getElementById('rec-h').textContent = n < 2 ? '🏅 Mistrzowie sezonów' : '🏆 Rekordy sezonu';
+  document.getElementById('rec-h').textContent = n < 2 ? 'Mistrzowie sezonów' : 'Rekordy sezonu';
   document.getElementById('champs').classList.toggle('only', n < 2);
   if (n < 2) { document.getElementById('rec-grid').innerHTML = ''; document.getElementById('rec-cap').textContent = ''; return; }
   var best = function(list, better) { // [{k, v, extra}] → zwycięzcy (z remisami)
@@ -1292,7 +1291,58 @@ function psRenderAll(meOnly) {
   if (!psFillNicks.done) { psFillNicks(order); psFillNicks.done = true; } // lista nicków nie zależy od „ja”
   psRenderDuel();
   psRenderTable();
+  psAccPreview();
 }
+
+// --- makieta: rozwijane sekcje „Statystyki sezonu” i pasek kontekstu ---
+var ACC_KEY = 'parcfer-acc';
+function psAccPreview() {
+  var txt = function(sel) { var e = document.querySelector(sel); return e ? e.textContent.trim() : ''; };
+  var set = function(id, s) { var e = document.getElementById('pv-' + id); if (e) e.textContent = s; };
+  var fr = document.querySelector('#form-table tbody tr');
+  if (fr && fr.cells.length > 2) set('form-sec', fr.cells[1].textContent.trim() + ' · ' + fr.cells[fr.cells.length - 2].textContent.trim() + ' pkt w 3 rundach');
+  var nrec = document.querySelectorAll('#rec-grid .rec').length;
+  set('rec-sec', nrec ? nrec + ' rekordów' : '');
+  var wr = document.querySelector('#wins-table tbody tr');
+  if (wr) set('wins-sec', (wr.cells[0].textContent.match(/R\d+/) || [''])[0] + ': ' + wr.cells[1].textContent.replace('czołówka', '').trim().split(',')[0] + (wr.cells[1].textContent.indexOf(',') > 0 ? ' i in.' : '') + ' ' + wr.cells[2].textContent);
+  var md = /mediana\s*([\d,]+)/.exec(txt('#dist-stats'));
+  set('dist-sec', md ? 'mediana ' + md[1] + ' pkt' : '');
+  var da = document.getElementById('duel-a').value.trim(), db = document.getElementById('duel-b').value.trim();
+  set('duel-sec', da && db ? da + ' vs ' + db : 'porównaj dwóch graczy');
+  // pasek kontekstu
+  var last = state.rounds[state.rounds.length - 1], me = '';
+  if (ME && state.participants[ME] && state.participants[ME][last]) me = ' · Ty: P' + psPlace(last, state.participants[ME][last]).txt;
+  document.getElementById('ctx-txt').innerHTML = '<b>' + SEASON + '</b> · po ' + psEsc(psRoundText(last)) + (ROUND_UPTO ? ' <span class="ctx-past">(wcześniejszy stan)</span>' : '') + psEsc(me);
+}
+function psToggleCtrl(force) {
+  var open = typeof force === 'boolean' ? force : !document.body.classList.contains('ctrl-open');
+  document.body.classList.toggle('ctrl-open', open);
+  document.getElementById('ctx-btn').setAttribute('aria-expanded', String(open));
+}
+function psMore(btn) {
+  var box = btn.closest('details, section'), all = box.classList.toggle('all');
+  if (!btn.dataset.t) btn.dataset.t = btn.textContent;
+  btn.textContent = all ? 'Zwiń' : btn.dataset.t;
+}
+function psAccInit() {
+  var saved = null;
+  try { saved = JSON.parse(localStorage.getItem(ACC_KEY) || 'null'); } catch (e) {}
+  var wide = window.matchMedia('(min-width: 900px)').matches;
+  document.querySelectorAll('details.acc').forEach(function(d) {
+    d.open = saved ? saved.indexOf(d.id) >= 0 : wide;
+    d.addEventListener('toggle', function() {
+      if (d.open && d.id === 'dist-sec' && DIST_RI !== null) psDrawDist(DIST_RI);
+      if (d.open && d.id === 'watch-sec') psDrawWatch();
+      var ids = [].filter.call(document.querySelectorAll('details.acc'), function(x) { return x.open; }).map(function(x) { return x.id; });
+      try { localStorage.setItem(ACC_KEY, JSON.stringify(ids)); } catch (e) {}
+    });
+  });
+  // link #forma, #rekordy… otwiera sekcję
+  var map = { forma: 'form-sec', rekordy: 'rec-sec', zwyciezcy: 'wins-sec', rozklad: 'dist-sec', pojedynek: 'duel-sec', obserwowani: 'watch-sec' };
+  var t = map[location.hash.slice(1)];
+  if (t) { var el = document.getElementById(t); el.open = true; setTimeout(function() { el.scrollIntoView({ block: 'start' }); }, 300); }
+}
+psAccInit();
 
 // wersja strony w górnym pasku (bez kroku budowania): wydanie z CHANGELOG.md (pierwsza sekcja „## vX.Y.Z”),
 // a liczba commitów na main po wydaniu i skrót ostatniego commita z API GitHuba.

@@ -26,7 +26,7 @@
 // motyw ustawiany przed renderem, żeby nie migał
 (function(){try{var t=localStorage.getItem('parcfer-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
 </script>
-<link rel="stylesheet" href="css/style.css?v=20261125a">
+<link rel="stylesheet" href="css/style.css?v=mock1">
 </head>
 <body>
 
@@ -47,6 +47,14 @@
   <div class="crumbs">parcfer.me<span>›</span>Klasyfikacja typerów</div>
   <h1>Klasyfikacja <em>typerów F1 <span id="ps-season"></span></em></h1>
   <p class="lead" id="ps-subtitle">Ładowanie…</p>
+  <div class="ctx" id="ps-ctx">
+    <span class="ctx-t" id="ctx-txt"></span>
+    <button type="button" class="ctx-btn" id="ctx-btn" aria-expanded="false" aria-controls="ps-ctrl" onclick="psToggleCtrl()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+      <span>Zmień</span>
+    </button>
+  </div>
+  <div class="ctrl" id="ps-ctrl">
   <div class="seasons" id="ps-seasons"></div>
   <div class="round-pick" id="ps-round-pick" hidden>
     <label for="ps-round">Stan po rundzie</label>
@@ -57,6 +65,8 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M5 11a8 8 0 0 1 8 8"/><path d="M5 4a15 15 0 0 1 15 15"/><circle cx="6" cy="18" r="1.6" fill="currentColor" stroke="none"/></svg>
     <span><b>Subskrybuj RSS</b> — powiadomienie o każdej nowej rundzie</span>
   </a>
+
+  </div>
 
   <a class="banner" data-goatcounter-click="buymeacoffee-banner" data-goatcounter-title="Klik: baner Buy me a coffee" href="https://www.buymeacoffee.com/patrykw" target="_blank" rel="noopener"><picture>
     <source type="image/webp" srcset="assets/banner-800.webp?v=2 800w, assets/banner-1600.webp?v=2 1600w, assets/banner-3200.webp?v=2 3200w" sizes="(max-width: 1100px) calc(100vw - 32px), 1068px">
@@ -91,64 +101,6 @@
     <div class="cap" id="title-cap"></div>
   </section>
 
-  <section class="card form" id="form-sec">
-    <div class="board-head"><h2>🔥 Forma — ostatnie 3 rundy <span class="chip blue" id="form-r">—</span></h2></div>
-    <div class="tw" style="max-height:none"><table id="form-table"></table></div>
-    <div class="cap" id="form-cap"></div>
-  </section>
-
-  <section class="card recs" id="rec-sec">
-    <div class="board-head"><h2 id="rec-h">🏆 Rekordy sezonu</h2></div>
-    <div class="rec-grid" id="rec-grid"></div>
-    <div class="champs" id="champs" hidden></div>
-    <div class="cap" id="rec-cap"></div>
-  </section>
-
-  <section class="card wins" id="wins-sec" hidden>
-    <div class="board-head"><h2>🥇 Zwycięzcy rund</h2></div>
-    <div class="wins-body">
-      <div class="tw" style="max-height:none"><table id="wins-table"></table></div>
-      <div class="dist">
-        <div class="dist-head"><label class="label" for="dist-r">Rozkład punktów w rundzie</label> <select id="dist-r" onchange="psDrawDist(+this.value)"></select></div>
-        <div class="dist-stats" id="dist-stats"></div>
-        <div class="chart" id="dist-chart"><div class="tip" id="dist-tip"></div></div>
-        <details class="dist-tab"><summary>Tabela rozkładu</summary><table id="dist-table"></table></details>
-      </div>
-    </div>
-    <div class="cap" id="wins-cap"></div>
-  </section>
-
-  <section class="card watch" id="watch-sec" hidden>
-    <div class="board-head">
-      <h2>⭐ Obserwowani <span class="chip blue" id="watch-n">—</span></h2>
-      <div class="sp"></div>
-      <button type="button" class="btn" onclick="psSetView('watch'); document.querySelector('.board').scrollIntoView({ behavior: 'smooth' })">Tabela</button>
-      <button type="button" class="btn" id="watch-share" onclick="psShareLeague()">🔗 Link do ligi</button>
-      <button type="button" class="btn" id="watch-clear" onclick="psClearWatch()" title="Usuń wszystkich z listy obserwowanych">✕ Wyczyść</button>
-    </div>
-    <div class="watch-body">
-      <div class="label">Miejsce w rankingu po każdej rundzie</div>
-      <div class="legend" id="watch-legend"></div>
-      <div class="chart" id="watch-chart"><div class="tip" id="watch-tip"></div></div>
-      <div class="cap" id="watch-cap"></div>
-    </div>
-  </section>
-
-  <section class="card duel" id="duel-sec">
-    <div class="board-head">
-      <h2>⚔️ Pojedynek</h2>
-      <div class="sp"></div>
-      <div class="duel-pick">
-        <input class="search" id="duel-a" list="nicks" placeholder="Gracz A" autocomplete="off" oninput="psRenderDuel()">
-        <span class="vs">VS</span>
-        <input class="search" id="duel-b" list="nicks" placeholder="Gracz B (rywal)" autocomplete="off" oninput="psRenderDuel()">
-        <button type="button" class="btn" id="duel-share" onclick="psShareDuel()" style="display:none">🔗 Link</button>
-      </div>
-    </div>
-    <datalist id="nicks"></datalist>
-    <div class="duel-body" id="duel-body"></div>
-  </section>
-
   <section class="card board">
     <div class="board-head">
       <h2>Tabela runda po rundzie <span class="chip gold" id="spr-legend" title="Rundy z weekendem sprinterskim">⚡ weekend ze sprintem</span></h2>
@@ -169,6 +121,66 @@
     <div class="pager" id="ps-pager" style="display:none"></div>
     <div class="empty" id="ps-empty" style="display:none">Brak danych dla tego sezonu.</div>
   </section>
+
+  <h2 class="acc-h">Statystyki sezonu</h2>
+  <details class="card acc form" id="form-sec">
+    <summary><span class="acc-ico" aria-hidden="true">🔥</span><span class="acc-t">Forma <span class="chip blue" id="form-r">—</span></span><span class="acc-p" id="pv-form-sec"></span></summary>
+    <div class="tw clip" style="max-height:none"><table id="form-table"></table></div>
+    <button type="button" class="more" onclick="psMore(this)">Pokaż wszystkich</button>
+    <div class="cap" id="form-cap"></div>
+  </details>
+  <details class="card acc recs" id="rec-sec">
+    <summary><span class="acc-ico" aria-hidden="true">🏆</span><span class="acc-t"><span id="rec-h">Rekordy sezonu</span></span><span class="acc-p" id="pv-rec-sec"></span></summary>
+    <div class="rec-grid" id="rec-grid"></div>
+    <div class="champs" id="champs" hidden></div>
+    <div class="cap" id="rec-cap"></div>
+  </details>
+  <details class="card acc wins" id="wins-sec" hidden>
+    <summary><span class="acc-ico" aria-hidden="true">🥇</span><span class="acc-t">Zwycięzcy rund</span><span class="acc-p" id="pv-wins-sec"></span></summary>
+    <div class="wins-body one">
+      <div class="tw clip" style="max-height:none"><table id="wins-table"></table></div>
+        <button type="button" class="more" onclick="psMore(this)">Pokaż wszystkie rundy</button>
+    </div>
+    <div class="cap" id="wins-cap"></div>
+  </details>
+  <details class="card acc wins" id="dist-sec" hidden>
+    <summary><span class="acc-ico" aria-hidden="true">📊</span><span class="acc-t">Rozkład punktów</span><span class="acc-p" id="pv-dist-sec"></span></summary>
+    <div class="wins-body one">
+      <div class="dist">
+        <div class="dist-head"><label class="label" for="dist-r">Runda</label> <select id="dist-r" onchange="psDrawDist(+this.value)"></select></div>
+        <div class="dist-stats" id="dist-stats"></div>
+        <div class="chart" id="dist-chart"><div class="tip" id="dist-tip"></div></div>
+        <details class="dist-tab"><summary>Tabela rozkładu</summary><table id="dist-table"></table></details>
+      </div>
+  </details>
+  <details class="card acc duel" id="duel-sec">
+    <summary><span class="acc-ico" aria-hidden="true">⚔️</span><span class="acc-t">Pojedynek</span><span class="acc-p" id="pv-duel-sec"></span></summary>
+    </div>
+    <div class="acc-tools duel-pick">
+      <input class="search" id="duel-a" list="nicks" placeholder="Gracz A" autocomplete="off" oninput="psRenderDuel()">
+      <span class="vs">VS</span>
+      <input class="search" id="duel-b" list="nicks" placeholder="Gracz B (rywal)" autocomplete="off" oninput="psRenderDuel()">
+      <button type="button" class="btn" id="duel-share" onclick="psShareDuel()" style="display:none">🔗 Link</button>
+    </div>
+    <datalist id="nicks"></datalist>
+    <div class="duel-body" id="duel-body"></div>
+  </details>
+  <details class="card acc watch" id="watch-sec" hidden>
+    <summary><span class="acc-ico" aria-hidden="true">⭐</span><span class="acc-t">Obserwowani <span class="chip blue" id="watch-n">—</span></span><span class="acc-p" id="pv-watch-sec"></span></summary>
+    <div class="acc-tools">
+      <button type="button" class="btn" onclick="psSetView('watch'); document.querySelector('.board').scrollIntoView({ behavior: 'smooth' })">Tabela</button>
+      <button type="button" class="btn" id="watch-share" onclick="psShareLeague()">🔗 Link do ligi</button>
+      <button type="button" class="btn" id="watch-clear" onclick="psClearWatch()" title="Usuń wszystkich z listy obserwowanych">✕ Wyczyść</button>
+    </div>
+    <div class="watch-body">
+      <div class="label">Miejsce w rankingu po każdej rundzie</div>
+      <div class="legend" id="watch-legend"></div>
+      <div class="chart" id="watch-chart"><div class="tip" id="watch-tip"></div></div>
+      <div class="cap" id="watch-cap"></div>
+    </div>
+  </details>
+
+
 
   <dialog class="hist" id="hist" aria-labelledby="h-name">
     <div class="hist-in">
@@ -203,7 +215,7 @@
   </div>
 </main>
 
-<script src="js/app.js?v=20261125a"></script>
+<script src="js/app.js?v=mock1"></script>
 <script data-goatcounter="https://parcferme.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </body>
 </html>

@@ -385,3 +385,68 @@ dialog.hist::backdrop{background:rgba(5,10,20,.6);backdrop-filter:blur(2px)}
 /* wąskie telefony: pasek górny z wersją strony musi się zmieścić */
 @media (max-width:400px){.top-in{gap:8px;padding:10px 12px}.brand{font-size:14px;gap:8px}.ver{padding:0 7px}.icon-btn,.coffee-btn{width:36px;height:36px}.coffee-btn{padding:0;justify-content:center}}
 @media (max-width:340px){.ver .ver-c{display:none}.brand>span:last-child{display:none}}
+
+/* ===== makieta: pasek kontekstu, rozwijane sekcje, mniejsze zaokrąglenia ===== */
+.card{border-radius:10px}
+.rec,.champs,.dp,.note{border-radius:8px}
+.banner{border-radius:10px}
+.seg{border-radius:8px}.seg button{border-radius:6px}.seg button.on{box-shadow:none}
+.seasons a,.seasons b{border-radius:6px}
+.rss-cta{border-radius:8px}
+.search,.btn{border-radius:8px}
+.field{border-radius:8px}
+.round-pick select{border-radius:8px}
+.ctx{display:none}
+.acc-h{margin:28px 0 10px;font-size:13px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+details.acc{margin-top:0;border-radius:0;box-shadow:none;border-left:0;border-right:0;border-top:0;background:transparent}
+details.acc:first-of-type{border-top:1px solid var(--border)}
+details.acc[hidden]{display:none}
+details.acc>summary{list-style:none;display:flex;align-items:center;gap:12px;padding:14px 4px;cursor:pointer;min-height:52px}
+details.acc>summary::-webkit-details-marker{display:none}
+details.acc>summary::after{content:"";width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);margin:0 6px 4px 4px;transition:transform .15s;flex:none}
+details.acc[open]>summary::after{transform:rotate(-135deg);margin-bottom:-4px}
+details.acc>summary:hover .acc-t{color:var(--accent-2)}
+.acc-ico{width:28px;text-align:center;font-size:18px;flex:none}
+.acc-t{font-weight:800;font-size:16px;display:flex;align-items:center;gap:8px;flex:none}
+.acc-p{flex:1;text-align:right;color:var(--text-2);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+details.acc[open] .acc-p{visibility:hidden}
+details.acc[open]{padding-bottom:16px}
+details.acc>*:not(summary){background:transparent}
+details.acc .wins-body.one{grid-template-columns:1fr;padding:0 0 4px}
+details.acc .rec-grid,details.acc .title-body,details.acc .watch-body,details.acc .duel-body{padding-left:0;padding-right:0}
+details.acc .champs{margin-left:0;margin-right:0}
+details.acc .cap{padding-left:0;padding-right:0}
+.acc-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:4px 0 10px}
+.clip:not(.x) tbody tr:nth-child(n+6){display:none}
+#form-sec .clip tbody tr:nth-child(n+6){display:table-row}
+#form-sec .clip tbody tr:nth-child(n+11){display:none}
+details.all .clip tbody tr{display:table-row!important}
+.more{margin:8px 0 0;border:0;background:transparent;color:var(--accent-2);font:inherit;font-size:13px;font-weight:700;cursor:pointer;padding:8px 0}
+.part{display:inline-block;margin-left:4px;padding:1px 6px;border-radius:4px;border:1px solid var(--border-strong);font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);vertical-align:1px}
+/* rekordy jako lista */
+details.acc .rec-grid{grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:0 24px}
+details.acc .rec{border:0;border-bottom:1px solid var(--border);border-radius:0;background:transparent;padding:10px 0;display:grid;grid-template-columns:1fr auto;column-gap:12px;align-items:baseline}
+details.acc .rec .label{grid-column:1}
+details.acc .rec .v{grid-column:2;grid-row:1 / span 2;font-size:20px;margin:0;text-align:right}
+details.acc .rec .who{grid-column:1;line-height:1.5}
+@media (max-width:700px){
+  .ctx{display:flex;align-items:center;gap:10px;position:sticky;top:59px;z-index:15;margin:14px -16px 0;padding:8px 10px 8px 16px;background:var(--accent-strong);color:#fff;font-size:13px}
+  .ctx-t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ctx-past{opacity:.8}
+  .ctx-btn{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px;border-radius:6px;border:1px solid rgba(255,255,255,.45);background:rgba(255,255,255,.12);color:#fff;font:inherit;font-weight:700;cursor:pointer}
+  .ctx-btn svg{width:16px;height:16px}
+  .ctrl{display:none;margin:0 -16px;padding:12px 16px 14px;background:var(--card);border-bottom:1px solid var(--border)}
+  body.ctrl-open .ctrl{display:block;position:sticky;top:107px;z-index:14;box-shadow:var(--shadow)}
+  .ctrl .seasons{margin-top:0}
+  .crumbs{margin-top:16px}
+  .lead{font-size:14px}
+  .banner{margin-top:14px}
+  /* kafelki: jeden pasek przewijany palcem; TOP 10 dubluje tabelę tuż niżej */
+  .tiles{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;margin:12px -16px 0;padding:0 16px 6px;scrollbar-width:none}
+  .tiles::-webkit-scrollbar{display:none}
+  .tiles>.tile{flex:0 0 64%;scroll-snap-align:start}
+  #t-top10{display:none}
+  .acc-t{font-size:15px}
+  details.acc .rec-grid{grid-template-columns:1fr}
+}
+@media (max-width:400px){.ctx{top:57px}body.ctrl-open .ctrl{top:105px}}
