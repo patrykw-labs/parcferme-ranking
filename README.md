@@ -145,4 +145,4 @@ Jeśli zestawienie Ci się przydaje: [☕ Postaw mi kawę](https://buymeacoffee.
 
 ## Licencja
 
-Kod: [MIT](LICENSE). Licencja nie obejmuje danych rankingu w `data/` — patrz uwaga na górze.
+Kod: [GNU AGPL-3.0](LICENSE) © 2026 patrykw-labs. Możesz go używać, zmieniać i rozpowszechniać, ale jeśli udostępniasz zmienioną wersję innym — także jako stronę w sieci — musisz udostępnić jej kod źródłowy na tej samej licencji. Licencja nie obejmuje danych rankingu w `data/` (patrz uwaga na górze) ani fontu w `assets/fonts/` (SIL OFL).
