@@ -472,3 +472,17 @@ details.acc.solo[open]{padding-bottom:16px}
 .round-pick label{color:var(--accent-2)}
 .round-pick select{border-color:color-mix(in srgb,var(--accent-strong) 45%,transparent);background:var(--card)}
 .round-pick:has(.past:not([hidden])){border-color:var(--gold-text);background:color-mix(in srgb,var(--gold-text) 10%,transparent)}
+
+/* wykresy: przesuwanie palcem w bok przesuwa znacznik rundy, w pionie — przewija stronę */
+.chart svg{touch-action:pan-y}
+/* historia gracza: tło strony nie przewija się pod okienkiem; tabela nie blokuje przewijania okienka */
+html:has(dialog[open]){overflow:hidden}
+.hist .tw{overscroll-behavior:auto}
+.hist-in{overscroll-behavior:contain}
+/* telefon: historia na cały ekran, przewijana zwykłym przesunięciem palca; nagłówek z ✕ zostaje u góry */
+@media (max-width:560px){
+  dialog.hist{width:100vw;max-width:100vw;height:100vh;height:100dvh;max-height:100vh;max-height:100dvh;margin:0;border:0;border-radius:0}
+  .hist-in{max-height:none;height:100%;padding-top:0}
+  .hist-top{position:sticky;top:0;z-index:3;margin:0 -16px;padding:14px 16px 10px;background:var(--card);border-bottom:1px solid var(--border)}
+  .hist-top h3{font-size:20px}
+}

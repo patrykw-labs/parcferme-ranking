@@ -557,8 +557,20 @@ function psDrawChart() {
   }
   el.addEventListener('pointermove', show);
   el.addEventListener('pointerdown', show);
-  el.addEventListener('pointerleave', function() { tip.style.display = 'none'; cross.style.display = 'none'; el.querySelectorAll('.dot.on').forEach(function(c) { c.classList.remove('on'); }); });
+  psTipLeave(el, function() { tip.style.display = 'none'; cross.style.display = 'none'; el.querySelectorAll('.dot.on').forEach(function(c) { c.classList.remove('on'); }); });
 }
+
+// dymki wykresów: myszą znikają po zjechaniu z wykresu; palcem zostają po podniesieniu palca
+// (przeglądarka zgłasza wtedy „opuszczenie” wykresu) i znikają po dotknięciu poza wykresem
+var PS_TIPS = [];
+function psTipLeave(el, hide) {
+  PS_TIPS = PS_TIPS.filter(function(t) { return document.contains(t.el); });
+  PS_TIPS.push({ el: el, hide: hide });
+  el.addEventListener('pointerleave', function(ev) { if (ev.pointerType === 'mouse') hide(); });
+}
+document.addEventListener('pointerdown', function(e) {
+  PS_TIPS.forEach(function(t) { if (!t.el.contains(e.target)) t.hide(); });
+});
 
 document.addEventListener('click', function(e) {
   var st = e.target.closest('[data-star]');
@@ -687,7 +699,7 @@ function psDrawDuel() {
     tip.style.top = Math.max(0, (v === null ? m.t : Math.min(Y(v), Y(0))) * rect.height / H - tip.offsetHeight - 10) + 'px';
   }
   el.addEventListener('pointermove', show); el.addEventListener('pointerdown', show);
-  el.addEventListener('pointerleave', function() { tip.style.display = 'none'; });
+  psTipLeave(el, function() { tip.style.display = 'none'; });
 }
 function psShareDuel() {
   if (!DUEL) return;
@@ -905,7 +917,7 @@ function psDrawWatch() {
     tip.style.top = '0px';
   }
   el.addEventListener('pointermove', show); el.addEventListener('pointerdown', show);
-  el.addEventListener('pointerleave', function() { tip.style.display = 'none'; cross.style.display = 'none'; });
+  psTipLeave(el, function() { tip.style.display = 'none'; cross.style.display = 'none'; });
 }
 function psShareLeague() {
   var keys = psLeagueKeys().filter(function(k) { return /^u\d+$/.test(k); });
@@ -1055,7 +1067,7 @@ function psDrawDist(ri) {
     tip.style.top = Math.max(0, Y(cnt[v]) * rect.height / H - tip.offsetHeight - 8) + 'px';
   }
   el.addEventListener('pointermove', show); el.addEventListener('pointerdown', show);
-  el.addEventListener('pointerleave', function() { tip.style.display = 'none'; });
+  psTipLeave(el, function() { tip.style.display = 'none'; });
 }
 
 // ---------- archiwum sezonów (data/history.json): mistrzowie i „Twoje sezony” ----------
