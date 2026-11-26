@@ -2,6 +2,11 @@
 
 Format: każda wersja to nagłówek `## vX.Y.Z (RRRR-MM-DD) — tytuł`. Workflow „Wydanie” (`.github/workflows/release.yml`) po wypchnięciu na `main` nowej wersji (bez tagu) sam zakłada tag i tworzy wydanie na GitHubie z treścią sekcji tej wersji.
 
+## v1.4.1 (2026-11-26) — Kalendarz 2027
+
+### Dane
+- **Kalendarz 2027** w `data/seasons.json`: 24 GP w kolejności z kalendarza F1 (Bahrajn R1 … Abu Zabi R24), z sprintami w rundach R1, R3, R4, R7, R8, R10, R14, R21, R23 i R24. Automat od pierwszego typowania 2027 nada numery rund według kalendarza, więc dodatkowe typowanie na parcfer.me nie przesunie numeracji.
+
 ## v1.4.0 (2026-11-26) — Nowy układ strony
 
 ### Nowości
