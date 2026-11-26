@@ -26,7 +26,7 @@
 // motyw ustawiany przed renderem, żeby nie migał
 (function(){try{var t=localStorage.getItem('parcfer-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
 </script>
-<link rel="stylesheet" href="css/style.css?v=20261126a">
+<link rel="stylesheet" href="css/style.css?v=20261126b">
 </head>
 <body>
 
@@ -97,6 +97,19 @@
     <div class="cap" id="title-cap"></div>
   </section>
 
+  <details class="card acc solo duel" id="duel-sec">
+    <summary><span class="acc-ico" aria-hidden="true">⚔️</span><span class="acc-t">Pojedynek</span><span class="acc-p" id="pv-duel-sec"></span></summary>
+    </div>
+    <div class="acc-tools duel-pick">
+      <input class="search" id="duel-a" list="nicks" placeholder="Gracz A" autocomplete="off" oninput="psRenderDuel()">
+      <span class="vs">VS</span>
+      <input class="search" id="duel-b" list="nicks" placeholder="Gracz B (rywal)" autocomplete="off" oninput="psRenderDuel()">
+      <button type="button" class="btn" id="duel-share" onclick="psShareDuel()" style="display:none">🔗 Link</button>
+    </div>
+    <datalist id="nicks"></datalist>
+    <div class="duel-body" id="duel-body"></div>
+  </details>
+
   <section class="card board">
     <div class="board-head">
       <h2>Tabela runda po rundzie <span class="chip gold" id="spr-legend" title="Rundy z weekendem sprinterskim">⚡ weekend ze sprintem</span></h2>
@@ -154,18 +167,6 @@
         <details class="dist-tab"><summary>Tabela rozkładu</summary><table id="dist-table"></table></details>
       </div>
   </details>
-  <details class="card acc duel" id="duel-sec">
-    <summary><span class="acc-ico" aria-hidden="true">⚔️</span><span class="acc-t">Pojedynek</span><span class="acc-p" id="pv-duel-sec"></span></summary>
-    </div>
-    <div class="acc-tools duel-pick">
-      <input class="search" id="duel-a" list="nicks" placeholder="Gracz A" autocomplete="off" oninput="psRenderDuel()">
-      <span class="vs">VS</span>
-      <input class="search" id="duel-b" list="nicks" placeholder="Gracz B (rywal)" autocomplete="off" oninput="psRenderDuel()">
-      <button type="button" class="btn" id="duel-share" onclick="psShareDuel()" style="display:none">🔗 Link</button>
-    </div>
-    <datalist id="nicks"></datalist>
-    <div class="duel-body" id="duel-body"></div>
-  </details>
   <details class="card acc watch" id="watch-sec" hidden>
     <summary><span class="acc-ico" aria-hidden="true">⭐</span><span class="acc-t">Obserwowani <span class="chip blue" id="watch-n">—</span></span><span class="acc-p" id="pv-watch-sec"></span></summary>
     <div class="acc-tools">
@@ -216,7 +217,7 @@
   </div>
 </main>
 
-<script src="js/app.js?v=20261126a"></script>
+<script src="js/app.js?v=20261126b"></script>
 <script data-goatcounter="https://parcferme.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </body>
 </html>

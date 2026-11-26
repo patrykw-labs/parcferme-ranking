@@ -989,8 +989,14 @@ function psRenderWins() {
     var w = psRoundWinners(i);
     if (!w) continue;
     if (w.full) fullIdx.push(i);
-    rows.push('<tr><td>' + psRoundLabel(R[i]) + '</td><td class="w">' + psWho(w.keys, 3) + (w.full ? '' : ' <span class="part" title="Z tej albo poprzedniej rundy mamy tylko czołówkę — zwycięzca wśród zapisanych">czołówka</span>') + '</td><td><b>+' + w.v + '</b></td></tr>');
+    rows.push({ i: i, w: w });
   }
+  // kolor punktów: im więcej w porównaniu z innymi rundami, tym mocniejsze tło (najlepszy wynik sezonu — 🔥)
+  var vs = rows.map(function(r) { return r.w.v; }), lo = Math.min.apply(null, vs), hi = Math.max.apply(null, vs);
+  rows = rows.map(function(r) {
+    var w = r.w, a = hi > lo ? Math.round(10 + 30 * (w.v - lo) / (hi - lo)) : 22;
+    return '<tr><td>' + psRoundLabel(R[r.i]) + '</td><td class="w">' + psWho(w.keys, 3) + (w.full ? '' : ' <span class="part" title="Z tej albo poprzedniej rundy mamy tylko czołówkę — zwycięzca wśród zapisanych">czołówka</span>') + '</td><td><span class="pt" style="--a:' + a + '%"' + (w.v === hi && hi > lo ? ' title="Najwięcej w sezonie"' : '') + '>+' + w.v + (w.v === hi && hi > lo ? ' 🔥' : '') + '</span></td></tr>';
+  });
   if (!rows.length) { sec.hidden = true; document.getElementById('dist-sec').hidden = true; DIST_RI = null; return; }
   sec.hidden = false;
   document.getElementById('wins-table').innerHTML = '<thead><tr><th>Runda</th><th class="w">Najwięcej punktów</th><th>Pkt</th></tr></thead><tbody>' + rows.join('') + '</tbody>';
