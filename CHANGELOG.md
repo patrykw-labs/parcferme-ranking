@@ -2,6 +2,29 @@
 
 Format: każda wersja to nagłówek `## vX.Y.Z (RRRR-MM-DD) — tytuł`. Workflow „Wydanie” (`.github/workflows/release.yml`) po wypchnięciu na `main` nowej wersji (bez tagu) sam zakłada tag i tworzy wydanie na GitHubie z treścią sekcji tej wersji.
 
+## v1.4.0 (2026-11-26) — Nowy układ strony
+
+### Nowości
+- **Nowy układ na telefonie:**
+  - tabela rankingu jest zaraz po „Walce o tytuł”, a nad nią rozwijany „Pojedynek”;
+  - forma, rekordy sezonu, zwycięzcy rund, rozkład punktów i obserwowani to rozwijane wiersze „Statystyki sezonu” z podglądem najważniejszej liczby (np. „mediana 7 pkt”, „R21: me-to +13”). Na telefonie są zwinięte, na komputerze rozwinięte, a przeglądarka pamięta wybór;
+  - linki `#forma`, `#rekordy`, `#zwyciezcy`, `#rozklad`, `#pojedynek` i `#obserwowani` otwierają wybraną sekcję.
+- **Pasek kontekstu na telefonie:** po przewinięciu u góry pojawia się „sezon · runda · Twoje miejsce” z przyciskiem „Zmień”, który wysuwa wybór sezonu, rundy i RSS.
+- **Pasek kafelków na telefonie:** kafelki rundy przewija się palcem w bok.
+- **Komputer:** sezony, „Stan po rundzie” i „Subskrybuj RSS” są w jednej linii pod tytułem.
+- **„Stan po rundzie”** jest w wyraźnej ramce, złotej przy oglądaniu wcześniejszego stanu rankingu.
+- **Zwycięzcy rund:** punkty na zielonym tle, tym mocniejszym, im lepszy wynik. Najlepszy wynik sezonu ma 🔥.
+- **Wygląd:** mniejsze zaokrąglenia i mniej cieni. Rekordy są listą zamiast kafelków, zwycięzcy rund i forma pokazują początek listy z „Pokaż wszystkie”, a baner „Postaw kawę” jest pod tabelą.
+
+### Poprawki
+- **Rozkład punktów** pokazuje medianę wśród punktujących. Wśród wszystkich graczy wynosiła zwykle 0, bo większość nie zdobywa punktów.
+- **Notka o zapisanych rundach** jest generowana z danych dla sezonów innych niż 2026, więc w 2027 nie będzie opisywać braków z 2026.
+- **Wersja w pasku:** gdy sprawdzenie zmian po wydaniu się nie uda, pasek pokazuje samo wydanie, a przyczyna jest tylko w dymku (zamiast „+?”).
+- **Kontrast w ciemnym motywie:** własny wiersz w „Walce o tytuł” jest czytelny także wtedy, gdy nie masz już szans na tytuł.
+
+### Inne
+- **Licencja kodu:** zmiana z MIT na GNU AGPL-3.0.
+
 ## v1.3.2 (2026-11-17) — Wersja w pasku i drobne poprawki
 
 ### Poprawki
