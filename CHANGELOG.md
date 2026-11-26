@@ -2,6 +2,12 @@
 
 Format: każda wersja to nagłówek `## vX.Y.Z (RRRR-MM-DD) — tytuł`. Workflow „Wydanie” (`.github/workflows/release.yml`) po wypchnięciu na `main` nowej wersji (bez tagu) sam zakłada tag i tworzy wydanie na GitHubie z treścią sekcji tej wersji.
 
+## v1.4.2 (2026-11-27) — Historia gracza na telefonie
+
+### Poprawki
+- **Dymki wykresów na telefonie:** dotknięty punkt pokazuje dymek, który zostaje po podniesieniu palca. Dotknięcie obok chowa dymek. Przesuwanie palcem w bok przesuwa znacznik rundy, a w pionie przewija stronę. Dotyczy historii gracza, pojedynku, obserwowanych i rozkładu punktów.
+- **Historia gracza na telefonie** otwiera się na cały ekran i przewija się zwykłym przesunięciem palca, także po tabeli rund. Nagłówek z nickiem i ✕ zostaje u góry, a strona pod spodem się nie przewija.
+
 ## v1.4.1 (2026-11-26) — Kalendarz 2027
 
 ### Dane
