@@ -463,8 +463,9 @@ details.acc.solo[open]{padding-bottom:16px}
 @media (min-width:701px){
   .ctrl{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;margin-top:14px}
   .ctrl .seasons,.ctrl .round-pick,.ctrl .rss-cta{margin-top:0}
-  .ctrl .rss-cta{margin-left:auto}
-  .ctrl .rss-d{display:none}
+  /* RSS wypełnia resztę wiersza; opis skraca się wielokropkiem, gdy brakuje miejsca */
+  .ctrl .rss-cta{flex:1 1 200px;min-width:0;align-self:stretch}
+  .ctrl .rss-cta>span{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 }
 /* „Stan po rundzie” jako wyraźna ramka; przy wcześniejszym stanie rankingu — złota */
 .round-pick{display:inline-flex;padding:6px 6px 6px 12px;border:1.5px solid color-mix(in srgb,var(--accent-strong) 55%,transparent);border-radius:10px;background:var(--accent-soft)}
